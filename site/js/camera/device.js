@@ -96,6 +96,7 @@ export class CameraSource {
     this.activeDeviceId = null;
     this.settings = null;
     this.facing = null;
+    this.onEnded = null;       // ({ id, rotulo }) — a câmera caiu por fora (ver start)
   }
 
   /** O aparelho tem mais de uma lente para alternar? */
@@ -136,84 +137,129 @@ export class CameraSource {
     const pf = preflight();
     if (!pf.ok) throw Object.assign(new Error(pf.message), { code: pf.code });
 
-    this.stop();
-
     /*
-     * `facingMode` como IDEAL, não exact.
-     *
-     * Com `exact`, um notebook sem câmera traseira responde
-     * OverconstrainedError e o usuário vê "erro" em vez de sua webcam. Com
-     * `ideal`, o navegador entrega a câmera mais próxima do pedido — no
-     * celular acerta a traseira, no desktop cai na única que existe.
+     * Troca A QUENTE (outra câmera com uma já ligada — o seletor do Studio,
+     * o painel Fonte): a nova abre ANTES de soltar a atual. Se a nova falhar
+     * (em uso por outro app, desplugada), a atual continua e o pipeline nem
+     * pisca; se abrir, o mesmo <video> só troca de srcObject — o Viewport,
+     * os operadores e os gráficos dos Studios seguem sem reiniciar. A mesma
+     * câmera (mudar resolução/fps) fecha antes: no Windows, abrir o mesmo
+     * dispositivo duas vezes falha.
      */
-    const video = {
-      width: { ideal: width },
-      height: { ideal: height },
-      frameRate: { ideal: fpsPreferido() },
-    };
-    if (deviceId) {
-      video.deviceId = { exact: deviceId };
-    } else {
-      video.facingMode = { ideal: facing || this.facing || 'user' };
-    }
-
+    const anterior = this.stream;
+    /*
+     * Celular/tablet: NÃO. O iOS (e vários Android) só mantêm uma câmera
+     * aberta — abrir a segunda encerra a primeira por fora, o que pareceria
+     * «câmera desconectada». Lá a troca fecha antes, como sempre foi.
+     */
+    const movel = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '')
+      || (/Macintosh/.test(navigator.userAgent || '') && (navigator.maxTouchPoints || 0) > 1);
+    const quente = Boolean(!movel && anterior && anterior.active && deviceId && deviceId !== this.activeDeviceId);
+    if (!quente) this.stop();
+    this._trocando = true;   // um «ended» da anterior durante a troca não é queda
     try {
-      this.stream = await navigator.mediaDevices.getUserMedia({ audio: false, video });
-    } catch (err) {
+      let novo = null;
+
       /*
-       * Uma tentativa sem restrição de lente antes de desistir. Aparelho que
-       * recusa a combinação resolução+facing costuma aceitar o pedido nu, e
-       * uma câmera funcionando vale mais que a resolução pedida.
+       * `facingMode` como IDEAL, não exact.
+       *
+       * Com `exact`, um notebook sem câmera traseira responde
+       * OverconstrainedError e o usuário vê "erro" em vez de sua webcam. Com
+       * `ideal`, o navegador entrega a câmera mais próxima do pedido — no
+       * celular acerta a traseira, no desktop cai na única que existe.
        */
-      /*
-       * Câmera escolhida por id (seletor «Abrir câmera») só repete com o MESMO
-       * id e só quando o que falhou foi a resolução: cair em «qualquer câmera»
-       * trocaria em silêncio a escolha da pessoa — e uma câmera em uso por
-       * outro app viraria outra câmera sem aviso.
-       */
-      if (deviceId && err && err.name !== 'OverconstrainedError') throw translateError(err);
+      const video = {
+        width: { ideal: width },
+        height: { ideal: height },
+        frameRate: { ideal: fpsPreferido() },
+      };
+      if (deviceId) {
+        video.deviceId = { exact: deviceId };
+      } else {
+        video.facingMode = { ideal: facing || this.facing || 'user' };
+      }
+
       try {
-        this.stream = await navigator.mediaDevices.getUserMedia({
-          audio: false, video: deviceId ? { deviceId: { exact: deviceId } } : true,
+        novo = await navigator.mediaDevices.getUserMedia({ audio: false, video });
+      } catch (err) {
+        /*
+         * Uma tentativa sem restrição de lente antes de desistir. Aparelho que
+         * recusa a combinação resolução+facing costuma aceitar o pedido nu, e
+         * uma câmera funcionando vale mais que a resolução pedida.
+         */
+        /*
+         * Câmera escolhida por id (seletor «Abrir câmera») só repete com o MESMO
+         * id e só quando o que falhou foi a resolução: cair em «qualquer câmera»
+         * trocaria em silêncio a escolha da pessoa — e uma câmera em uso por
+         * outro app viraria outra câmera sem aviso.
+         */
+        if (deviceId && err && err.name !== 'OverconstrainedError') throw translateError(err);
+        try {
+          novo = await navigator.mediaDevices.getUserMedia({
+            audio: false, video: deviceId ? { deviceId: { exact: deviceId } } : true,
+          });
+        } catch (_) {
+          throw translateError(err);
+        }
+      }
+
+      // a nova abriu: agora sim solta a anterior (nenhuma trilha fica viva sem dono)
+      if (quente) for (const t of anterior.getTracks()) t.stop();
+      this.stream = novo;
+      this.video.srcObject = this.stream;
+      await this.video.play().catch(() => {});
+      await this.waitForFrame();
+
+      const track = this.stream.getVideoTracks()[0];
+      /*
+       * Câmera desplugada, celular (Continuity/DroidCam) que se afastou ou
+       * permissão revogada: a trilha termina POR FORA («ended» não dispara no
+       * track.stop() nosso). Sem isto o app seguia «câmera ligada» com a imagem
+       * congelada; agora solta tudo e avisa quem pendurou `onEnded` (o
+       * workspace, por camera/fonte-app.js), que mostra a mensagem e reconecta
+       * quando ela voltar (devicechange).
+       */
+      if (track) {
+        const meu = this.stream;
+        track.addEventListener('ended', () => {
+          if (this.stream !== meu || this._trocando) return;
+          const info = { id: this.activeDeviceId, rotulo: track.label || '' };
+          this.stop();
+          if (this.onEnded) this.onEnded(info);
         });
-      } catch (_) {
-        throw translateError(err);
       }
-    }
+      this.settings = track ? track.getSettings() : null;
+      cameraAtual.pedido = { width, height, fps: video.frameRate.ideal };
+      cameraAtual.settings = this.settings;
+      try { cameraAtual.caps = track && track.getCapabilities ? track.getCapabilities() : null; } catch (_) { cameraAtual.caps = null; }
+      this.activeDeviceId = (this.settings && this.settings.deviceId) || deviceId;
+      // o que o aparelho REALMENTE entregou pode diferir do pedido
+      this.facing = (this.settings && this.settings.facingMode)
+        || facing || this.facing || 'user';
+      await this.listDevices(); // agora com labels, pois a permissão já foi dada
 
-    this.video.srcObject = this.stream;
-    await this.video.play().catch(() => {});
-    await this.waitForFrame();
-
-    const track = this.stream.getVideoTracks()[0];
-    this.settings = track ? track.getSettings() : null;
-    cameraAtual.pedido = { width, height, fps: video.frameRate.ideal };
-    cameraAtual.settings = this.settings;
-    try { cameraAtual.caps = track && track.getCapabilities ? track.getCapabilities() : null; } catch (_) { cameraAtual.caps = null; }
-    this.activeDeviceId = (this.settings && this.settings.deviceId) || deviceId;
-    // o que o aparelho REALMENTE entregou pode diferir do pedido
-    this.facing = (this.settings && this.settings.facingMode)
-      || facing || this.facing || 'user';
-    await this.listDevices(); // agora com labels, pois a permissão já foi dada
-
-    /*
-     * Notebooks com Windows Hello (ThinkPad, Dell, etc.) expõem DUAS câmeras
-     * no mesmo módulo USB: a RGB e a infravermelha. A IR entrega imagem preta
-     * fora de uma autenticação do Hello, porque o emissor IR não está aceso —
-     * e o browser pode perfeitamente escolher ela como padrão.
-     *
-     * Sintoma: "a câmera liga mas a tela fica preta". Então: se caímos numa IR
-     * e existe uma colorida, troca sozinho. Escolha explícita do usuário é
-     * respeitada (preferColor=false), inclusive para usar a IR de propósito.
-     */
-    if (preferColor && !deviceId) {
-      const active = this.devices.find((d) => d.id === this.activeDeviceId);
-      const rgb = this.devices.find((d) => !d.ir);
-      if (active && active.ir && rgb) {
-        return this.start({ deviceId: rgb.id, width, height, preferColor: false });
+      /*
+       * Notebooks com Windows Hello (ThinkPad, Dell, etc.) expõem DUAS câmeras
+       * no mesmo módulo USB: a RGB e a infravermelha. A IR entrega imagem preta
+       * fora de uma autenticação do Hello, porque o emissor IR não está aceso —
+       * e o browser pode perfeitamente escolher ela como padrão.
+       *
+       * Sintoma: "a câmera liga mas a tela fica preta". Então: se caímos numa IR
+       * e existe uma colorida, troca sozinho. Escolha explícita do usuário é
+       * respeitada (preferColor=false), inclusive para usar a IR de propósito.
+       */
+      if (preferColor && !deviceId) {
+        const active = this.devices.find((d) => d.id === this.activeDeviceId);
+        const rgb = this.devices.find((d) => !d.ir);
+        if (active && active.ir && rgb) {
+          this._trocando = false;
+          return this.start({ deviceId: rgb.id, width, height, preferColor: false });
+        }
       }
+      return this.settings;
+    } finally {
+      this._trocando = false;
     }
-    return this.settings;
   }
 
   /** Espera metadata + dimensões reais; sem isso o primeiro draw sai 0x0. */

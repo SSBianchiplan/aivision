@@ -58,6 +58,7 @@ import { definirFonte as fonteBeltScan } from './cv/runtime/livres-k/canal.js';
 import { definirFonte as fonteTakt } from './cv/runtime/livres-m/canal.js';
 import { definirUsuario as viaDoUsuario, alternarVia } from './via/base.js';
 import { definirUsuario as projetoDoUsuario } from './projeto/base.js';
+import { registrarFonteApp } from './camera/fonte-app.js';
 
 /*
  * Carregados SÓ AO ABRIR (components/SobDemanda.js): esportes, Bike Fit,
@@ -318,6 +319,11 @@ export function App({ sessao = null }) {
         deviceId: deviceId !== undefined ? deviceId : st.deviceId,
         ...(res || st.resolution),
       });
+      // vindo de outra fonte: solta a anterior (a tela seguia compartilhada e o arquivo decodificando)
+      const antes = source.current;
+      if (antes === screen.current) screen.current.stop();
+      if (antes === stream.current) stream.current.disconnect();
+      if (antes === file.current) soltarArquivo();
       source.current = camera.current;
       store.set({
         cameraOn: true,
@@ -327,7 +333,8 @@ export function App({ sessao = null }) {
       });
     } catch (err) {
       store.set({
-        cameraOn: false,
+        // troca a quente que falhou: a câmera anterior continua ligada (camera/device.js)
+        cameraOn: source.current === camera.current && camera.current.isRunning,
         notice: err.message,
         panels: { ...store.get().panels, camera: true },
       });
@@ -354,6 +361,9 @@ export function App({ sessao = null }) {
     try {
       await file.current.load(f);
       camera.current.stop();
+      // a tela e o stream também: senão seguiam capturando por baixo do arquivo
+      if (source.current === screen.current) screen.current.stop();
+      if (source.current === stream.current) stream.current.disconnect();
       source.current = file.current;
       executor.current.resetState();
       store.set({ sourceKind: 'file', cameraOn: false, notice: null });
@@ -421,6 +431,31 @@ export function App({ sessao = null }) {
     window.__vlcStartCamera = () => startCamera();
     return () => { delete window.__vlcStartCamera; };
   }, [startCamera]);
+
+  /*
+   * Ações de fonte para os Studios (camera/fonte-app.js → components/studio/
+   * FonteStudio.js): trocar câmera, arquivo, tela e YouTube sem sair da tela
+   * cheia. Também liga o aviso de câmera desconectada e a reconexão.
+   */
+  useEffect(() => {
+    registrarFonteApp({
+      source, camera, youtube, stream, screen,
+      ligarCamera: (id, res) => startCamera(id, res),
+      pararCamera: () => { camera.current.stop(); store.set({ cameraOn: false }); },
+      abrirArquivo: (f) => pickFile(f),
+      ligarTela: () => startScreenRef.current(),
+      pararTela: () => stopScreenRef.current(),
+      ligarYouTube: () => startYouTubeRef.current(),
+      pararYouTube: () => stopYouTubeRef.current(),
+      conectarStream: (cfg) => connectStreamRef.current(cfg),
+      desconectarStream: () => disconnectStreamRef.current(),
+    });
+    return () => registrarFonteApp(null);
+  }, [startCamera, pickFile]);
+  // as ações abaixo são declaradas depois; o registro lê sempre a versão atual
+  const startScreenRef = useRef(null), stopScreenRef = useRef(null);
+  const startYouTubeRef = useRef(null), stopYouTubeRef = useRef(null);
+  const connectStreamRef = useRef(null), disconnectStreamRef = useRef(null);
 
   // ---------------------------------------------------------- sessão
 
@@ -631,6 +666,10 @@ export function App({ sessao = null }) {
       store.set({ cameraOn: false, running: false });
     }
   }, []);
+
+  startScreenRef.current = startScreen; stopScreenRef.current = stopScreen;
+  startYouTubeRef.current = startYouTube; stopYouTubeRef.current = stopYouTube;
+  connectStreamRef.current = connectStream; disconnectStreamRef.current = disconnectStream;
 
   const reloadSource = useCallback(() => {
     executor.current.resetState();

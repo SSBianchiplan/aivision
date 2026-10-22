@@ -44,6 +44,7 @@ import { Onda } from './onda.js';
 import { exportarVideo, exportarQuadros, tamanhoSaida, sondarExportacao, Cancelado } from './exportar.js';
 import { montarZip } from './zip.js';
 import { tomarPedido, ultimaGravacao, emitirPrints } from './ponte.js';
+import { FonteStudio, fonteStudioAberta } from '../studio/FonteStudio.js';
 
 /* O CSS desta tela só baixa com ela (o app não paga por quem não edita vídeo). */
 await new Promise((r) => {
@@ -530,12 +531,39 @@ export function StudioVideo({ onClose, source, onPickFile }) {
     const el = fonteAoVivo();
     if (!el) { setMsg('Ligue uma fonte ao vivo (câmera, tela, YouTube ou stream) para gravar um trecho.'); return; }
     let stream = null;
+    let reles = null;
+    /*
+     * Câmera: grava por um canvas-relé, não pela trilha. Trocar de câmera no
+     * meio (Fonte do Studio, painel Fonte) PARA a trilha antiga — o
+     * MediaRecorder ficaria com uma trilha morta e o trecho congelava. O relé
+     * desenha o <video> da fonte (o mesmo elemento, com o srcObject novo) e
+     * segue gravando a câmera nova.
+     */
+    if (store.get().sourceKind === 'camera') {
+      const cv = document.createElement('canvas');
+      cv.width = el.videoWidth || 1280; cv.height = el.videoHeight || 720;
+      const g = cv.getContext('2d');
+      let vivo = true;
+      const passo = () => {
+        if (!vivo) return;
+        const v = fonteAoVivo() || el;
+        if (v.videoWidth && (v.videoWidth !== cv.width || v.videoHeight !== cv.height)) { cv.width = v.videoWidth; cv.height = v.videoHeight; }
+        try { if (v.readyState >= 2) g.drawImage(v, 0, 0, cv.width, cv.height); } catch (_) { /* quadro ainda não pronto */ }
+        if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(passo); else requestAnimationFrame(passo);
+      };
+      passo();
+      // rVFC para de chamar se o <video> trocar de fonte sem quadro novo: um pulso de segurança
+      const pulso = setInterval(() => { const v = fonteAoVivo() || el; try { if (v.readyState >= 2) g.drawImage(v, 0, 0, cv.width, cv.height); } catch (_) { /* idem */ } }, 250);
+      try { stream = cv.captureStream(30); } catch (_) { stream = null; }
+      reles = () => { vivo = false; clearInterval(pulso); if (stream) for (const t of stream.getTracks()) t.stop(); };
+    }
     try {
-      if (el.srcObject && typeof el.srcObject.getTracks === 'function') stream = new MediaStream(el.srcObject.getTracks().filter((t) => t.readyState === 'live'));
+      if (stream) { /* relé da câmera */ }
+      else if (el.srcObject && typeof el.srcObject.getTracks === 'function') stream = new MediaStream(el.srcObject.getTracks().filter((t) => t.readyState === 'live'));
       else if (el.captureStream) stream = el.captureStream();
       else if (el.mozCaptureStream) stream = el.mozCaptureStream();
     } catch (_) { stream = null; }
-    if (!stream || !stream.getVideoTracks().length) { setMsg('Não consegui capturar a imagem desta fonte.'); return; }
+    if (!stream || !stream.getVideoTracks().length) { if (reles) reles(); setMsg('Não consegui capturar a imagem desta fonte.'); return; }
     const comAudio = stream.getAudioTracks().length > 0;
     const fmt = melhorFormato(comAudio);
     if (!fmt) { setMsg('Este navegador não grava vídeo.'); return; }
@@ -544,8 +572,9 @@ export function StudioVideo({ onClose, source, onPickFile }) {
     let rec;
     try {
       rec = new MediaRecorder(stream, { mimeType: fmt.mime, videoBitsPerSecond: Math.round(Math.max(6e6, Math.min(25e6, w * h * 30 * 0.1))), audioBitsPerSecond: 160000 });
-    } catch (err) { setMsg('Falha ao gravar: ' + err.message); return; }
+    } catch (err) { if (reles) reles(); setMsg('Falha ao gravar: ' + err.message); return; }
     rec.ondataavailable = (ev) => { if (ev.data && ev.data.size) pedacos.push(ev.data); };
+    rec.addEventListener('stop', () => { if (reles) reles(); });
     rec.onstop = () => {
       const blob = new Blob(pedacos, { type: fmt.mime.split(';')[0] });
       const nome = `trecho-${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}.${fmt.ext}`;
@@ -654,6 +683,7 @@ export function StudioVideo({ onClose, source, onPickFile }) {
       if (emCampo && k !== 'Escape') return;
       const pega = () => { ev.preventDefault(); ev.stopImmediatePropagation(); };
       const e = E.current;
+      if (k === 'Escape' && fonteStudioAberta()) return;   // o popover da Fonte fecha primeiro
       if (k === 'Escape') {
         pega();
         if (e.dialogo) setDialogo(null);
@@ -757,6 +787,7 @@ export function StudioVideo({ onClose, source, onPickFile }) {
         <div class="vde-titulo"><span class="vde-marca">GPlanSiS<i>|</i></span>Vídeo</div>
         ${midia && html`<span class="vde-nome" title=${midia.nome}>${midia.nome}</span>`}
         <button class="vde-btn" onClick=${() => setDialogo('abrir')} title="Abrir outro vídeo, a fonte, uma gravação ou gravar um trecho">📂<span class="vde-rot"> Abrir</span></button>
+        <${FonteStudio} classeBotao="vde-btn" semTexto=${true} />
         <input ref=${arquivoRef} type="file" accept="video/*,.mp4,.mov,.m4v,.webm,.mkv" hidden
                onChange=${(ev) => { abrirArquivo(ev.target.files[0]); ev.target.value = ''; }} />
         <span class="vde-sep"></span>

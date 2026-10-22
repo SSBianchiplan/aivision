@@ -24,7 +24,7 @@
  * ========================================================================
  */
 
-const VERSION = 'iav-v87-vps';   // 22/10/2026: animações da página principal no celular (toque, cartões automáticos, assinatura em onda)
+const VERSION = 'iav-v88-vps';   // 22/10/2026: botão Fonte dentro dos Studios; troca de câmera a quente, desconexão e vazamentos de MediaStream
 const SHELL = `${VERSION}-shell`;
 /*
  * Pesos dos modelos num cache de nome FIXO: sobrevivem às publicações. Antes o

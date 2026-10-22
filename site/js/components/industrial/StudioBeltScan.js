@@ -37,6 +37,7 @@ import {
   desenharCamera, desenharPerfil, desenharCorreia, desenharTendencia, desenharTriangulacao,
 } from './beltscan-comum.js';
 import { BeltScanConfig } from './BeltScanConfig.js';
+import { FonteStudio, fonteStudioAberta } from '../studio/FonteStudio.js';
 
 const ROT_ESTADO = { ATIVO_NR: 'ativo, não reconhecido', ATIVO_R: 'ativo, reconhecido', RTN_NR: 'voltou ao normal' };
 
@@ -121,6 +122,7 @@ export function StudioBeltScan({ onClose, onPickFile, onResetState }) {
       const t = e.target;
       if (t && /INPUT|SELECT|TEXTAREA/.test(t.tagName)) return;
       // só Esc: as letras são das ferramentas de mouse do app (R, A…)
+      if (e.key === 'Escape' && fonteStudioAberta()) return;   // o popover da Fonte fecha primeiro
       if (e.key === 'Escape') { e.stopPropagation(); if (cfg) setCfg(false); else onClose(); }
     };
     window.addEventListener('keydown', onKey, true);
@@ -184,6 +186,7 @@ export function StudioBeltScan({ onClose, onPickFile, onResetState }) {
     <div class="bsc" role="dialog" aria-modal="true" aria-label="iaVision GPlanSiS|BeltScan">
       <div class="bsc-barra">
         <b class="bsc-titulo"><span class="bsc-marca">iaVision</span> <span class="bsc-gp">GPlanSiS<i>|</i></span>BeltScan</b>
+        <${FonteStudio} classeBotao="bsc-btn" />
         <select class="bsc-btn" aria-label="Perfil" value=${perfilAtivo()} onChange=${async (e) => { await trocarPerfil(e.target.value); setMsg('Perfil: ' + e.target.selectedOptions[0].text); setV((n) => n + 1); }}>
           ${perfis.map((p) => html`<option key=${p.id} value=${p.id}>${p.nome}</option>`)}
         </select>
@@ -201,7 +204,7 @@ export function StudioBeltScan({ onClose, onPickFile, onResetState }) {
         <div class="bsc-avisos">
           ${!ativo && html`<div class="bsc-aviso">O operador BeltScan não está ativo no Pipeline.
             <button class="bsc-btn" onClick=${() => { ativarBeltScan(); onResetState && onResetState(); }}>Ligar no Pipeline</button></div>`}
-          ${ativo && !vivo && html`<div class="bsc-aviso">Aguardando imagem: abra um ensaio acima ou escolha a fonte (câmera, arquivo, YouTube) na barra do app.</div>`}
+          ${ativo && !vivo && html`<div class="bsc-aviso">Aguardando imagem: abra um ensaio acima ou escolha a fonte (câmera, arquivo, tela, YouTube) em «Fonte», na barra acima.</div>`}
           ${C.mapping.height_gain !== 1 && html`<div class="bsc-aviso amb">Ganho de altura ${fmt(C.mapping.height_gain, 1)}× ativo: os níveis da correia são demonstração, não medição (Configurar › Correia).</div>`}
         </div>`}
 

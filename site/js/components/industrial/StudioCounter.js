@@ -36,6 +36,7 @@ import {
   removerDoDataset, zipYolo, baixarTexto, baixarBlob, abrirExemplo,
 } from './counter-comum.js';
 import { EnviarTreinoContador, EscolherOnnx } from './CounterPanel.js';
+import { FonteStudio, fonteStudioAberta } from '../studio/FonteStudio.js';
 
 const ROT_ESTADO = { ATIVO_NR: 'ativo, não reconhecido', ATIVO_R: 'ativo, reconhecido', RTN_NR: 'voltou ao normal' };
 const corPrio = (p) => (p === 1 ? 'var(--cvs-p1)' : 'var(--cvs-p2)');
@@ -121,6 +122,7 @@ export function StudioCounter({ onClose, onResetState, onPickFile }) {
     const onKey = (e) => {
       const t = e.target;
       if (t && /INPUT|SELECT|TEXTAREA/.test(t.tagName)) return;
+      if (e.key === 'Escape' && fonteStudioAberta()) return;   // o popover da Fonte fecha primeiro
       if (e.key === 'Escape') { e.stopPropagation(); if (modo !== 'ver') { setModo('ver'); rasc.current = []; } else onClose(); }
     };
     window.addEventListener('keydown', onKey, true);
@@ -175,6 +177,7 @@ export function StudioCounter({ onClose, onResetState, onPickFile }) {
     <div class="cvs" role="dialog" aria-modal="true" aria-label="iaVision GPlanSiS|CounterVision">
       <div class="cvs-barra">
         <b class="cvs-titulo"><span class="cvs-marca">iaVision</span> <span class="cvs-gp">GPlanSiS<i>|</i></span>CounterVision</b>
+        <${FonteStudio} classeBotao="cvs-btn" />
         <select class="cvs-btn" aria-label="Detector" value=${cadeia && cadeia !== 'outro' ? cadeia : ''} onChange=${(e) => motorSel(e.target.value)}>
           ${!cadeia && html`<option value="">Escolha o detector…</option>`}
           ${cadeia === 'outro' && html`<option value="">Cadeia própria</option>`}

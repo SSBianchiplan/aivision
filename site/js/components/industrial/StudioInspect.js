@@ -38,6 +38,7 @@ import {
   desenharVivo, desenharInspecao, pintarFundo, marcarFerramenta, marcarGatilho,
 } from './inspect-comum.js';
 import { InspectEditor } from './InspectEditor.js';
+import { FonteStudio, fonteStudioAberta } from '../studio/FonteStudio.js';
 
 const clonar = (o) => JSON.parse(JSON.stringify(o));
 const CLS = { OK: 'ok', NOK: 'nok', INCERTO: 'inc' };
@@ -270,6 +271,7 @@ export function StudioInspect({ onClose }) {
       const t = e.target;
       if (t && /INPUT|SELECT|TEXTAREA/.test(t.tagName)) return;
       if (e.key !== 'Escape') return;
+      if (fonteStudioAberta()) return;   // o popover da Fonte fecha primeiro
       e.stopPropagation();
       if (desenhando) setDesenhando(null);
       else if (treinar) setTreinar(false);
@@ -343,6 +345,7 @@ export function StudioInspect({ onClose }) {
     <div class="ins" role="dialog" aria-modal="true" aria-label="iaVision GPlanSiS|Inspect">
       <div class="ins-barra">
         <b class="ins-titulo"><span class="ins-marca">iaVision</span> <span class="ins-gp">GPlanSiS<i>|</i></span>Inspect</b>
+        <${FonteStudio} classeBotao="ins-btn" />
         <select class="ins-btn" aria-label="Programa ativo" value=${prog ? prog.id : ''} onChange=${(ev) => { canal.ativar(ev.target.value); setTeste(null); }}>
           ${!prog && html`<option value="">— nenhum programa —</option>`}
           ${progs.map((p) => html`<option key=${p.id} value=${p.id}>${p.codigo} · v${p.versao} — ${p.nome}</option>`)}
@@ -366,7 +369,7 @@ export function StudioInspect({ onClose }) {
             <button class="ins-btn" onClick=${() => ativarInspect()}>Ligar no Pipeline</button></div>`}
           ${!prog && html`<div class="ins-aviso">Nenhum programa: crie um (modelo de presença, dimensional, cor e defeito, ou um exemplo do Inspect).
             <button class="ins-btn" onClick=${abrirEditor}>Criar programa</button></div>`}
-          ${ativo && !vivo && html`<div class="ins-aviso">Aguardando imagem: escolha a fonte (câmera, arquivo, YouTube) na barra do app.</div>`}
+          ${ativo && !vivo && html`<div class="ins-aviso">Aguardando imagem: escolha a fonte (câmera, arquivo, tela, YouTube) em «Fonte», na barra acima.</div>`}
           ${alarmes.map((a) => html`<div key=${a.id} class="ins-aviso alarme" role="alert"><b>ALARME</b> ${a.texto} · ${hora(a.em)}
             <button class="ins-btn" onClick=${() => canal.reconhecerAlarmes()}>Reconhecer</button></div>`)}
         </div>`}

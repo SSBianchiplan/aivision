@@ -56,6 +56,7 @@ import { AtletaBikeFit, useAtleta } from './AtletaBikeFit.js';
 import { PipelineConteudo } from '../Panels.js';
 import { dadosSessao, htmlRelatorio } from '../../cv/runtime/livres-e/relatorio.js';
 import { Recorder, salvar, formatarTempo, suportado as gravacaoSuportada } from '../../cv/recorder.js';
+import { FonteStudio, fonteStudioAberta } from '../studio/FonteStudio.js';
 
 const OP = 'bikefit.analise';
 const PREFS = 'aiv.studio.bikefit';
@@ -458,7 +459,7 @@ function desenharVideo(g, area, est, u) {
   }
 
   let aviso = null;
-  if (!temDc) aviso = 'Sem vídeo: escolha a fonte (câmera, arquivo ou YouTube).';
+  if (!temDc) aviso = 'Sem vídeo: escolha a fonte (câmera, arquivo, tela ou YouTube) em «Fonte», na barra acima.';
   else if (!est.temNo) aviso = 'Bike Fit fora do Pipeline: abra o painel Bike Fit e clique em "Adicionar ao Pipeline".';
   else if (!r || !fresco) aviso = 'Aguardando a análise do Bike Fit…';
   else if (r.sem) aviso = 'Procurando o ciclista…';
@@ -1834,6 +1835,7 @@ export function StudioBikeFit({ displayCanvas, onClose, onResetState }) {
   // as teclas do app não disparam por baixo do Studio
   useEffect(() => {
     const onKey = (e) => {
+      if (e.key === 'Escape' && fonteStudioAberta()) return;   // o popover da Fonte fecha primeiro
       if (e.key === 'Escape') {
         // o editor de um alvo trata o próprio Esc (cancela a edição)
         if (e.target && e.target.closest && e.target.closest('.bfa-ed')) return;
@@ -2031,6 +2033,7 @@ export function StudioBikeFit({ displayCanvas, onClose, onResetState }) {
     <div class="sbf" role="dialog" aria-modal="true" aria-label="GPlanSiS|StudioBikeFit">
       <div class="sbf-barra">
         <b class="sbf-titulo"><span class="sbf-marca">iaVision</span> GPlanSiS<i>|</i>StudioBikeFit</b>
+        <${FonteStudio} classeBotao="sbf-btn" />
         <div class="sbf-seg" role="group" aria-label="Vista">
           <button class=${vista === 'lateral' ? 'on' : ''} onClick=${() => definirVista('lateral')}>Lateral</button>
           <button class=${vista === 'frontal' ? 'on' : ''} onClick=${() => definirVista('frontal')}>Frontal</button>

@@ -1,0 +1,115 @@
+/* ==========================================================================
+   FONTE DOS STUDIOS (components/studio/FonteStudio.js) — botão na barra do
+   Studio + popover. Só tokens do tema (--panel-solid, --line, --ink-*,
+   --accent…): escuro, claro e Code Dark saem do mesmo CSS. O botão herda a
+   classe de botão do Studio (classeBotao) e só acrescenta a bolinha.
+   Injetado pelo componente.
+   ========================================================================== */
+
+.fst { display: inline-flex; flex: none; position: relative; }
+.fst-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  max-width: 230px; white-space: nowrap;
+  cursor: pointer;
+}
+/* sem classe do Studio: um botão neutro que funciona em qualquer barra */
+.fst-neutro {
+  padding: 5px 10px; border-radius: 8px; font: 600 12px var(--sans, inherit);
+  background: transparent; color: inherit; border: 1px solid currentColor;
+}
+.fst-rot { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.fst-seta { opacity: .7; font-size: .85em; }
+
+/* bolinha de estado: verde = imagem entrando · cinza = parada · vermelha = erro */
+.fst-luz { flex: none; width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: #8a9a98; }
+.fst-luz.vivo { background: #34D399; box-shadow: 0 0 0 3px rgba(52, 211, 153, .22); }
+.fst-luz.erro { background: #FF5A4E; box-shadow: 0 0 0 3px rgba(255, 90, 78, .25); animation: fst-pulso 1.4s ease-in-out infinite; }
+@keyframes fst-pulso { 50% { box-shadow: 0 0 0 6px rgba(255, 90, 78, .05); } }
+@media (prefers-reduced-motion: reduce) { .fst-luz.erro { animation: none; } }
+
+/* popover: acima da tela cheia dos Studios (5000) e da barra de vídeo (5100) */
+.fst-pop {
+  position: fixed; z-index: 5400;
+  display: flex; flex-direction: column; gap: 7px;
+  padding: 10px 12px 12px; overflow: auto; overscroll-behavior: contain;
+  background: var(--panel-solid); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .45), 0 2px 6px rgba(0, 0, 0, .25);
+  font: 12px var(--sans, Archivo, sans-serif); text-align: left;
+}
+.fst-pop > * { flex-shrink: 0; }
+/* celular: folha presa embaixo */
+.fst-pop.folha {
+  left: 0; right: 0; bottom: 0; max-height: 82vh;
+  border-radius: 14px 14px 0 0;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+.fst-cab { display: flex; align-items: center; gap: 8px; }
+.fst-cab b { font-size: 13px; }
+.fst-estado { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; color: var(--ink-2); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.fst-estado em { font-style: normal; color: var(--ink-3); font-family: var(--mono, monospace); font-size: 10.5px; }
+.fst-sec {
+  font-size: 9.5px; text-transform: uppercase; letter-spacing: .12em; color: var(--ink-3);
+  padding: 4px 2px 3px; border-bottom: 1px solid var(--line-2); margin-top: 2px;
+}
+.fst-aviso {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 7px 9px; border-radius: 8px;
+  background: color-mix(in srgb, var(--err, #FF5A4E) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--err, #FF5A4E) 45%, transparent);
+  color: var(--ink); line-height: 1.4;
+}
+.fst-aviso span { flex: 1; }
+.fst-vazio { color: var(--ink-2); line-height: 1.45; }
+
+.fst-lista { display: flex; flex-direction: column; gap: 3px; }
+.fst-i {
+  display: flex; align-items: center; gap: 9px; width: 100%;
+  padding: 7px 8px; border-radius: 8px; border: 1px solid transparent;
+  background: none; color: var(--ink); text-align: left; font: inherit; cursor: pointer;
+}
+.fst-i:hover:not(:disabled), .fst-i:focus-visible { background: var(--line-2); outline: none; }
+.fst-i:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+.fst-i:disabled { cursor: default; opacity: .75; }
+.fst-i.em { border-color: var(--accent); opacity: 1; }
+.fst-i.erro { border-color: var(--err); }
+.fst-ic { flex: none; width: 22px; text-align: center; font-size: 15px; }
+.fst-n { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.fst-n b { font-weight: 600; overflow-wrap: anywhere; }
+.fst-n small { color: var(--ink-3); font-size: 10.5px; }
+.fst-err { color: var(--err) !important; font-size: 10.5px; margin: 0; }
+.fst-tag { color: var(--ok, #34D399); font-size: 11px; }
+.fst-usar { font-size: 10.5px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink-2); }
+.fst-i:hover:not(:disabled) .fst-usar { border-color: var(--accent); color: var(--ink); }
+
+.fst-grade { display: grid; grid-template-columns: 1.4fr 1fr; gap: 8px; }
+.fst-grade .ctl { margin: 0; }
+.fst-linha { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.fst-linha .txt { flex: 1; min-width: 0; }
+.fst-outras { display: flex; flex-wrap: wrap; gap: 6px; }
+.fst-outras .btn { flex: 1 1 auto; }
+.fst-yt { display: flex; flex-direction: column; gap: 6px; }
+.fst-larga { width: 100%; }
+.fst-dica { margin: 0; color: var(--ink-3); font-size: 10.5px; line-height: 1.45; }
+.fst-dica b { color: var(--ink-2); font-family: var(--mono, monospace); font-weight: 500; }
+.fst-dica.amb { color: var(--warn, #F2A900); }
+.fst-msg { padding: 6px 8px; border-radius: 7px; font-size: 11px; line-height: 1.4; }
+.fst-msg.ok { background: color-mix(in srgb, var(--ok, #34D399) 12%, transparent); }
+.fst-msg.no { background: color-mix(in srgb, var(--err, #FF5A4E) 14%, transparent); }
+.fst-facing { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.fst-facing .btn { padding: 10px; }
+
+/*
+ * Com um Studio aberto (tela cheia, z 5000): o seletor completo de câmera e o
+ * aviso do app (câmera negada, em uso, desconectada) ficavam ATRÁS dele.
+ */
+body.studio-aberto .camsel,
+body:has(.vde) .camsel,
+body:has(.fst-pop) .camsel { z-index: 5400; }
+body.studio-aberto .toast:not(.toast-layout),
+body:has(.vde) .toast:not(.toast-layout) { z-index: 5300; }
+
+@media (max-width: 640px) {
+  .fst-btn { max-width: 150px; }
+  .fst-grade { grid-template-columns: 1fr 1fr; }
+}

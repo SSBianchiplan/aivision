@@ -27,6 +27,7 @@
 import { html, useState, useEffect, useRef, useCallback } from '../../vendor.js';
 import { useStore, store } from '../../state/store.js';
 import { marcStore, vistaParaFonte, vista } from '../../cv/marcacoes.js';
+import { FonteStudio, fonteStudioAberta } from '../studio/FonteStudio.js';
 import {
   obterMotor, instantaneo, ultimoQuadro, assinar, avisarAgora, definirStudio, recente, novaSessao,
   TEMPOS, TURNOS_EXEMPLO, normalizar, ERRO_MAX_CALIBRACAO_M,
@@ -115,6 +116,7 @@ export function StudioTakt({ onClose }) {
     const onKey = (e) => {
       const t = e.target;
       if (t && /INPUT|SELECT|TEXTAREA/.test(t.tagName)) return;
+      if (e.key === 'Escape' && fonteStudioAberta()) return;   // o popover da Fonte fecha primeiro
       if (e.key === 'Escape') {
         e.stopPropagation();
         if (exp) setExp(false); else if (cfg) setCfg(false); else if (calibrando) setCalibrando(false); else onClose();
@@ -190,6 +192,7 @@ export function StudioTakt({ onClose }) {
     <div class="tkt" ref=${raiz} role="dialog" aria-modal="true" aria-label="iaVision GPlanSiS|Takt">
       <div class="tkt-barra">
         <b class="tkt-titulo"><span class="tkt-marca">iaVision</span> <span class="tkt-gp">GPlanSiS<i>|</i></span>Takt</b>
+        <${FonteStudio} classeBotao="tkt-btn" />
         <span class="tkt-chip" title="Janela dos KPIs">${janelaTxt}</span>
         <span class=${`tkt-chip ${piso.calibrado ? 'ok' : piso.H ? 'amb' : ''}`} title=${piso.msg}>${piso.calibrado ? `piso ±${fmt(piso.erro, 2)} m` : piso.H ? 'piso: erro alto' : 'piso sem calibração'}</span>
         <span class=${`tkt-chip ${r && r.borrado ? 'ok' : 'erro'}`}>${r && r.borrado ? 'rostos borrados' : 'borrão desligado'}</span>
@@ -219,7 +222,7 @@ export function StudioTakt({ onClose }) {
             <button class="tkt-btn" onClick=${() => { ativarTakt(); }}>Pôr a Pose RTMO antes</button></div>`}
           ${ativo && !nPostos && html`<div class="tkt-aviso">Nenhum posto marcado: crie um e ajuste as alças sobre a bancada e o lugar do operador.
             <button class="tkt-btn acento" onClick=${() => setMsg(novoPosto())}>Novo posto</button></div>`}
-          ${ativo && nPostos > 0 && !vivo && html`<div class="tkt-aviso">Aguardando imagem: escolha a câmera, um arquivo ou o YouTube na barra do app.</div>`}
+          ${ativo && nPostos > 0 && !vivo && html`<div class="tkt-aviso">Aguardando imagem: escolha a câmera, um arquivo, a tela ou o YouTube em «Fonte», na barra acima.</div>`}
           ${r && r.fonteParada && html`<div class="tkt-aviso amb">Fonte pausada: o tempo corre como NÃO OBSERVADO (não conta como ocioso).</div>`}
           ${r && r.foraDeTurno && html`<div class="tkt-aviso amb">Fora de turno: a medição está suspensa (agenda em Configurar).</div>`}
           ${r && !r.borrado && html`<div class="tkt-aviso erro">Borrão de rostos DESLIGADO: o vídeo, a gravação e o PNG mostram rostos (LGPD — use só com base legal).</div>`}

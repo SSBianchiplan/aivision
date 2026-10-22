@@ -578,9 +578,31 @@ export function Viewport({ source, executor, snapshotRef, hideIdle, ring, canvas
       rafId = requestAnimationFrame(tick);
     };
 
+    /*
+     * Fonte trocada por baixo de uma espera de rVFC: câmera → arquivo (o
+     * pickFile para a câmera na hora), câmera desplugada, tela encerrada. O
+     * requestVideoFrameCallback pendente no <video> ANTIGO nunca vem e o laço
+     * parava — o pipeline e os Studios congelavam. Vigia leve: se o elemento
+     * da fonte não é mais o da espera, ou ele ficou sem mídia, troca a espera
+     * por um rAF (o schedule() seguinte escolhe o elemento certo).
+     */
+    const vigia = setInterval(() => {
+      if (!alive || !vfcPendente || !vfcTarget) return;
+      const src = source.current;
+      const r = ring && ring.current;
+      const atual = r && r.current() ? null : (src && src.element);
+      const semMidia = !vfcTarget.srcObject && !vfcTarget.currentSrc;
+      if (atual === vfcTarget && !semMidia) return;
+      try { vfcTarget.cancelVideoFrameCallback(vfcHandle); } catch (_) { /* já cancelado */ }
+      vfcPendente = false;
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(tick);
+    }, 400);
+
     schedule();
     return () => {
       alive = false;
+      clearInterval(vigia);
       rt.redesenhar = () => {};
       repintarRef.current = () => {};
       cancelAnimationFrame(rafId);
