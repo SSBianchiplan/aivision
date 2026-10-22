@@ -1,0 +1,12 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Código-fonte · GPlanSiS|iaVision</title>
+<link rel="icon" type="image/svg+xml" href="/icons/favicon.svg">
+<style>body{font:15px/1.6 system-ui,sans-serif;max-width:760px;margin:40px auto;padding:0 16px;background:#0b1514;color:#dfe9e7}a{color:#7fe0c4}code{background:#14211f;padding:1px 5px;border-radius:4px}h1{font-size:22px}</style></head><body>
+<h1>Código-fonte do GPlanSiS|iaVision</h1>
+<p>Este protótipo usa modelos <b>Ultralytics YOLO26 e YOLOE</b>, distribuídos sob a licença <b>GNU AGPL-3.0</b>. Por isso o código-fonte completo do sistema está disponível aqui, sob a mesma licença, para quem o usa pela rede.</p>
+<ul>
+<li><a href="aivision-fonte.tar.gz">aivision-fonte.tar.gz</a>: HTML, JavaScript (operadores, runtime ONNX, interface), estilos e service worker, o módulo <b>Treinar modelos</b> (/treino/) e o <b>serviço de treino</b> (pasta servico-treino: API FastAPI, job de treino Ultralytics, Dockerfile e compose), sem os pesos dos modelos.</li>
+<li><a href="LICENSE-AGPL-3.0.txt">Texto da licença GNU AGPL-3.0</a>.</li>
+<li>Pesos dos modelos: servidos pelo próprio site em <code>/models/</code> e <code>/relacoes/models/</code> (o app os baixa ao habilitar cada módulo). Os YOLO26/YOLOE são da Ultralytics (AGPL-3.0); os demais mantêm as licenças das origens indicadas no painel de cada módulo.</li>
+</ul>
+<p><a href="/">← Voltar ao GPlanSiS|iaVision</a></p>
+</body></html>

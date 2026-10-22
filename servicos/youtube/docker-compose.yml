@@ -1,0 +1,28 @@
+# Busca do YouTube para a fonte "YouTube" do iaVision (vps2, /opt/aivision/yt).
+# O Caddy (/etc/caddy/aivision.caddy) repassa /api/yt/* para 127.0.0.1:8994 (8995 já é do /opt/roadmap).
+services:
+  yt:
+    build: .
+    image: gplansis/aivision-yt:1.0.0
+    container_name: aivision-yt
+    restart: unless-stopped
+    environment:
+      # endpoint que valida a sessão do iaVision (mesma API PHP que o Caddy usa em /api/*)
+      AIV_ME_URL: https://gplansis.com/aivision-api/api/me
+    # a API PHP mora na hospedagem: o nome gplansis.com precisa ir para o IP da origem,
+    # como o Caddy faz (Host e SNI gplansis.com, conexão em 45.132.157.26)
+    extra_hosts:
+      - "gplansis.com:45.132.157.26"
+    ports:
+      - "127.0.0.1:8994:8995"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cpus: 1
+    mem_limit: 512m
+    pids_limit: 128
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }

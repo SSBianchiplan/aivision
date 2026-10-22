@@ -1,0 +1,90 @@
+# Memória da Via do iaVision (vps2, /opt/aivision/via): conversas e base de conhecimento (RAG).
+# O Caddy (/etc/caddy/aivision.caddy) repassa /api/via/* para 127.0.0.1:8989 (8992 é do papo).
+# Segredo do banco em .env (VIA_DB_SENHA, gerado no servidor). Admins da base em .env (AIV_VIA_ADMINS).
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: aivision-via-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: via
+      POSTGRES_USER: via
+      POSTGRES_PASSWORD: ${VIA_DB_SENHA:?defina VIA_DB_SENHA no .env}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C.UTF-8"
+    command: ["postgres", "-c", "shared_buffers=64MB", "-c", "max_connections=30", "-c", "work_mem=4MB"]
+    volumes:
+      - ./dados:/var/lib/postgresql/data
+    networks: [interno]
+    # sem porta publicada: só a API (rede interna) fala com o banco
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U via -d via"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    shm_size: 64m
+    mem_limit: 384m
+    cpus: 1
+    pids_limit: 128
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  api:
+    build: .
+    image: gplansis/aivision-via:1.0.0
+    container_name: aivision-via
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+    env_file: .env
+    environment:
+      VIA_DB_HOST: db
+      AIV_ME_URL: https://gplansis.com/aivision-api/api/me
+    # a API PHP de login mora na hospedagem (mesmo IP de origem que o Caddy e o aivision-yt usam)
+    extra_hosts:
+      - "gplansis.com:45.132.157.26"
+    ports:
+      - "127.0.0.1:8989:8000"
+    networks: [interno, saida]
+    read_only: true
+    tmpfs:
+      - /tmp
+    mem_limit: 256m
+    cpus: 1
+    pids_limit: 64
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  backup:
+    image: pgvector/pgvector:pg16
+    container_name: aivision-via-backup
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+    entrypoint: ["/bin/sh", "/backup.sh"]
+    environment:
+      PGUSER: via
+      PGDATABASE: via
+      PGPASSWORD: ${VIA_DB_SENHA:?defina VIA_DB_SENHA no .env}
+    volumes:
+      - ./backup.sh:/backup.sh:ro
+      - ./backups:/backups
+    networks: [interno]
+    mem_limit: 128m
+    cpus: 0.5
+    pids_limit: 32
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options: { max-size: "5m", max-file: "2" }
+
+networks:
+  interno:
+    internal: true      # sem saída para a internet: banco e backup só falam entre si e com a API
+  saida: {}

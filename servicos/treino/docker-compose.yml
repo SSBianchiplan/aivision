@@ -1,0 +1,29 @@
+# Serviço de treino do iaVision (vps2, /opt/aivision/treino). A senha fica em .env (AIV_TREINO_SENHA).
+services:
+  treino:
+    build: .
+    image: gplansis/aivision-treino:2.2.0
+    container_name: aivision-treino
+    restart: unless-stopped
+    pids_limit: 512
+    env_file: .env
+    environment:
+      AIV_DATA: /data
+      AIV_CUSTOM: /custom
+      # entrada pela sessão do iaVision (SSO dos admins listados em AIV_TREINO_ADMINS, no .env)
+      AIV_ME_URL: https://gplansis.com/aivision-api/api/me
+    # a API PHP de login mora na hospedagem: gplansis.com vai para o IP da origem, como no Caddy e no aivision-yt
+    extra_hosts:
+      - "gplansis.com:45.132.157.26"
+    ports:
+      - "127.0.0.1:8996:8996"
+    volumes:
+      - ./dados:/data
+      - /opt/aivision/site/models/custom:/custom
+    cpus: 3
+    mem_limit: 6g
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }

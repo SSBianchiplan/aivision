@@ -1,0 +1,34 @@
+# pesos dos modelos ficam no servidor (/opt/aivision/site/models), não no git
+site/models/
+site/relacoes/models/
+site/codigo-fonte/*.tar.gz
+# segredos e dados dos serviços
+.env
+*.env
+servicos/treino/dados/
+# lixo
+__pycache__/
+*.pyc
+.DS_Store
+zz*
+*.bak*
+
+# vídeos de ensaio de cliente: ficam só no servidor
+site/amostras/beltscan/
+
+# pesos e binários grandes nunca entram (ficam no servidor)
+*.onnx
+*.onnx_data
+*.data
+*.bin
+site/vendor/ort/*.wasm
+site/relacoes/vendor/ort/*.wasm
+# API PHP e banco privado, dados e backups dos serviços
+site/api/
+api/
+*.sqlite
+*.sqlite3
+*.db
+dados/
+backups/
+._*

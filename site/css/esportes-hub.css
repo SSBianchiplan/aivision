@@ -1,0 +1,9 @@
+/* hub "Esportes" (components/esportes/EsportesPanel.js) */
+.esp-hub { display: grid; gap: 8px; }
+.esp-card { border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; background: rgba(255,255,255,.03); }
+.esp-card.on { border-color: rgba(255, 216, 77, .45); }
+.esp-card-h { display: flex; align-items: center; gap: 7px; }
+.esp-card-h b { font-size: 12.5px; flex: 1; }
+.esp-ico { width: 22px; text-align: center; }
+.esp-tag { font-style: normal; font-family: var(--mono); font-size: 9px; color: var(--accent); }
+.esp-card p { margin: 5px 0 7px; font-size: 11px; line-height: 1.5; color: var(--ink-3); }

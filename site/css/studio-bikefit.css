@@ -1,0 +1,378 @@
+/* ==========================================================================
+   STUDIO BIKE FIT (components/esportes/StudioBikeFit.js)
+   Tela cheia preta por cima de tudo. O "palco" é um canvas só (vídeo,
+   gráficos, faixa e rodapé); a barra e os ajustes são HTML e não entram
+   no PNG nem no vídeo gravado.
+   ========================================================================== */
+
+.sbf {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: flex;
+  flex-direction: column;
+  background: #02302C;
+  color: #fff;
+  font-family: Archivo, "Helvetica Neue", Arial, sans-serif;
+}
+
+.sbf-barra {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  min-height: 42px;
+  background: #04413C;
+  border-bottom: 1px solid rgba(255,255,255,.12);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.sbf-barra::-webkit-scrollbar { display: none; }
+
+.sbf-titulo {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  margin-right: 6px;
+  white-space: nowrap;
+  padding-left: 8px;
+  border-left: 4px solid #FFD84D;
+}
+
+.sbf-btn,
+.sbf-seg button {
+  flex: 0 0 auto;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffffff;
+  background: #0a4e48;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 7px;
+  padding: 6px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+.sbf-btn:hover,
+.sbf-seg button:hover { border-color: #FFD84D; }
+.sbf-btn:disabled { opacity: .45; cursor: not-allowed; }
+.sbf-btn.on { background: #FFD84D; border-color: #FFD84D; color: #04413C; }
+.sbf-btn.rec { background: #ef4444; border-color: #ef4444; color: #fff; }
+.sbf-btn:focus-visible,
+.sbf-seg button:focus-visible { outline: 2px solid #FFD84D; outline-offset: 2px; }
+
+.sbf-seg { display: flex; flex: 0 0 auto; }
+.sbf-seg button { border-radius: 0; }
+.sbf-seg button:first-child { border-radius: 7px 0 0 7px; }
+.sbf-seg button:last-child { border-radius: 0 7px 7px 0; border-left: 0; }
+.sbf-seg button.on { background: #FFD84D; border-color: #FFD84D; color: #04413C; }
+
+.sbf-msg {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12px;
+  color: #FFD84D;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: right;
+}
+.sbf-fechar { font-size: 14px; padding: 5px 11px; }
+
+.sbf-palco {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  /* no celular o canvas fica mais alto que a tela (vídeo, cartões, gráficos, tabela, recomendações) */
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.sbf-palco canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.sbf-ajustes {
+  position: absolute;
+  top: 48px;
+  right: 10px;
+  width: 320px;
+  max-width: calc(100vw - 20px);
+  max-height: calc(100% - 58px);
+  overflow-y: auto;
+  padding: 14px 14px 16px;
+  background: rgba(4, 65, 60, .98);
+  border: 1px solid rgba(255,255,255,.14);
+  border-top: 3px solid #FFD84D;
+  border-radius: 10px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, .7);
+  z-index: 2;
+}
+.sbf-ajustes h3 { margin: 0 0 10px; font-size: 14px; font-weight: 800; }
+.sbf-ajustes h4 { margin: 14px 0 8px; font-size: 12px; font-weight: 700; color: #CFEBE4; }
+.sbf-ajustes label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11.5px;
+  color: #CFEBE4;
+  margin-bottom: 9px;
+}
+.sbf-ajustes input:not([type="file"]),
+.sbf-ajustes select {
+  font: inherit;
+  font-size: 13px;
+  color: #fff;
+  background: #022621;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 6px;
+  padding: 7px 8px;
+  color-scheme: dark;
+}
+.sbf-ajustes input:focus,
+.sbf-ajustes select:focus { outline: none; border-color: #FFD84D; }
+.sbf-ajustes .sbf-linha { flex-direction: row; align-items: center; gap: 8px; }
+.sbf-ajustes .sbf-linha select { flex: 1 1 auto; }
+.sbf-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 11.5px;
+  color: #CFEBE4;
+  margin-bottom: 6px;
+}
+.sbf-logo img {
+  height: 32px;
+  max-width: 90px;
+  object-fit: contain;
+  background: #022621;
+  border-radius: 4px;
+}
+.sbf-logo label.sbf-btn { display: inline-block; margin: 0; color: #ffffff; font-size: 12px; }
+.sbf-nota { font-size: 11px; line-height: 1.5; color: rgba(207,235,228,.65); margin: 10px 0; }
+
+@media (max-width: 600px) {
+  .sbf-barra { gap: 5px; padding: 5px 8px; }
+  .sbf-titulo { display: none; }
+  .sbf-btn, .sbf-seg button { font-size: 11.5px; padding: 6px 8px; }
+  .sbf-msg { position: absolute; top: 48px; left: 30px; right: 8px; text-align: left; pointer-events: none; z-index: 3; }
+  .sbf-msg:not(:empty) { right: auto; max-width: calc(100% - 40px); padding: 5px 9px; border-radius: 6px; background: rgba(0, 0, 0, .82); }
+  .sbf-ajustes { left: 10px; right: 10px; width: auto; }
+}
+
+/* marca no título: iaVision pequeno + GPlanSiS|StudioBikeFit */
+.sbf-titulo .sbf-marca { font-weight: 500; font-size: .78em; letter-spacing: .04em; color: #CFEBE4; margin-right: 6px; text-transform: none; }
+.sbf-titulo i { font-style: normal; color: #FFD84D; font-weight: 300; margin: 0 1px; }
+
+/* barra de vídeo do app por cima do Studio (controles do player dentro do Studio) */
+body.studio-aberto .vctl { z-index: 5100; }
+/* centrada no pé do vídeo: o Studio publica --sbf-vctl-x/-b a partir do próprio layout */
+body.studio-aberto .vctl:not(.moved) { bottom: var(--sbf-vctl-b, 84px); left: var(--sbf-vctl-x, calc(34px + (100vw - 34px) * 0.25)); }
+.sbf-titulo { text-transform: none !important; letter-spacing: .02em !important; }
+@media (max-width: 760px) { body.studio-aberto .vctl:not(.moved) { bottom: 92px; left: 50%; } }
+
+/* Ajustes: liga/desliga os blocos da tela */
+.sbf-ajustes .sbf-checks { display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px; }
+.sbf-ajustes .sbf-checks label { flex-direction: row; align-items: center; gap: 8px; margin: 0; padding: 3px 0; color: #ffffff; font-size: 12px; cursor: pointer; }
+.sbf-ajustes .sbf-checks input { accent-color: #FFD84D; width: 15px; height: 15px; margin: 0; }
+
+/* barra de vídeo some sozinha depois de 3 s sem mexer (volta ao mover o mouse ou tocar) */
+body.studio-aberto .vctl { transition: opacity .35s ease; }
+body.studio-aberto.studio-ocioso .vctl:not(:hover):not(:focus-within) { opacity: 0; pointer-events: none; }
+
+/* ==========================================================================
+   Tema do Studio para componentes do app embutidos (Pipeline, bloco Atleta):
+   as variáveis do app valem dentro do Studio no teal, mesmo no tema claro.
+   ========================================================================== */
+.sbf {
+  --panel: rgba(4, 65, 60, .98); --panel-solid: #04413C;
+  --line: rgba(255,255,255,.16); --line-2: rgba(255,255,255,.09);
+  --ink: #FFFFFF; --ink-2: #CFEBE4; --ink-3: rgba(207,235,228,.62);
+  --accent: #FFD84D; --accent-ink: #04413C; --ok: #8CE0C8; --warn: #FFD84D; --err: #FF8A80;
+}
+.sbf-btn.alerta { border-color: #FF8A80; color: #FFD84D; }
+.sbf-ajustes h4.sbf-h4-1 { margin-top: 4px; }
+
+/* ---------------------------------------------- popover "Pipeline" do Studio */
+.sbf-pipe {
+  position: fixed;
+  top: 48px; left: 10px;
+  width: 380px;
+  max-width: calc(100vw - 20px);
+  max-height: calc(100vh - 70px);
+  display: flex; flex-direction: column;
+  background: rgba(4, 65, 60, .985);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.14);
+  border-top: 3px solid #FFD84D;
+  border-radius: 10px;
+  box-shadow: 0 20px 50px rgba(0,0,0,.7);
+  z-index: 5200;           /* por cima da barra de vídeo do app (5100) */
+}
+.sbf-pipe-fundo { display: none; }
+.sbf-pipe-cab { display: flex; align-items: center; gap: 8px; padding: 10px 10px 8px 14px; border-bottom: 1px solid rgba(255,255,255,.1); }
+.sbf-pipe-cab b { font-size: 14px; font-weight: 800; }
+.sbf-pipe-cab span { flex: 1 1 auto; font-size: 11px; color: #CFEBE4; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sbf-pipe-cab .sbf-btn { padding: 4px 9px; }
+.sbf-pipe-aviso { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 10px 12px 0; padding: 8px 10px; font-size: 12px; line-height: 1.45;
+  border: 1px solid rgba(255,138,128,.45); background: rgba(255,138,128,.1); border-radius: 8px; color: #ffd9d4; }
+.sbf-pipe-aviso span { flex: 1 1 180px; }
+.sbf-pipe-corpo { overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 10px 12px 14px; overscroll-behavior: contain; }
+.sbf-pipe-corpo .node { background: rgba(0,0,0,.14); }
+.sbf-pipe-corpo .ctl select, .sbf-pipe-corpo select { background: #022621; color: #fff; color-scheme: dark; }
+.sbf-pipe-corpo .btn { color: #fff; }
+.sbf-pipe-corpo .empty { font-size: 12px; color: #CFEBE4; text-align: center; }
+
+@media (max-width: 600px) {
+  /* celular: gaveta inferior com rolagem */
+  .sbf-pipe-fundo { display: block; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 5150; }
+  .sbf-pipe { top: auto !important; left: 0 !important; right: 0; bottom: 0; width: auto; max-width: none;
+    max-height: 78vh; border-radius: 14px 14px 0 0; border-left: 0; border-right: 0; border-bottom: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0); }
+  .sbf-pipe-cab::before { content: ''; position: absolute; left: 50%; top: 5px; width: 40px; height: 4px; margin-left: -20px; border-radius: 2px; background: rgba(255,255,255,.3); }
+  .sbf-pipe-cab { padding-top: 14px; position: relative; }
+  .sbf-pipe-corpo .node-acts button { width: 30px; height: 30px; font-size: 13px; }
+}
+
+/* ==========================================================================
+   BLOCO "ATLETA" (components/esportes/AtletaBikeFit.js) — painel e Studio
+   ========================================================================== */
+.bfa { font-size: 12px; color: var(--ink); }
+.bfa-topo { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
+.bfa-topo select { flex: 1 1 auto; min-width: 0; }
+.bfa input, .bfa select {
+  font: inherit; font-size: 12.5px; color: var(--ink); background: rgba(0,0,0,.25);
+  border: 1px solid var(--line); border-radius: 7px; padding: 6px 7px; width: 100%; box-sizing: border-box; color-scheme: dark;
+}
+.bfa input[type="checkbox"] { width: 15px; height: 15px; padding: 0; margin: 0; accent-color: var(--accent); flex: none; }
+.bfa input:focus, .bfa select:focus { outline: none; border-color: var(--accent); }
+.bfa .bfa-c, .sbf-ajustes .bfa .bfa-c { display: flex; flex-direction: column; gap: 3px; margin: 0; font-size: 11px; color: var(--ink-2); min-width: 0; }
+.bfa .bfa-larga { margin-bottom: 8px; }
+.bfa-grade { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 8px; }
+.bfa-dica { display: inline-grid; place-items: center; width: 14px; height: 14px; border-radius: 50%; font-style: normal; font-size: 9.5px;
+  font-weight: 700; background: rgba(255,216,77,.2); color: var(--accent); cursor: help; margin-left: 3px; vertical-align: 1px; }
+.bfa-dicas { margin: 8px 0 2px; }
+.bfa-dicas summary { cursor: pointer; font-size: 11px; color: var(--ink-3); }
+.bfa-dicas p { margin: 5px 0; font-size: 11px; line-height: 1.5; color: var(--ink-2); }
+.bfa-sub { margin: 11px 0 6px; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); }
+.bfa-sub em { font-style: normal; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--ink-3); margin-left: 4px; }
+.bfa-dores { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 8px; }
+.bfa .bfa-dores label, .sbf-ajustes .bfa .bfa-dores label { flex-direction: row; display: flex; align-items: center; gap: 6px; margin: 0; padding: 2px 0;
+  font-size: 11.5px; color: var(--ink); cursor: pointer; }
+.bfa-nota { margin: 6px 0; font-size: 10.5px; line-height: 1.5; color: var(--ink-3); }
+.bfa-alvos, .bfa-med { list-style: none; margin: 0; padding: 0; }
+.bfa-alvos li, .bfa-med li { padding: 5px 6px; border-bottom: 1px solid var(--line-2); border-left: 2px solid transparent; }
+.bfa-alvos li.mudou { border-left-color: var(--accent); background: rgba(255,216,77,.06); }
+.bfa-al { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.bfa-pq { margin: 2px 0 0; font-size: 10.5px; line-height: 1.45; color: var(--ink-3); }
+.bfa-med li { display: grid; grid-template-columns: 1fr auto; gap: 0 8px; }
+.bfa-med li .bfa-pq { grid-column: 1 / -1; }
+.bfa-med b { font-family: var(--mono); color: var(--accent); }
+.bfa-b { font: inherit; font-size: 11.5px; font-weight: 600; color: var(--ink); background: rgba(255,255,255,.06); border: 1px solid var(--line);
+  border-radius: 7px; padding: 5px 9px; cursor: pointer; white-space: nowrap; flex: none; }
+.bfa-b:hover:not(:disabled) { border-color: var(--accent); }
+.bfa-b:disabled { opacity: .45; cursor: not-allowed; }
+.bfa-b.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+/* alvo clicável (tabela do painel e lista do bloco) */
+.bfa-alvo { font: inherit; font-family: var(--mono); font-size: 11px; color: var(--ink); background: transparent; border: 1px dashed transparent;
+  border-radius: 5px; padding: 2px 4px; cursor: pointer; white-space: nowrap; }
+.bfa-alvo:hover, .bfa-alvo.aberto { border-color: var(--accent); }
+.bfa-alvo.mudou { color: var(--accent); font-weight: 700; }
+.bfa-pt, .bfa-man { font-style: normal; margin-left: 3px; color: var(--accent); }
+.bfa-tr-mudou td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
+.bfa-ed { margin: 6px 0 2px; padding: 8px; border: 1px solid var(--accent); border-radius: 8px; background: rgba(0,0,0,.2);
+  display: flex; flex-direction: column; gap: 6px; white-space: normal; text-align: left; font-family: var(--sans, inherit); }
+.bfa-ed-l { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 11px; color: var(--ink-2); }
+.bfa-ed-l b { color: var(--ink); font-size: 12px; }
+.bfa .bfa-ed input, .bfa-ed input { width: 70px; flex: none; }
+.bfa-aviso { font-size: 10.5px; color: var(--err); }
+/* painel: seção recolhível */
+.bfa-det { margin: 8px 0 4px; border: 1px solid var(--line-2); border-radius: 9px; padding: 6px 8px; }
+.bfa-det > summary { cursor: pointer; font-size: 12px; font-weight: 600; color: var(--ink-2); }
+.bfa-det[open] > summary { margin-bottom: 8px; }
+.bfa-tag { font-style: normal; font-size: 10.5px; font-weight: 500; color: var(--accent); margin-left: 4px; }
+.bfa-tag.off { color: var(--ink-3); }
+:root[data-theme="light"] .bfa input, :root[data-theme="light"] .bfa select { background: #fff; color-scheme: light; }
+
+/* ==========================================================================
+   TEMA CLARO DO STUDIO. O palco (canvas) troca de paleta no JS (paletaDoTema
+   em StudioBikeFit.js); aqui a barra, os Ajustes e o Pipeline seguem os
+   tokens do claro (css/theme.css). O Code Dark do Studio está em theme.css.
+   ========================================================================== */
+:root[data-theme="light"] .sbf {
+  --panel: rgba(255, 255, 255, .98); --panel-solid: #FFFFFF;
+  --line: rgba(4, 65, 60, .24); --line-2: rgba(4, 65, 60, .13);
+  --ink: #04413C; --ink-2: #285C56; --ink-3: #4A6F6A;
+  --accent: #04413C; --accent-ink: #FFFFFF; --ok: #176B53; --warn: #7A5600; --err: #B3261E;
+  background: #F1F8F6;
+  color: #04413C;
+}
+:root[data-theme="light"] .sbf-barra { background: #FFFFFF; border-bottom-color: rgba(4, 65, 60, .16); }
+:root[data-theme="light"] .sbf-titulo { border-left-color: #D9AE00; }
+:root[data-theme="light"] .sbf-titulo .sbf-marca { color: #285C56; }
+:root[data-theme="light"] .sbf-titulo i { color: #7A5600; }
+:root[data-theme="light"] .sbf-btn,
+:root[data-theme="light"] .sbf-seg button { color: #04413C; background: #FFFFFF; border-color: rgba(4, 65, 60, .24); }
+:root[data-theme="light"] .sbf-btn:hover,
+:root[data-theme="light"] .sbf-seg button:hover { border-color: #D9AE00; }
+:root[data-theme="light"] .sbf-btn.on,
+:root[data-theme="light"] .sbf-seg button.on { background: #FFD84D; border-color: #D9AE00; color: #04413C; }
+:root[data-theme="light"] .sbf-btn.rec { background: #B3261E; border-color: #B3261E; color: #FFFFFF; }
+:root[data-theme="light"] .sbf-btn.alerta { border-color: #B3261E; color: #8C1D18; }
+:root[data-theme="light"] .sbf-btn:focus-visible,
+:root[data-theme="light"] .sbf-seg button:focus-visible { outline-color: #04413C; }
+:root[data-theme="light"] .sbf-msg { color: #7A5600; }
+:root[data-theme="light"] .sbf-ajustes,
+:root[data-theme="light"] .sbf-pipe {
+  background: rgba(255, 255, 255, .985); color: #04413C;
+  border-color: rgba(4, 65, 60, .18); border-top-color: #D9AE00;
+  box-shadow: 0 20px 50px rgba(4, 65, 60, .22);
+}
+:root[data-theme="light"] .sbf-ajustes h4,
+:root[data-theme="light"] .sbf-ajustes label,
+:root[data-theme="light"] .sbf-logo,
+:root[data-theme="light"] .sbf-pipe-cab span,
+:root[data-theme="light"] .sbf-pipe-corpo .empty { color: #285C56; }
+:root[data-theme="light"] .sbf-ajustes .sbf-checks label { color: #04413C; }
+:root[data-theme="light"] .sbf-ajustes .sbf-checks input { accent-color: #04413C; }
+:root[data-theme="light"] .sbf-nota { color: #4A6F6A; }
+:root[data-theme="light"] .sbf-ajustes input:not([type="file"]),
+:root[data-theme="light"] .sbf-ajustes select,
+:root[data-theme="light"] .sbf-pipe-corpo .ctl select,
+:root[data-theme="light"] .sbf-pipe-corpo select,
+:root[data-theme="light"] .sbf .bfa input,
+:root[data-theme="light"] .sbf .bfa select {
+  color: #04413C; background: #FFFFFF; border-color: rgba(4, 65, 60, .24); color-scheme: light;
+}
+:root[data-theme="light"] .sbf-ajustes input:focus,
+:root[data-theme="light"] .sbf-ajustes select:focus { border-color: #04413C; }
+:root[data-theme="light"] .sbf-logo img { background: #F1F8F6; }
+:root[data-theme="light"] .sbf-logo label.sbf-btn { color: #04413C; }
+:root[data-theme="light"] .sbf-pipe-cab { border-bottom-color: rgba(4, 65, 60, .13); }
+:root[data-theme="light"] .sbf-pipe-aviso { border-color: rgba(179, 38, 30, .32); background: #FDECEA; color: #8C1D18; }
+:root[data-theme="light"] .sbf-pipe-corpo .node { background: #F1F8F6; }
+:root[data-theme="light"] .sbf-pipe-corpo .btn { color: #04413C; }
+:root[data-theme="light"] .sbf .bfa-dica { background: #FFF6D6; color: #7A5600; }
+:root[data-theme="light"] .sbf .bfa-alvos li.mudou { background: #FFF6D6; }
+:root[data-theme="light"] .sbf .bfa-b:not(.on) { background: #FFFFFF; }
+:root[data-theme="light"] .sbf .bfa-ed { background: #F1F8F6; }
+@media (max-width: 600px) {
+  :root[data-theme="light"] .sbf-msg:not(:empty) { background: rgba(255, 255, 255, .95); box-shadow: 0 2px 10px rgba(4, 65, 60, .2); }
+  :root[data-theme="light"] .sbf-pipe-cab::before { background: rgba(4, 65, 60, .3); }
+}
+
+/* Code Dark: os campos de texto dos Ajustes ficavam no verde-petróleo (#022621) — theme.css só trocava os select */
+:root[data-theme="code"] .sbf-ajustes input:not([type="file"]):not([type="checkbox"]),
+:root[data-theme="code"] .sbf .bfa input:not([type="checkbox"]) { background: #313131; color: #CCCCCC; border-color: #3C3C3C; }
+
+/* etiqueta sobre a miniatura da pose congelada (painel Bike Fit): segue o tema escuro/Code */
+:root { --bf-etq-foto: rgba(2, 48, 44, .8); }
+:root[data-theme="code"] { --bf-etq-foto: rgba(30, 30, 30, .85); }

@@ -1,0 +1,151 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>GPlanSiS|iaVision · sistema</title>
+  <meta name="description" content="GPlanSiS|iaVision — visão computacional em tempo real, na tela e na palma da sua mão: câmera, pipeline modular de operadores clássicos e modelos ONNX." />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#04413C" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest" />
+
+  <!--
+    iOS ignora o manifest para instalação: o Safari usa estas metas próprias.
+    Sem `apple-mobile-web-app-capable` o "Adicionar à Tela de Início" cria um
+    atalho que abre no Safari com barra de endereço, e não um app.
+  -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="GPlanSiS|iaVision" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=20" />
+  <!--
+    Tipografia do design (Archivo + IBM Plex Mono). Vem do Google Fonts porque
+    ele responde Cross-Origin-Resource-Policy: cross-origin — verificado — e
+    por isso passa pelo isolamento (COEP require-corp) que o WASM multithread
+    exige. Sem rede, cai na pilha de sistema declarada em --sans/--mono.
+  -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/app.css?v=iav-v86-vps" />
+  <link rel="stylesheet" href="css/gate.css?v=iav-v86-vps" />
+  <link rel="stylesheet" href="css/controls.css?v=iav-v86-vps" />
+  <link rel="stylesheet" href="css/theme.css?v=iav-v86-vps" />
+  <link rel="stylesheet" href="css/youtube.css?v=iav-v86-vps" />
+  <link rel="stylesheet" href="css/studio-bikefit.css?v=iav-v86-vps" />
+  <link rel="stylesheet" href="css/esportes-swing-vbt.css?v=iav-v86-vps" />
+  <link rel="stylesheet" href="css/esportes-quadra.css?v=iav-v86-vps" />
+  <link rel="stylesheet" href="css/esportes-hub.css?v=iav-v86-vps" />
+  <link rel="stylesheet" href="css/bikefit-3d.css?v=iav-v86-vps" />
+  <link rel="stylesheet" href="css/industrial-beltscan.css?v=iav-v86-vps" />
+  <link rel="stylesheet" href="css/via.css?v=iav-v86-vps" />
+  <!--
+    Caminho crítico da tela de login (js/app.js): sem isto o navegador só
+    descobre store/AccessGate depois de baixar o app.js, e o api.js depois do
+    AccessGate — uma ida e volta a mais por nível. O resto do sistema
+    (js/workspace.js) entra com import() depois que o login pinta.
+  -->
+  <link rel="modulepreload" href="js/vendor.js" />
+  <link rel="modulepreload" href="js/state/store.js" />
+  <link rel="modulepreload" href="js/components/AccessGate.js" />
+  <link rel="modulepreload" href="js/auth/api.js" />
+  <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg?v=20" />
+  <link rel="icon" type="image/x-icon" sizes="16x16 32x32 48x48" href="/favicon.ico?v=20" />
+<script>
+    /* Antes de qualquer pintura: sem isto a página aparece escura por um
+       instante e só então vira clara — o "flash of wrong theme". */
+    try {
+      /* três temas: dark (iaVision, padrão), light e code (Code Dark, cinzas do VS Code) */
+      var t = localStorage.getItem('gplansis.theme');
+      if (t !== 'light' && t !== 'code') t = 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+      document.documentElement.style.colorScheme = t === 'light' ? 'light' : 'dark';
+      if (t === 'code') document.querySelector('meta[name="theme-color"]').setAttribute('content', '#181818');
+    } catch (e) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  </script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <noscript>
+    <p style="padding:24px;color:#f5f5f4;font:14px system-ui">
+      Este protótipo precisa de JavaScript habilitado.
+    </p>
+  </noscript>
+
+  <!--
+    React, ReactDOM e htm entram como UMD vendorizado (frontend/vendor/):
+    sem CDN, sem npm install, funciona offline. js/vendor.js reexporta os
+    globais como ES module para o resto do app.
+
+    Quando o disco permitir o Vite (SPEC §3.1), estes três <script> saem e
+    js/vendor.js vira `export * from 'react'`.
+  -->
+  <script src="vendor/react.js"></script>
+  <script src="vendor/react-dom.js"></script>
+  <script src="vendor/htm.js"></script>
+
+  <script type="module" src="js/app.js"></script>
+
+  <script>
+    /*
+     * Service worker: é o que torna a aplicação INSTALÁVEL e abre sem rede.
+     * Registrado depois do load para não competir por banda com a casca.
+     */
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js').then(function (reg) {
+          /*
+           * Versão nova detectada: ativa e recarrega uma vez.
+           *
+           * Sem isto o service worker novo fica "esperando" até que TODAS as
+           * abas fechem — e o usuário continua vendo a versão antiga sem
+           * entender por quê. Foi exatamente o que aconteceu com o formulário
+           * de cadastro que já tinha sido removido.
+           */
+          reg.addEventListener('updatefound', function () {
+            var novo = reg.installing;
+            if (!novo) return;
+            novo.addEventListener('statechange', function () {
+              if (novo.state === 'installed' && navigator.serviceWorker.controller) {
+                novo.postMessage('skipWaiting');
+              }
+            });
+          });
+          // procura atualização a cada 15 min numa aba que fica aberta o dia todo
+          setInterval(function () { reg.update().catch(function () {}); }, 900000);
+        }).catch(function (e) {
+          console.warn('[sw] não registrou:', e && e.message);
+        });
+
+        // primeira visita: o SW assume a página sem nada para trocar — recarregar só baixaria tudo de novo
+        var recarregou = !navigator.serviceWorker.controller;
+        navigator.serviceWorker.addEventListener('controllerchange', function () {
+          if (recarregou) return;   // sem a trava, vira laço de recarga
+          recarregou = true;
+          location.reload();
+        });
+      });
+    }
+  </script>
+
+  <script>
+    // Falha de módulo é silenciosa no console; sem isso a tela fica só preta.
+    window.addEventListener('error', function (e) {
+      if (document.getElementById('root').childElementCount) return;
+      document.getElementById('root').innerHTML =
+        '<div style="padding:32px;font:13px/1.7 ui-monospace,monospace;color:#fca5a5">' +
+        '<b style="display:block;margin-bottom:10px;font-size:15px">Falha ao inicializar</b>' +
+        (e.message || 'erro desconhecido') +
+        '<br><br><span style="color:#a1a1aa">Sirva a pasta por http://localhost — abrir ' +
+        'index.html por file:// bloqueia ES modules e a câmera.<br>' +
+        'Rode: <b style="color:#ff5a1f">python serve.py</b></span></div>';
+    });
+  </script>
+</body>
+</html>

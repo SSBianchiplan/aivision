@@ -1,0 +1,561 @@
+/* ==========================================================================
+   CONTROLES DE VÍDEO FLUTUANTES
+   Botões circulares de vidro fosco, como na referência, mas no tema do
+   sistema: mesmo laranja #FFD84D e o mesmo vidro com blur dos painéis.
+   ========================================================================== */
+
+.vctl {
+  /* padrão: rodapé centralizado. Arrastar troca para posição livre. */
+  position: fixed;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%);
+  z-index: 320;
+  padding: 12px 16px 10px;
+  border-radius: 20px;
+  background: rgba(18, 18, 21, .72);
+  border: 1px solid rgba(255, 255, 255, .09);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  box-shadow:
+    0 22px 56px rgba(0, 0, 0, .62),
+    inset 0 1px 0 rgba(255, 255, 255, .06);
+  user-select: none;
+  min-width: 400px;
+}
+
+/*
+ * Posição livre: `top` vem do JS, então o `bottom` e o centramento do
+ * padrão precisam sair — senão a barra ficaria presa ao rodapé e só
+ * deslizaria na horizontal.
+ */
+.vctl.moved {
+  bottom: auto;
+  transform: none;
+}
+.vctl.dragging { box-shadow: 0 30px 72px rgba(0, 0, 0, .78); }
+
+/* punho de arrastar, na mesma linguagem visual da barra de menu */
+.vctl-grip {
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  padding: 4px 10px;
+  cursor: grab;
+  touch-action: none;
+  border-radius: 6px;
+}
+.vctl-grip span {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--ink-3);
+}
+.vctl-grip:hover { background: rgba(255, 255, 255, .07); }
+.vctl-grip:hover span { background: var(--ink-2); }
+.vctl.dragging .vctl-grip { cursor: grabbing; }
+
+/* o punho ocupa o topo: o conteúdo desce para não passar por baixo */
+.vctl-row { margin-top: 8px; }
+
+.vctl-row { display: flex; align-items: center; gap: 10px; }
+
+.vctl-sep {
+  width: 1px;
+  height: 30px;
+  margin: 0 2px 0 6px;
+  background: rgba(255, 255, 255, .12);
+}
+
+/* --------------------------------------------------- botão circular */
+
+.vctl-btn {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  flex: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  /* o vidro: gradiente claro no topo, escuro embaixo, com anel */
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, .20) 0%, rgba(255, 255, 255, .05) 42%,
+                    rgba(255, 255, 255, .02) 60%, rgba(255, 255, 255, .10) 100%);
+  border: 1px solid rgba(255, 255, 255, .26);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, .38),
+    inset 0 -6px 14px rgba(0, 0, 0, .34),
+    0 4px 12px rgba(0, 0, 0, .40);
+  transition: transform .12s ease, border-color .14s, box-shadow .14s, background .14s;
+}
+
+/* brilho especular no topo, como no vidro da referência */
+.vctl-btn::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 62%;
+  height: 38%;
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .40), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+
+.vctl-btn:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, .44);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, .48),
+    inset 0 -6px 14px rgba(0, 0, 0, .30),
+    0 7px 18px rgba(0, 0, 0, .46);
+}
+.vctl-btn:active:not(:disabled) { transform: translateY(1px) scale(.97); }
+
+.vctl-btn:disabled { opacity: .32; cursor: default; }
+
+.vctl-btn.active {
+  border-color: rgba(255, 216, 77, .70);
+  color: #fff;
+  background:
+    linear-gradient(160deg, rgba(255, 122, 66, .40) 0%, rgba(255, 216, 77, .22) 45%,
+                    rgba(255, 216, 77, .12) 100%);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, .34),
+    inset 0 -6px 14px rgba(120, 30, 0, .34),
+    0 0 0 3px rgba(255, 216, 77, .14),
+    0 6px 16px rgba(0, 0, 0, .44);
+}
+
+/* --------------------------------------------------- botão de sair */
+
+.vctl-exit {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  color: #fca5a5;
+  background: rgba(248, 113, 113, .10);
+  border: 1px solid rgba(248, 113, 113, .34);
+  transition: background .14s, color .14s, border-color .14s, transform .12s;
+}
+.vctl-exit:hover {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
+  transform: translateY(-1px);
+}
+.vctl-exit:active { transform: translateY(1px) scale(.96); }
+
+/* --------------------------------------------------- linha do tempo */
+
+.vctl-track { margin-top: 12px; }
+
+.vctl-track input[type="range"] {
+  width: 100%;
+  height: 10px;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+.vctl-track input[type="range"]:disabled { cursor: default; opacity: .45; }
+
+.vctl-track input[type="range"]::-webkit-slider-runnable-track {
+  height: 10px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .30), rgba(255, 255, 255, .16));
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .35);
+}
+.vctl-track input[type="range"]::-moz-range-track {
+  height: 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, .22);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .35);
+}
+
+.vctl-track input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -6px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, .55);
+  background: linear-gradient(160deg, #fdfdfd, #cfcfd4);
+  box-shadow: 0 2px 7px rgba(0, 0, 0, .55), inset 0 1px 1px rgba(255, 255, 255, .9);
+  cursor: grab;
+}
+.vctl-track input[type="range"]::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, .55);
+  background: linear-gradient(160deg, #fdfdfd, #cfcfd4);
+  box-shadow: 0 2px 7px rgba(0, 0, 0, .55);
+  cursor: grab;
+}
+.vctl-track input[type="range"]:active::-webkit-slider-thumb { cursor: grabbing; }
+
+/* --------------------------------------------------- status */
+
+.vctl-status {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 7px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .06em;
+}
+.vctl-status span { color: var(--ink-2); font-weight: 600; }
+.vctl-status span.live { color: #4ade80; }
+.vctl-status span.live::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 6px #4ade80;
+  animation: vctl-pulse 1.6s ease-in-out infinite;
+}
+@keyframes vctl-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .vctl-status span.live::before { animation: none; } }
+
+.vctl-status em { font-style: normal; color: var(--ink-3); }
+
+@media (max-width: 640px) {
+  .vctl { min-width: 0; width: calc(100vw - 24px); bottom: 14px; padding: 10px 12px 8px; }
+  .vctl-btn { width: 42px; height: 42px; }
+  .vctl-row { gap: 6px; }
+}
+
+/* ==========================================================================
+   MOBILE — iaVision na palma da mão
+   O layout de duas colunas laterais não cabe num celular: as colunas viram
+   uma gaveta única, e os controles ficam ao alcance do polegar.
+   ========================================================================== */
+
+@media (max-width: 1000px) {
+  /*
+   * Uma coluna só: posição, largura, topo (abaixo da barra) e base (acima da
+   * barra de vídeo) vêm do organizador (js/layout/organizador.js) como
+   * estilo inline.
+   */
+  .rail { max-height: none; }
+
+  /*
+   * No celular o app.js junta tudo numa coluna só (RAILS vira ['left']), então
+   * não há segunda coluna para esconder. A regra antiga era `.rail ~ .rail
+   * { display: none }`, e ela FAZIA UM PAINEL SUMIR: abrir Fonte (coluna
+   * esquerda) e Códigos (coluna direita) renderizava duas colunas, e a
+   * segunda simplesmente não aparecia — o widget existia e era invisível.
+   */
+
+  .panel.floating {
+    width: calc(100vw - 20px) !important;
+    left: 10px !important;
+    /* o teto de um painel flutuante é imposto em Panel.js: aqui seria
+       regra morta, porque o `top` vem do style inline do arrasto */
+  }
+
+  .menubar {
+    left: 10px !important;
+    right: 10px;
+    width: calc(100vw - 20px);
+    overflow-x: auto;
+    scrollbar-width: none;
+    border-radius: 12px;
+  }
+  .menubar::-webkit-scrollbar { display: none; }
+
+  .hotkeys { display: none; }   /* não há teclado */
+
+  /* alvos de toque: 44px é o mínimo recomendado */
+  .vctl-btn { width: 46px; height: 46px; }
+  .mb-btn { padding: 9px 10px; }
+  .tabs button { padding: 9px 6px; }
+}
+
+@media (max-width: 480px) {
+  .vctl {
+    width: calc(100vw - 16px);
+    bottom: 10px;
+    padding: 9px 10px 7px;
+    border-radius: 16px;
+  }
+  .vctl-row { gap: 4px; justify-content: space-between; }
+  .vctl-btn { width: 42px; height: 42px; }
+  .vctl-btn svg { width: 17px; height: 17px; }
+  .vctl-status { font-size: 9px; }
+  .rail { bottom: 130px; }
+  .gate-card { padding: 26px 20px 22px; }
+  .gate-brand { font-size: 23px; }
+}
+
+/* Aparelho sem mouse: o :hover fica "grudado" depois do toque.
+   Só aplica o realce onde existe ponteiro fino de verdade. */
+@media (hover: none) {
+  .vctl-btn:hover:not(:disabled) { transform: none; }
+  .mb-btn:hover { background: transparent; color: var(--ink-2); }
+}
+
+/* Barra de status / notch do iOS */
+@supports (padding: max(0px)) {
+  .vctl { bottom: max(10px, env(safe-area-inset-bottom)); }
+  .menubar { top: max(14px, env(safe-area-inset-top)); }
+}
+
+/* --------------------------------------------------- gravação */
+
+.vctl-rec {
+  width: 46px;
+  height: 46px;
+  flex: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, .05);
+  border: 1px solid rgba(248, 113, 113, .38);
+  transition: background .14s, border-color .14s, transform .12s;
+}
+.vctl-rec:hover:not(:disabled) { border-color: rgba(248, 113, 113, .7); transform: translateY(-1px); }
+.vctl-rec:disabled { opacity: .3; cursor: default; }
+
+.vctl-rec-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ef4444;
+  transition: border-radius .18s, width .18s, height .18s;
+}
+/* gravando: o ponto vira quadrado, que é o símbolo universal de parar */
+.vctl-rec.on { background: rgba(239, 68, 68, .18); border-color: #ef4444; }
+.vctl-rec.on .vctl-rec-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  animation: rec-pulse 1.3s ease-in-out infinite;
+}
+@keyframes rec-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .vctl-rec.on .vctl-rec-dot { animation: none; } }
+
+.vctl-recbar {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  margin-top: 8px;
+  padding: 5px 9px;
+  border-radius: 7px;
+  background: rgba(239, 68, 68, .12);
+  border: 1px solid rgba(239, 68, 68, .3);
+  font-family: var(--mono);
+  font-size: 10px;
+}
+.vctl-recbar b { color: #ef4444; letter-spacing: .1em; }
+.vctl-recbar span { color: var(--ink); font-size: 12px; }
+.vctl-recbar em { font-style: normal; color: var(--ink-3); margin-left: auto; }
+
+/* --------------------------------------------------- áudio da gravação */
+
+/*
+ * Ao lado do botão de gravar, e não num painel: a decisão "com ou sem som"
+ * se toma no momento de apertar REC, e um controle escondido num menu seria
+ * descoberto depois de uma gravação muda. Riscado quando desligado, para o
+ * estado ser legível sem tooltip.
+ */
+.vctl-mic {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, .05);
+  border: 1px solid rgba(255, 255, 255, .14);
+  color: var(--ink);
+  transition: background .14s, border-color .14s, color .14s, transform .12s;
+}
+.vctl-mic:hover:not(:disabled) { border-color: rgba(255, 255, 255, .3); transform: translateY(-1px); }
+.vctl-mic.off { color: var(--ink-3); border-style: dashed; }
+.vctl-mic:disabled { opacity: .45; cursor: default; }
+
+@media (max-width: 480px) {
+  .vctl-mic { width: 36px; height: 36px; }
+}
+
+/* ---------------------------------------------------------------
+   Compacto (20/10/2026): o widget estava grande demais sobre o vídeo.
+   Tudo ~20% menor, mantendo 40px+ de alvo de toque no celular.
+   --------------------------------------------------------------- */
+.vctl { padding: 9px 13px 8px; border-radius: 17px; min-width: 330px; }
+.vctl-row { gap: 8px; margin-top: 6px; }
+.vctl-btn { width: 40px; height: 40px; }
+.vctl-btn svg { width: 16px; height: 16px; }
+.vctl-rec { width: 38px; height: 38px; }
+.vctl-rec-dot { width: 13px; height: 13px; }
+.vctl-rec.on .vctl-rec-dot { width: 11px; height: 11px; }
+.vctl-mic { width: 34px; height: 34px; }
+.vctl-mic svg { width: 15px; height: 15px; }
+.vctl-track { margin-top: 9px; }
+.vctl-track input[type="range"],
+.vctl-track input[type="range"]::-webkit-slider-runnable-track { height: 7px; }
+.vctl-track input[type="range"]::-moz-range-track { height: 7px; }
+.vctl-track input[type="range"]::-webkit-slider-thumb { width: 17px; height: 17px; margin-top: -5px; }
+.vctl-track input[type="range"]::-moz-range-thumb { width: 17px; height: 17px; }
+.vctl-status { margin-top: 5px; font-size: 9.5px; }
+@media (max-width: 1000px) { .vctl-btn { width: 42px; height: 42px; } }
+@media (max-width: 480px) {
+  /* o bloco compacto acima vale para todas as larguras e anulava o gap/padding
+     do celular: em 390px o botão de gravar saía cortado na borda direita */
+  .vctl { padding: 9px 10px 7px; }
+  .vctl-row { gap: 4px; }
+  .vctl-btn { width: 40px; height: 40px; }
+  .vctl-rec { width: 36px; height: 36px; }
+  .vctl-mic { width: 34px; height: 34px; }
+}
+
+/* YouTube aberto: velocidade e som do player na própria barra */
+.vctl-yt {
+  flex: none; height: 34px; min-width: 40px; padding: 0 9px; border-radius: 17px;
+  border: 1px solid rgba(255, 255, 255, .18); background: rgba(255, 255, 255, .06);
+  color: var(--ink); font: 600 12px var(--mono); cursor: pointer;
+  transition: background .14s, border-color .14s;
+}
+.vctl-yt:hover { border-color: rgba(255, 216, 77, .6); background: rgba(255, 216, 77, .12); }
+@media (max-width: 480px) { .vctl-yt { height: 32px; min-width: 34px; padding: 0 6px; font-size: 11px; } }
+
+/* YouTube só assistindo: atalho para virar fonte do pipeline */
+.vctl-usar {
+  display: block; width: 100%; margin-top: 8px; padding: 7px 10px; border-radius: 10px;
+  border: 1px solid rgba(255, 216, 77, .55); background: rgba(255, 216, 77, .14);
+  color: var(--accent); font: 600 12px var(--sans, inherit); cursor: pointer;
+}
+.vctl-usar:hover { background: rgba(255, 216, 77, .24); }
+
+/* zoom digital da fonte (Viewport): − valor + na barra de vídeo */
+.vctl-zoom { display: flex; gap: 3px; align-items: center; }
+.vctl-zoom .vctl-yt { min-width: 30px; padding: 0 7px; }
+.vctl-zoom .vctl-zval { min-width: 44px; }
+.vctl-zoom .vctl-yt:disabled { opacity: .35; cursor: default; }
+@media (max-width: 480px) { .vctl-zoom .vctl-yt { min-width: 26px; padding: 0 5px; } .vctl-zoom .vctl-zval { min-width: 38px; } }
+
+/* repetir vídeo (arquivo/YouTube) */
+.vctl-loop { font-size: 16px; }
+.vctl-loop.on { color: var(--accent); border-color: rgba(255, 216, 77, .6); background: rgba(255, 216, 77, .14); }
+.vctl-usar.busy, .vctl-usar:disabled { opacity: .75; cursor: progress; }
+
+/* Celular/tablet: a barra fica SOBRE o vídeo — o desfoque seria recalculado a cada quadro. Fundo mais opaco no lugar. */
+@media (pointer: coarse) {
+  .vctl {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(18, 18, 21, .9);
+  }
+}
+
+/* ---------- recolher / abrir a barra de vídeo ---------- */
+/* botão no canto superior direito do controle (aberto) ou no canto direito da barra fina */
+.vctl-min {
+  position: absolute;
+  top: 5px;
+  right: 8px;
+  z-index: 2;
+  width: 22px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, .05);
+  color: var(--ink-2);
+  line-height: 1;
+  cursor: pointer;
+}
+.vctl-min svg { display: block; width: 12px; height: 12px; }
+.vctl-min:hover { background: rgba(255, 255, 255, .12); color: var(--ink); }
+.vctl-min:focus-visible { outline: 2px solid var(--accent, #FFD84D); outline-offset: 1px; }
+:root[data-theme="light"] .vctl-min { border-color: rgba(0, 0, 0, .14); background: rgba(0, 0, 0, .04); }
+
+/*
+ * BARRA FINA (recolhida): os mesmos controles, todos pequenos, numa linha só
+ * com a linha do tempo. O punho vira três pontos na vertical à esquerda.
+ */
+.vctl.mini {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  width: auto;
+  max-width: calc(100vw - 16px);
+  padding: 5px 36px 5px 20px;
+  border-radius: 12px;
+}
+.vctl.mini .vctl-grip {
+  top: 50%;
+  left: 4px;
+  transform: translateY(-50%);
+  flex-direction: column;
+  gap: 3px;
+  padding: 5px 4px;
+}
+.vctl.mini .vctl-min { top: 50%; transform: translateY(-50%); }
+.vctl.mini .vctl-row { margin-top: 0; gap: 4px; flex: none; }
+.vctl.mini .vctl-btn { width: 26px; height: 26px; }
+.vctl.mini .vctl-btn svg { width: 11px; height: 11px; }
+.vctl.mini .vctl-yt { height: 24px; min-width: 26px; padding: 0 6px; font-size: 11px; border-radius: 12px; }
+.vctl.mini .vctl-zoom .vctl-yt { min-width: 22px; padding: 0 4px; }
+.vctl.mini .vctl-zoom .vctl-zval { min-width: 36px; }
+.vctl.mini .vctl-sep { height: 18px; margin: 0 2px; }
+.vctl.mini .vctl-mic { width: 24px; height: 24px; }
+.vctl.mini .vctl-mic svg { width: 11px; height: 11px; }
+.vctl.mini .vctl-rec { width: 24px; height: 24px; }
+.vctl.mini .vctl-rec-dot { width: 9px; height: 9px; }
+.vctl.mini .vctl-rec.on .vctl-rec-dot { width: 8px; height: 8px; }
+.vctl.mini .vctl-track { margin-top: 0; flex: 1 1 120px; min-width: 90px; }
+.vctl.mini .vctl-track input[type="range"],
+.vctl.mini .vctl-track input[type="range"]::-webkit-slider-runnable-track { height: 4px; }
+.vctl.mini .vctl-track input[type="range"]::-moz-range-track { height: 4px; }
+.vctl.mini .vctl-track input[type="range"]::-webkit-slider-thumb { width: 12px; height: 12px; margin-top: -4px; }
+.vctl.mini .vctl-track input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; }
+.vctl.mini .vctl-status { margin-top: 0; flex: none; white-space: nowrap; }
+.vctl.mini .vctl-status em { display: none; }
+.vctl.mini .vctl-recbar { display: none; }
+.vctl.mini .vctl-usar { width: auto; margin-top: 0; padding: 3px 8px; font-size: 11px; flex: none; }
+/* aberto: a fileira cede o canto direito ao botão de recolher (não encosta no ● gravar) */
+.vctl:not(.mini) .vctl-row { padding-right: 20px; }
+
+/* celular: não cabe numa linha — botões na 1ª, linha do tempo e tempo na 2ª */
+@media (max-width: 480px) {
+  .vctl.mini { flex-wrap: wrap; row-gap: 4px; width: auto; bottom: 10px; }
+  .vctl.mini .vctl-row { flex-wrap: nowrap; overflow-x: auto; max-width: 100%; scrollbar-width: none; }
+  .vctl.mini .vctl-row::-webkit-scrollbar { display: none; }
+  .vctl.mini .vctl-track { flex: 1 1 100%; order: 3; }
+  .vctl.mini .vctl-status { order: 4; }
+  .vctl.mini .vctl-track { flex-basis: 60%; }
+  .vctl.mini .vctl-row { gap: 2px; }
+  .vctl.mini .vctl-btn { width: 23px; height: 23px; }
+  .vctl.mini .vctl-yt { height: 22px; min-width: 22px; padding: 0 4px; }
+  .vctl.mini .vctl-zoom .vctl-zval { min-width: 30px; }
+  .vctl.mini .vctl-mic, .vctl.mini .vctl-rec { width: 22px; height: 22px; }
+  .vctl.mini .vctl-sep { margin: 0 1px; }
+}
+
+/* qualidade do YouTube na barra de vídeo (camera/youtube.js QUALIDADES) */
+.vctl-qual { appearance: none; -webkit-appearance: none; text-align: center; padding: 0 8px; }
+.vctl-qual option { color: #0b1f1d; background: #fff; }

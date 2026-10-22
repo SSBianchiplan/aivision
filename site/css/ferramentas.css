@@ -1,0 +1,568 @@
+/* ==========================================================================
+   FERRAMENTAS DE MOUSE — widget vertical sobre o vídeo
+   Mesma linguagem da barra de vídeo (controls.css): vidro fosco escuro,
+   punho •••, botão de recolher no canto, ativo em amarelo #FFD84D.
+   Carregado pelo próprio componente (FerramentasMouse.js).
+   ========================================================================== */
+
+.ferr {
+  position: fixed;
+  z-index: 110;               /* abaixo das colunas de painéis (120) e das barras (300/320) */
+  padding: 38px 5px 6px;     /* punho e botão de recolher empilhados no alto */
+  border-radius: 14px;
+  background: rgba(18, 18, 21, .72);
+  border: 1px solid rgba(255, 255, 255, .09);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .06);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+.ferr.dragging { box-shadow: 0 26px 64px rgba(0, 0, 0, .74); }
+
+.ferr-grip {
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 3px;
+  padding: 5px 6px;
+  border-radius: 6px;
+  cursor: grab;
+  touch-action: none;
+}
+.ferr-grip span { width: 3px; height: 3px; border-radius: 50%; background: var(--ink-3); }
+.ferr-grip:hover { background: rgba(255, 255, 255, .07); }
+.ferr-grip:hover span { background: var(--ink-2); }
+.ferr.dragging .ferr-grip { cursor: grabbing; }
+
+.ferr-min {
+  position: absolute;
+  top: 19px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 22px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, .05);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.ferr-min svg { width: 11px; height: 11px; }
+.ferr-min:hover { background: rgba(255, 255, 255, .12); color: var(--ink); }
+.ferr-min:focus-visible { outline: 2px solid var(--accent, #FFD84D); outline-offset: 1px; }
+
+/* coluna(s) de botões: o JS diz quantas linhas cabem; o que sobra vira 2ª coluna */
+.ferr-grade {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 32px;
+  gap: 3px;
+  min-width: 32px;
+}
+
+.ferr-b {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  color: #fff;
+  cursor: pointer;
+  background: linear-gradient(160deg, rgba(255, 255, 255, .14) 0%, rgba(255, 255, 255, .03) 60%, rgba(255, 255, 255, .07) 100%);
+  border: 1px solid rgba(255, 255, 255, .18);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, .22), 0 2px 6px rgba(0, 0, 0, .32);
+  transition: border-color .12s, background .12s, transform .1s;
+}
+.ferr-b:hover:not(:disabled) { border-color: rgba(255, 255, 255, .42); }
+.ferr-b:active:not(:disabled) { transform: scale(.95); }
+.ferr-b:disabled { opacity: .32; cursor: default; }
+.ferr-b:focus-visible { outline: 2px solid var(--accent, #FFD84D); outline-offset: 1px; }
+.ferr-b.on {
+  color: #02302C;
+  background: #FFD84D;
+  border-color: #FFD84D;
+  box-shadow: 0 0 0 3px rgba(255, 216, 77, .18), 0 3px 8px rgba(0, 0, 0, .4);
+}
+/* separador entre grupos: um respiro acima do primeiro botão do grupo */
+.ferr-b.g-ini::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: 6px;
+  right: 6px;
+  height: 1px;
+  background: rgba(255, 255, 255, .22);
+}
+.ferr-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: 7px;
+  background: #FFD84D;
+  color: #02302C;
+  font: 700 9px/14px ui-monospace, monospace;
+  font-style: normal;
+}
+
+/* tooltip com nome e atalho — só onde existe hover de verdade */
+@media (hover: hover) {
+  .ferr-b[data-tip]:hover::after {
+    content: attr(data-tip);
+    position: absolute;
+    left: calc(100% + 9px);
+    top: 50%;
+    transform: translateY(-50%);
+    white-space: nowrap;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font: 500 11.5px/1.3 var(--font, system-ui), sans-serif;
+    color: #f5f5f4;
+    background: rgba(2, 48, 44, .96);
+    border: 1px solid rgba(255, 216, 77, .35);
+    pointer-events: none;
+    z-index: 5;
+  }
+  .ferr.direita .ferr-b[data-tip]:hover::after { left: auto; right: calc(100% + 9px); }
+}
+
+/* recolhido: só o punho, a ferramenta ativa e o botão de abrir */
+.ferr.mini { padding: 36px 4px 4px; }
+.ferr.mini .ferr-b { width: 28px; height: 28px; }
+.ferr.mini .ferr-grade { grid-auto-columns: 28px; min-width: 28px; }
+
+/* dica da ferramenta ativa, ao lado do widget */
+.ferr-dica {
+  position: fixed;
+  z-index: 109;
+  max-width: 360px;
+  padding: 6px 10px;
+  border-radius: 9px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--ink-2);
+  background: rgba(2, 48, 44, .82);
+  border: 1px solid rgba(255, 255, 255, .10);
+  pointer-events: none;
+}
+
+/* leitura do conta-gotas, presa ao cursor */
+.ferr-cor {
+  position: fixed;
+  z-index: 340;
+  width: 224px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font: 12px/1.5 ui-monospace, monospace;
+  color: #CFEBE4;
+  background: rgba(2, 48, 44, .94);
+  border: 1px solid rgba(255, 216, 77, .35);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .5);
+  pointer-events: none;
+}
+.ferr-cor b { color: #fff; font-weight: 600; }
+.ferr-cor em { margin-left: auto; color: #FFD84D; font-style: normal; font-size: 10.5px; }
+.ferr-cor-l { display: flex; align-items: center; gap: 6px; }
+.ferr-cor-l i { width: 16px; height: 16px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, .5); flex: none; }
+
+/* editor do texto da anotação, sobre o ponto */
+.ferr-texto {
+  position: fixed;
+  z-index: 340;
+  width: 220px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  border: 1px solid #FFD84D;
+  background: rgba(2, 48, 44, .96);
+  color: #fff;
+  font: 600 14px system-ui, sans-serif;
+  outline: none;
+}
+
+/* ---------------------------------------------------------- lista */
+.ferr-lista {
+  position: fixed;
+  z-index: 210;
+  width: 360px;
+  max-width: calc(100vw - 16px);
+  max-height: min(70vh, calc(100vh - 120px));
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 10px;
+  border-radius: 14px;
+  background: var(--panel, rgba(4, 65, 60, .94));
+  border: 1px solid var(--line, rgba(255, 255, 255, .16));
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, .55);
+  color: var(--ink);
+  font-size: 12.5px;
+}
+.ferr-lista-h { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.ferr-lista-h b { font-size: 13.5px; margin-right: auto; }
+.ferr-lista-h select { max-width: 120px; }
+.ferr-lista select, .ferr-lista input:not([type="checkbox"]):not([type="color"]) {
+  min-width: 0;
+  padding: 3px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, .18);
+  color: var(--ink);
+  font: inherit;
+}
+.ferr-x {
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 4px;
+}
+.ferr-aviso {
+  margin: 0 0 8px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 216, 77, .4);
+  background: rgba(255, 216, 77, .08);
+  color: var(--ink-2);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.ferr-vazio { color: var(--ink-3); margin: 6px 2px 10px; }
+.ferr-itens { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ferr-itens li {
+  padding: 6px;
+  border-radius: 9px;
+  border: 1px solid var(--line-2, rgba(255, 255, 255, .09));
+  background: rgba(0, 0, 0, .12);
+}
+.ferr-itens li.sel { border-color: #FFD84D; }
+.ferr-it-l { display: flex; align-items: center; gap: 5px; }
+.ferr-it-l input[type="color"] { width: 22px; height: 22px; padding: 0; border: 0; background: none; flex: none; cursor: pointer; }
+.ferr-nome { flex: 1 1 0; width: 0; min-width: 56px; }
+.ferr-it-l select { flex: 0 0 auto; width: 132px; }
+.ferr-vis { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; cursor: pointer; }
+.ferr-del { border: 0; background: transparent; color: #fca5a5; cursor: pointer; padding: 2px 4px; }
+.ferr-it-d { margin: 4px 2px 0; color: var(--ink-2); font: 11.5px/1.4 ui-monospace, monospace; word-break: break-word; }
+.ferr-it-a { margin-top: 5px; display: flex; flex-wrap: wrap; align-items: center; gap: 5px; color: var(--ink-3); }
+.ferr-cls { flex: 1 1 0; width: 0; min-width: 120px; }
+.ferr-num { width: 64px; }
+.ferr-escala { margin: 10px 2px 6px; color: var(--ink-2); line-height: 1.45; }
+.ferr-roi { display: flex; align-items: center; gap: 6px; margin: 4px 2px 8px; color: var(--ink-2); cursor: pointer; }
+.ferr-lista-f { display: flex; flex-wrap: wrap; gap: 5px; }
+.ferr-msg { margin-top: 8px; color: var(--ok, #4ade80); }
+
+/* ---------------------------------------------------------- celular */
+@media (max-width: 480px) {
+  .ferr { padding: 36px 4px 4px; border-radius: 12px; }
+  .ferr-b { width: 30px; height: 30px; border-radius: 8px; }
+  .ferr-b svg { width: 15px; height: 15px; }
+  .ferr-grade { grid-auto-columns: 30px; gap: 2px; min-width: 30px; }
+  .ferr-lista { width: auto; font-size: 12px; }
+  .ferr-it-l select { width: 112px; }
+}
+@media (max-height: 560px) {
+  .ferr-b { width: 30px; height: 30px; }
+  .ferr-grade { grid-auto-columns: 30px; gap: 2px; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .ferr { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(18, 18, 21, .94); }
+}
+
+/* ---------------------------------------------------------- tema claro */
+:root[data-theme="light"] .ferr {
+  background: rgba(248, 248, 249, .9);
+  border-color: rgba(0, 0, 0, .10);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .16), 0 1px 3px rgba(0, 0, 0, .10);
+}
+:root[data-theme="light"] .ferr-b {
+  color: #1a1a1d;
+  background: linear-gradient(160deg, rgba(255, 255, 255, .95) 0%, rgba(228, 228, 232, .92) 100%);
+  border-color: rgba(0, 0, 0, .14);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, .9), 0 1px 4px rgba(0, 0, 0, .14);
+}
+:root[data-theme="light"] .ferr-b.on {
+  color: #fff;
+  background: linear-gradient(160deg, #0B5A53 0%, var(--accent) 100%);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(4, 65, 60, .16), 0 3px 8px rgba(0, 0, 0, .22);
+}
+:root[data-theme="light"] .ferr-b.g-ini::before { background: rgba(0, 0, 0, .14); }
+:root[data-theme="light"] .ferr-badge { background: var(--accent); color: #fff; }
+:root[data-theme="light"] .ferr-min { border-color: rgba(0, 0, 0, .14); background: rgba(0, 0, 0, .04); }
+:root[data-theme="light"] .ferr-grip:hover { background: rgba(0, 0, 0, .06); }
+:root[data-theme="light"] .ferr-dica { background: rgba(255, 255, 255, .94); color: var(--ink); border-color: var(--line); }
+:root[data-theme="light"] .ferr-lista { box-shadow: 0 14px 40px rgba(0, 0, 0, .2); }
+:root[data-theme="light"] .ferr-lista select,
+:root[data-theme="light"] .ferr-lista input:not([type="checkbox"]):not([type="color"]) { background: #fff; }
+:root[data-theme="light"] .ferr-itens li { background: rgba(4, 65, 60, .03); }
+:root[data-theme="light"] .ferr-itens li.sel { border-color: var(--accent); }
+:root[data-theme="light"] .ferr-aviso { border-color: rgba(138, 109, 0, .4); background: rgba(255, 216, 77, .16); color: var(--ink); }
+:root[data-theme="light"] .ferr-msg { color: var(--ok); }
+:root[data-theme="light"] .ferr-del { color: var(--err); }
+
+/* ==========================================================================
+   MAIS FERRAMENTAS (out/2026) — popover ⋯, opções da ferramenta, cartão de
+   análise, camadas, alinhar e a camada dos auxílios de exibição.
+   Só tokens do tema (--panel, --ink, --line, --accent…): escuro, claro e os
+   temas que redefinem as variáveis (Code Dark) seguem sem regra própria.
+   ========================================================================== */
+
+/* camada da grade, lupa, mira e réguas: por cima do vídeo, fora da captura */
+.ferr-aux {
+  position: fixed;
+  z-index: 100;               /* abaixo do widget (110) e das colunas (120) */
+  pointer-events: none;
+  display: none;
+}
+
+/* botão ⋯ no fim da barra */
+.ferr-b-mais svg { stroke-width: 3.4; }
+.ferr.mini .ferr-grade { grid-auto-flow: row; gap: 3px; }   /* recolhido: a ativa e o ⋯, um embaixo do outro */
+.ferr-b.provisoria { outline: 1px dashed var(--accent); outline-offset: 1px; }
+
+/* ---------------------------------------------------------- popover */
+.ferr-pop {
+  position: fixed;
+  z-index: 230;
+  max-height: min(620px, calc(100vh - 16px));
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  background: var(--panel-solid, #04413C);
+  border: 1px solid var(--line);
+  box-shadow: 0 22px 54px rgba(0, 0, 0, .5);
+  color: var(--ink);
+  font-size: 12.5px;
+}
+.ferr-pop.folha {
+  left: 0; right: 0; bottom: 0;
+  width: auto;
+  max-height: 72vh;
+  border-radius: 16px 16px 0 0;
+  border-bottom: 0;
+}
+.ferr-pop-h { display: flex; align-items: center; gap: 8px; padding: 10px 10px 8px; border-bottom: 1px solid var(--line-2); }
+.ferr-pop-h b { font-size: 13.5px; white-space: nowrap; }
+.ferr-pop-busca {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 5px 9px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--bg, transparent);
+  color: var(--ink);
+  font: inherit;
+}
+.ferr-pop-busca:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ferr-pop-corpo { overflow: auto; overscroll-behavior: contain; padding: 4px 10px 8px; }
+.ferr-pop-sec h3 {
+  margin: 10px 2px 5px;
+  font-size: 10.5px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.ferr-pop-grade { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.ferr-pop.folha .ferr-pop-grade { grid-template-columns: 1fr; }
+.ferr-pop-i { position: relative; display: flex; align-items: stretch; border-radius: 9px; border: 1px solid var(--line-2); }
+.ferr-pop-i.on { border-color: var(--accent); }
+.ferr-pop-b {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 4px 6px 7px;
+  border: 0;
+  border-radius: 9px 0 0 9px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ferr-pop-b:hover:not(:disabled) { background: var(--line-2); }
+.ferr-pop-b:disabled { opacity: .45; cursor: default; }
+.ferr-pop-b:focus-visible, .ferr-pop-pin:focus-visible, .ferr-pop-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.ferr-pop-i.on .ferr-pop-ic { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+.ferr-pop-ic {
+  flex: none;
+  width: 28px; height: 28px;
+  display: grid; place-items: center;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+.ferr-pop-t { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.ferr-pop-n { font-weight: 600; line-height: 1.25; }
+.ferr-pop-t small { color: var(--ink-3); font-size: 11px; line-height: 1.3; }
+.ferr-pop-b kbd {
+  margin-left: auto;
+  flex: none;
+  padding: 1px 5px;
+  border-radius: 5px;
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  font: 600 10.5px/1.5 var(--mono, ui-monospace), monospace;
+  white-space: nowrap;
+}
+.ferr-pop-pin {
+  flex: none;
+  width: 30px;
+  border: 0;
+  border-left: 1px solid var(--line-2);
+  border-radius: 0 9px 9px 0;
+  background: transparent;
+  color: var(--ink-3);
+  cursor: pointer;
+  display: grid; place-items: center;
+}
+.ferr-pop-pin svg { width: 15px; height: 15px; }
+.ferr-pop-pin:hover { color: var(--ink); background: var(--line-2); }
+.ferr-pop-pin.on { color: var(--accent); }
+.ferr-pop-pin.on svg path { fill: currentColor; fill-opacity: .25; }
+.ferr-pop-f { border-top: 1px solid var(--line-2); padding: 8px 10px 10px; }
+.ferr-pop-ft { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.ferr-pop-ft span { color: var(--ink-3); font-size: 11px; flex: 1 1 auto; }
+.ferr-pop-ord { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px; }
+.ferr-pop-chip {
+  position: relative;
+  display: grid; place-items: center;
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  cursor: grab;
+}
+.ferr-pop-chip .ferr-pop-ic { width: 28px; height: 28px; border: 0; }
+.ferr-pop-chip.arr { opacity: .4; }
+.ferr-pop-chip-x {
+  position: absolute; top: -5px; right: -5px;
+  width: 14px; height: 14px;
+  padding: 0;
+  border-radius: 7px;
+  border: 0;
+  background: var(--err, #f87171);
+  color: #fff;
+  font-size: 8.5px; line-height: 14px;
+  cursor: pointer;
+  display: none;
+}
+.ferr-pop-chip:hover .ferr-pop-chip-x, .ferr-pop-chip:focus-visible .ferr-pop-chip-x { display: block; }
+
+/* ---------------------------------------------------------- opções da ferramenta */
+.ferr-opc {
+  position: fixed;
+  z-index: 112;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  max-width: 440px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 12px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .35);
+}
+.ferr-opc.estreito { max-width: none; }
+.ferr-opc label { display: inline-flex; align-items: center; gap: 6px; }
+.ferr-opc input[type="range"] { width: 110px; accent-color: var(--accent); }
+.ferr-opc select { padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line); background: transparent; color: var(--ink); font: inherit; }
+.ferr-opc-d { color: var(--ink-2); }
+.ferr-opc-aviso { color: var(--ink); font-weight: 600; }
+
+/* ---------------------------------------------------------- cartão de análise */
+.ferr-analise {
+  position: fixed;
+  z-index: 211;
+  width: 340px;
+  max-width: calc(100vw - 16px);
+  padding: 10px;
+  border-radius: 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, .5);
+  color: var(--ink);
+  font-size: 12px;
+}
+.ferr-analise.estreito { width: auto; }
+.ferr-graf { display: block; width: 100%; height: 130px; margin: 2px 0 6px; }
+.ferr-tab { width: 100%; border-collapse: collapse; font: 11.5px/1.5 var(--mono, ui-monospace), monospace; }
+.ferr-tab th, .ferr-tab td { padding: 1px 4px; text-align: right; }
+.ferr-tab th:first-child { text-align: left; }
+.ferr-tab thead th { color: var(--ink-3); font-weight: 500; }
+.ferr-an-d { margin: 6px 2px 8px; color: var(--ink-2); font: 11px/1.4 var(--mono, ui-monospace), monospace; }
+.ferr-seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+.ferr-seg button { border: 0; padding: 2px 7px; background: transparent; color: var(--ink-2); font: 600 11px var(--sans, system-ui); cursor: pointer; }
+.ferr-seg button.on { background: var(--accent); color: var(--accent-ink); }
+.ferr-vivo { display: inline-flex; align-items: center; gap: 4px; margin-right: auto; color: var(--ink-2); }
+
+/* ---------------------------------------------------------- lista: camadas, alinhar, cadeado */
+.ferr-camadas { margin: 0 0 8px; padding: 6px 8px; border-radius: 9px; border: 1px solid var(--line-2); display: grid; gap: 4px; }
+.ferr-camada { display: flex; align-items: center; gap: 5px; }
+.ferr-camada span { flex: 1 1 auto; }
+.ferr-camada i { color: var(--ink-3); font-style: normal; }
+.ferr-alinhar { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; margin: 0 0 8px; }
+.ferr-alinhar span { margin-right: 4px; color: var(--ink-2); }
+.ferr-mini {
+  width: 26px; height: 26px;
+  padding: 0;
+  display: grid; place-items: center;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.ferr-mini svg { width: 15px; height: 15px; }
+.ferr-mini:disabled { opacity: .35; cursor: default; }
+.ferr-mini:hover:not(:disabled) { border-color: var(--accent); }
+.ferr-cad { border: 0; background: transparent; cursor: pointer; padding: 2px; font-size: 12px; opacity: .55; }
+.ferr-cad.on { opacity: 1; }
+.ferr-exib { display: flex; flex-wrap: wrap; gap: 6px 12px; margin: 0 2px 8px; color: var(--ink-2); }
+.ferr-exib label { display: inline-flex; align-items: center; gap: 5px; }
+.ferr-voltas { color: var(--ink-2); font: 11px/1.4 var(--mono, ui-monospace), monospace; }
+
+@media (max-width: 480px) {
+  .ferr-opc input[type="range"] { width: 90px; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .ferr-analise { backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--panel-solid); }
+}
+
+/* tema claro: sombras mais leves; o resto vem dos tokens */
+:root[data-theme="light"] .ferr-pop { box-shadow: 0 16px 44px rgba(0, 0, 0, .18); }
+:root[data-theme="light"] .ferr-opc,
+:root[data-theme="light"] .ferr-analise { box-shadow: 0 12px 34px rgba(0, 0, 0, .16); }
+:root[data-theme="light"] .ferr-pop-busca { background: #fff; }
+.ferr-pop-t small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+/* Code Dark: cantos do VS Code (o resto vem dos tokens de css/theme.css) */
+:root[data-theme="code"] :is(.ferr-pop, .ferr-analise, .ferr-opc) { border-radius: 8px; }
+:root[data-theme="code"] :is(.ferr-pop-i, .ferr-pop-b, .ferr-pop-ic, .ferr-pop-chip, .ferr-mini) { border-radius: 4px; }
+
+/* Celular/tablet: sem vidro fosco sobre o vídeo (mesma regra da barra de vídeo,
+   da barra do topo e dos painéis). O desfoque de fundo é recomposto a cada
+   quadro do vídeo e pesa na GPU de celular; o fundo semitransparente fica. */
+@media (pointer: coarse) {
+  .ferr, .ferr-lista, .ferr-analise { backdrop-filter: none; -webkit-backdrop-filter: none; }
+}

@@ -1,0 +1,240 @@
+/* ==========================================================================
+   GPlanSiS|Vídeo — editor de vídeo interno (js/components/video/)
+   Tela cheia .vde no tema do iaVision: teal escuro no tema escuro, branco e
+   verde no claro. Visor e timeline ficam SEMPRE no palco escuro (como o vídeo
+   do app e os gráficos do BeltScan): fundo claro falseia a imagem e a forma
+   de onda. Carregado pelo próprio StudioVideo.js (só quem abre o editor baixa).
+   ========================================================================== */
+
+.vde {
+  --vde-bg: #02302C; --vde-sup: #04413C; --vde-painel: rgba(4, 65, 60, .72);
+  --vde-linha: rgba(255, 255, 255, .13); --vde-linha2: rgba(255, 255, 255, .07);
+  --vde-tinta: #FFFFFF; --vde-tinta2: #CFEBE4; --vde-tinta3: rgba(207, 235, 228, .66);
+  --vde-acento: #FFD84D; --vde-acento-tinta: #04413C; --vde-campo: #022621;
+  --vde-palco: #000; --vde-erro: #FF8A80; --vde-ok: #8CE0C8;
+  /* timeline (canvas: sempre escura) */
+  --vde-tl-fundo: #011B18; --vde-tl-trilha: #032B27; --vde-regua: #01120F;
+  --vde-clipe: #1D6A86; --vde-clipe-audio: #23694D; --vde-onda: #BFF3DA;
+  --vde-sel: #FFD84D; --vde-playhead: #FF5A4E; --vde-io: rgba(255, 216, 77, .14); --vde-marcador: #58B4FF;
+  position: fixed; inset: 0; z-index: 5000;
+  display: flex; flex-direction: column;
+  background: var(--vde-bg); color: var(--vde-tinta);
+  font-family: Archivo, "Helvetica Neue", Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+}
+:root[data-theme="light"] .vde {
+  --vde-bg: #EAF3F1; --vde-sup: #FFFFFF; --vde-painel: #FFFFFF;
+  --vde-linha: rgba(4, 65, 60, .18); --vde-linha2: rgba(4, 65, 60, .09);
+  --vde-tinta: #04413C; --vde-tinta2: #285C56; --vde-tinta3: #4A6F6A;
+  --vde-acento: #04413C; --vde-acento-tinta: #FFFFFF; --vde-campo: #FFFFFF;
+  --vde-erro: #B3261E; --vde-ok: #176B53;
+}
+/* o canvas lê estas variáveis: no claro continuam as do palco escuro, só a tinta da timeline é fixada */
+.vde-tl-cv { --vde-acento: #FFD84D; --vde-tinta: #FFFFFF; --vde-tinta3: rgba(207, 235, 228, .70); --vde-linha: rgba(255, 255, 255, .14); }
+
+/* com o editor aberto, a barra de vídeo e os widgets do app saem de cena (o editor tem o próprio transporte) */
+body.vde-aberto .vctl, body.vde-aberto .ferr, body.vde-aberto .hotkeys { visibility: hidden; }
+
+.vde button, .vde select, .vde input { font: inherit; color: inherit; }
+.vde-mono, .vde code, .vde kbd { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+
+/* ---------------------------------------------------------------- barra */
+.vde-barra {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 6px;
+  padding: 6px 10px; min-height: 46px;
+  background: var(--vde-sup); border-bottom: 1px solid var(--vde-linha);
+  overflow-x: auto; scrollbar-width: none;
+}
+.vde-barra::-webkit-scrollbar { display: none; }
+.vde-titulo { font-size: 14px; font-weight: 800; white-space: nowrap; padding-left: 8px; border-left: 4px solid #FFD84D; margin-right: 4px; letter-spacing: .02em; }
+.vde-titulo .vde-marca { font-weight: 500; font-size: .78em; color: var(--vde-tinta2); margin-right: 1px; }
+.vde-titulo i { font-style: normal; color: #FFD84D; font-weight: 300; margin: 0 1px; }
+:root[data-theme="light"] .vde-titulo i { color: #C69A00; }
+.vde-nome { flex: 0 1 auto; min-width: 40px; max-width: 220px; font-size: 12px; color: var(--vde-tinta2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vde-msg { flex: 1 1 auto; min-width: 80px; font-size: 12px; color: var(--vde-acento); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; }
+:root[data-theme="light"] .vde-msg { color: var(--vde-tinta2); }
+.vde-sep { flex: 0 0 1px; align-self: stretch; margin: 4px 2px; background: var(--vde-linha); }
+.vde-flex { flex: 1 1 auto; }
+
+.vde-btn, .vde-seg button, .vde-chip {
+  flex: 0 0 auto; font-size: 12px; font-weight: 600; line-height: 1.2;
+  color: var(--vde-tinta); background: var(--vde-campo);
+  border: 1px solid var(--vde-linha); border-radius: 7px; padding: 6px 10px; cursor: pointer; white-space: nowrap;
+}
+.vde-btn:hover:not(:disabled), .vde-seg button:hover, .vde-chip:hover:not(:disabled) { border-color: var(--vde-acento); }
+.vde-btn:disabled, .vde-chip:disabled, .vde-tb:disabled { opacity: .42; cursor: not-allowed; }
+.vde-btn.on, .vde-seg button.on, .vde-chip.on, .vde-btn.acento, .vde-chip.acento { background: var(--vde-acento); border-color: var(--vde-acento); color: var(--vde-acento-tinta); }
+.vde-btn:focus-visible, .vde-tb:focus-visible, .vde-chip:focus-visible, .vde-seg button:focus-visible, .vde-op:focus-visible { outline: 2px solid var(--vde-acento); outline-offset: 2px; }
+.vde-x { font-size: 14px; padding: 5px 10px; }
+.vde-chip { font-size: 11.5px; padding: 4px 9px; border-radius: 999px; }
+.vde-seg { display: inline-flex; flex: 0 0 auto; }
+.vde-seg button { border-radius: 0; }
+.vde-seg button:first-child { border-radius: 7px 0 0 7px; }
+.vde-seg button:last-child { border-radius: 0 7px 7px 0; border-left: 0; }
+
+/* ---------------------------------------------------------------- meio: visor + inspetor */
+.vde-meio { flex: 1 1 auto; min-height: 120px; display: flex; position: relative; }
+.vde-visor { flex: 1 1 auto; min-width: 0; position: relative; background: var(--vde-palco); }
+.vde-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.vde-tela { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+.vde-carregando {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 10px;
+  color: #CFEBE4; font-size: 13px; background: rgba(0, 0, 0, .55);
+}
+.vde-giro { width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .25); border-top-color: #FFD84D; animation: vde-giro .8s linear infinite; }
+@keyframes vde-giro { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .vde-giro { animation-duration: 3s; } }
+
+.vde-recorte-barra {
+  position: absolute; left: 50%; top: 10px; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 5px; flex-wrap: wrap; justify-content: center; max-width: calc(100% - 20px);
+  padding: 6px 8px; border-radius: 10px; background: rgba(1, 27, 24, .88); border: 1px solid rgba(255, 255, 255, .14); color: #fff;
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+.vde-recorte-barra b { font-size: 12px; margin-right: 4px; color: #FFD84D; }
+.vde-recorte-barra .vde-chip { background: rgba(0, 0, 0, .35); color: #fff; border-color: rgba(255, 255, 255, .2); }
+.vde-recorte-barra .vde-chip.on, .vde-recorte-barra .vde-chip.acento { background: #FFD84D; color: #04413C; border-color: #FFD84D; }
+
+.vde-rec-flutua {
+  position: absolute; right: 12px; bottom: 12px; display: flex; gap: 8px; align-items: center;
+  padding: 6px 10px; border-radius: 10px; background: rgba(0, 0, 0, .75); color: #fff; font-size: 12px;
+}
+.vde-rec-flutua b { color: #ff5a4e; }
+
+/* tela inicial (sem mídia) */
+.vde-inicio {
+  position: absolute; inset: 0; overflow: auto; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 24px 16px; gap: 10px; color: #fff; text-align: center;
+  background: radial-gradient(900px 520px at 50% 40%, #04413C 0%, #011B18 75%);
+}
+.vde-inicio.embutida { position: static; padding: 0; background: none; color: inherit; text-align: left; align-items: stretch; }
+.vde-inicio h2 { margin: 0; font-size: 22px; font-weight: 800; }
+.vde-inicio > .vde-dica { color: rgba(207, 235, 228, .8); max-width: 520px; }
+.vde-opcoes { display: flex; flex-direction: column; gap: 8px; width: min(520px, 100%); }
+.vde-op {
+  display: flex; flex-direction: column; gap: 2px; text-align: left; cursor: pointer;
+  padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, .18); background: rgba(0, 0, 0, .28); color: #fff;
+}
+.vde-op span { font-size: 12px; color: rgba(207, 235, 228, .78); }
+.vde-op b { font-size: 14px; }
+.vde-op:hover { border-color: #FFD84D; }
+.vde-op.principal { border-color: #FFD84D; background: rgba(255, 216, 77, .1); }
+.vde-op.gravando { flex-direction: row; align-items: center; justify-content: space-between; border-color: #ff5a4e; }
+.vde-op.gravando b { color: #ff8a80; }
+.vde-inicio.embutida .vde-op { background: var(--vde-campo); color: var(--vde-tinta); border-color: var(--vde-linha); }
+.vde-inicio.embutida .vde-op span { color: var(--vde-tinta3); }
+.vde-inicio.embutida .vde-op.principal { border-color: var(--vde-acento); }
+.vde-recentes { width: min(520px, 100%); text-align: left; font-size: 12px; margin-top: 8px; }
+.vde-recentes ul { margin: 4px 0; padding-left: 18px; }
+.vde-recentes em { font-style: normal; opacity: .75; }
+.vde-inicio:not(.embutida) .vde-recentes { color: rgba(207, 235, 228, .9); }
+
+/* inspetor */
+.vde-insp {
+  flex: 0 0 290px; overflow-y: auto; position: relative;
+  background: var(--vde-sup); border-left: 1px solid var(--vde-linha); padding: 8px 12px 16px; font-size: 12.5px;
+}
+.vde-insp section { padding: 8px 0 10px; border-bottom: 1px solid var(--vde-linha2); }
+.vde-insp h3 { margin: 0 0 6px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--vde-tinta3); }
+.vde-insp dl { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; margin: 0 0 6px; }
+.vde-insp dt { color: var(--vde-tinta3); }
+.vde-insp dd { margin: 0; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 11.5px; overflow-wrap: anywhere; }
+.vde-insp-x { position: absolute; right: 8px; top: 8px; border: 0; background: none; color: var(--vde-tinta3); cursor: pointer; font-size: 13px; display: none; }
+.vde-sub { margin: 8px 0 4px; font-weight: 700; font-size: 12px; }
+.vde-linha { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.vde-linha.fim { justify-content: flex-end; margin-top: 12px; }
+.vde-dica { margin: 4px 0; font-size: 12px; color: var(--vde-tinta3); line-height: 1.45; }
+.vde-num { width: 76px; padding: 3px 6px; border-radius: 6px; border: 1px solid var(--vde-linha); background: var(--vde-campo); }
+
+/* ---------------------------------------------------------------- transporte */
+.vde-transporte {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap;
+  padding: 6px 12px; background: var(--vde-sup); border-top: 1px solid var(--vde-linha);
+}
+.vde-tc { display: flex; flex-direction: column; min-width: 150px; line-height: 1.15; }
+.vde-tc b { font: 600 22px "IBM Plex Mono", ui-monospace, monospace; letter-spacing: .02em; color: var(--vde-acento); }
+:root[data-theme="light"] .vde-tc b { color: #04413C; }
+.vde-tc em { font-style: normal; font-size: 11px; color: var(--vde-tinta3); white-space: nowrap; }
+.vde-tbtns { display: flex; align-items: center; gap: 4px; }
+.vde-tb {
+  min-width: 34px; height: 32px; padding: 0 8px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--vde-linha); background: var(--vde-campo); color: var(--vde-tinta); font-size: 13px; font-weight: 700;
+}
+.vde-tb:hover:not(:disabled) { border-color: var(--vde-acento); }
+.vde-tb.on { background: var(--vde-acento); color: var(--vde-acento-tinta); border-color: var(--vde-acento); }
+.vde-play { min-width: 46px; font-size: 15px; }
+.vde-io { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+.vde-taxa, .vde-iotxt, .vde-dur { font: 500 11.5px "IBM Plex Mono", ui-monospace, monospace; color: var(--vde-tinta2); white-space: nowrap; }
+.vde-dur { margin-left: auto; }
+
+/* ---------------------------------------------------------------- ferramentas + timeline */
+.vde-ferr {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 6px; padding: 6px 10px;
+  background: var(--vde-bg); border-top: 1px solid var(--vde-linha);
+  overflow-x: auto; scrollbar-width: thin;
+}
+.vde-zoom { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+.vde-zoom input[type="range"] { width: 140px; accent-color: #FFD84D; }
+:root[data-theme="light"] .vde-zoom input[type="range"] { accent-color: #04413C; }
+.vde-tl { flex: 0 0 auto; background: #011B18; border-top: 1px solid rgba(255, 255, 255, .08); }
+.vde-tl-cv { display: block; width: 100%; touch-action: none; }
+
+/* ---------------------------------------------------------------- diálogos */
+.vde-modal-fundo { position: absolute; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, .5); padding: 16px; }
+.vde-modal {
+  width: min(520px, 100%); max-height: calc(100% - 32px); display: flex; flex-direction: column;
+  background: var(--vde-sup); color: var(--vde-tinta); border: 1px solid var(--vde-linha); border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .45);
+}
+.vde-modal.largo { width: min(720px, 100%); }
+.vde-modal header { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px 10px 16px; border-bottom: 1px solid var(--vde-linha); }
+.vde-modal-corpo { padding: 12px 16px 16px; overflow-y: auto; }
+.vde-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+.vde-form label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--vde-tinta2); }
+.vde-form select { padding: 6px 8px; border-radius: 7px; border: 1px solid var(--vde-linha); background: var(--vde-campo); color: var(--vde-tinta); color-scheme: dark; }
+:root[data-theme="light"] .vde-form select { color-scheme: light; }
+.vde-form .vde-check { flex-direction: row; align-items: center; gap: 6px; grid-column: 1 / -1; color: var(--vde-tinta); }
+.vde-prog { display: flex; flex-direction: column; gap: 8px; }
+.vde-prog-barra { height: 10px; border-radius: 6px; background: var(--vde-linha); overflow: hidden; }
+.vde-prog-barra span { display: block; height: 100%; background: #FFD84D; transition: width .2s linear; }
+:root[data-theme="light"] .vde-prog-barra span { background: #04413C; }
+.vde-erro { color: var(--vde-erro); font-size: 12.5px; }
+.vde-aviso { color: var(--vde-acento); font-size: 12px; margin: 4px 0; }
+:root[data-theme="light"] .vde-aviso { color: #7A5600; }
+.vde-ok p { margin: 4px 0; }
+.vde-atalhos { display: grid; grid-template-columns: auto 1fr; gap: 5px 14px; margin: 0; font-size: 12.5px; }
+.vde-atalhos dd { margin: 0; color: var(--vde-tinta2); }
+.vde-atalhos kbd { display: inline-block; padding: 1px 6px; border-radius: 5px; border: 1px solid var(--vde-linha); background: var(--vde-campo); font-size: 11.5px; white-space: nowrap; }
+
+.vde-soltar-aviso {
+  position: absolute; inset: 10px; z-index: 20; display: flex; align-items: center; justify-content: center;
+  border: 3px dashed #FFD84D; border-radius: 14px; background: rgba(2, 48, 44, .82); color: #fff; font-size: 18px; font-weight: 700; pointer-events: none;
+}
+
+/* ---------------------------------------------------------------- telas estreitas */
+@media (max-width: 999px) {
+  .vde-insp { position: absolute; right: 0; top: 0; bottom: 0; z-index: 6; width: min(300px, 88vw); box-shadow: -10px 0 30px rgba(0, 0, 0, .35); }
+  .vde-insp-x { display: block; }
+}
+@media (max-width: 700px) {
+  .vde-barra { gap: 4px; padding: 5px 8px; min-height: 42px; }
+  .vde-nome { display: none; }
+  .vde-rot { display: none; }
+  .vde-btn, .vde-seg button { padding: 6px 9px; font-size: 13px; }
+  .vde-msg {
+    position: absolute; top: 48px; left: 8px; right: 8px; z-index: 7; pointer-events: none; text-align: center;
+    white-space: normal; padding: 4px 8px; border-radius: 8px; background: rgba(0, 0, 0, .72); color: #FFD84D;
+  }
+  .vde-msg:empty { display: none; }
+  .vde-recorte-barra { top: 40px; }
+  .vde-transporte { gap: 6px 8px; padding: 5px 8px; justify-content: center; }
+  .vde-tc { min-width: 0; width: 100%; flex-direction: row; align-items: baseline; gap: 8px; justify-content: center; }
+  .vde-tc b { font-size: 19px; }
+  .vde-tc em { overflow: hidden; text-overflow: ellipsis; }
+  .vde-tb { min-width: 32px; height: 32px; padding: 0 6px; }
+  .vde-dur { display: none; }
+  .vde-zoom input[type="range"] { width: 90px; }
+  .vde-form { grid-template-columns: 1fr; }
+  .vde-meio { min-height: 150px; }
+}

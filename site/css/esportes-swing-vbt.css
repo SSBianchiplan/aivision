@@ -1,0 +1,83 @@
+/* esportes-swing-vbt.css — painéis Swing (CV-33) e VBT (CV-34). Só classes .esp-*. */
+
+.esp-grade { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 8px; margin-bottom: 8px; }
+.esp-grade label { min-width: 0; }
+.esp-sel, .esp-num {
+  width: 100%; box-sizing: border-box; padding: 6px 7px; border-radius: 7px; border: 1px solid var(--line);
+  background: rgba(0, 0, 0, .25); color: var(--ink); font: inherit; font-size: 12px;
+}
+.esp-sel.peq { width: auto; padding: 3px 5px; font-size: 11px; }
+.esp-check { display: flex; gap: 6px; align-items: center; font-size: 11.5px; color: var(--ink-2); align-self: end; padding-bottom: 6px; }
+.esp-link { color: var(--accent); white-space: nowrap; }
+.esp-aviso { color: var(--warn); }
+.esp-alerta { color: var(--err) !important; font-weight: 600; }
+.esp-banner-alerta {
+  margin: 0 0 10px; padding: 7px 9px; border-radius: 8px; font-size: 12px; line-height: 1.45;
+  background: rgba(255, 138, 128, .14); border: 1px solid rgba(255, 138, 128, .45); color: var(--err);
+}
+.esp-cab { display: flex; justify-content: space-between; align-items: center; gap: 6px; flex-wrap: wrap; }
+.esp-cab .hint { margin: 0; }
+.esp-nav { display: inline-flex; gap: 4px; }
+.esp-botoes { gap: 6px; flex-wrap: wrap; }
+.esp-sum { cursor: pointer; font-size: 12px; color: var(--ink-2); margin-top: 6px; }
+.esp-lista { padding-left: 18px; margin-top: 6px; }
+.esp-vel { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-top: 8px; }
+.esp-vel .ctl-label { margin: 0 2px 0 0; }
+.esp-vel .hint { margin: 0; font-size: 10.5px; }
+.esp-vel .btn.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+
+.esp-tabwrap { overflow-x: auto; margin-bottom: 6px; }
+.esp-tab { width: 100%; border-collapse: collapse; font-size: 11px; font-variant-numeric: tabular-nums; }
+.esp-tab th {
+  text-align: left; font-weight: 500; color: var(--ink-3); font-size: 9.5px; padding: 3px; border-bottom: 1px solid var(--line-2);
+}
+.esp-tab td { padding: 4px 3px; border-bottom: 1px solid var(--line-2); white-space: nowrap; }
+.esp-tab .n { text-align: right; font-family: var(--mono); }
+.esp-tab .esp-ref { color: var(--ink-3); }
+.esp-tab .esp-vazio { color: var(--ink-3); text-align: center; padding: 10px 3px; white-space: normal; }
+.esp-lista-swings tbody tr { cursor: pointer; }
+.esp-lista-swings tbody tr:hover { background: rgba(255, 255, 255, .04); }
+.esp-lista-swings tbody tr.sel { background: rgba(255, 216, 77, .12); }
+.esp-lista-swings tbody tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.esp-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; vertical-align: middle; margin-right: 5px; }
+
+.esp-barras { width: 100%; height: auto; display: block; margin: 2px 0 6px; }
+.esp-svg-txt { font: 9px var(--mono, monospace); fill: var(--ink-2); }
+.esp-traj-linha { display: flex; gap: 10px; align-items: center; margin-bottom: 6px; }
+.esp-traj-linha .hint { margin: 0; flex: 1 1 auto; }
+.esp-trajeto { height: 120px; width: auto; max-width: 45%; flex: none; background: rgba(0, 0, 0, .2); border-radius: 8px; }
+.esp-trajeto-swing { width: 100%; max-height: 220px; display: block; background: rgba(0, 0, 0, .2); border-radius: 8px; margin: 4px 0; }
+.esp-zonas { list-style: none; padding: 0; margin: 0 0 8px; font-size: 11px; color: var(--ink-2); display: grid; gap: 3px; }
+.esp-zonas em { font-style: normal; color: var(--ink-3); margin-left: 6px; font-family: var(--mono); font-size: 10px; }
+
+.esp-quadros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
+.esp-quadro { margin: 0; min-width: 0; }
+.esp-quadro figcaption { font-size: 10px; color: var(--ink-2); margin-top: 2px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.esp-quadro-img { position: relative; aspect-ratio: 1; border-radius: 7px; overflow: hidden; background: #000; }
+.esp-quadro-img img, .esp-quadro-img svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.esp-quadro-vazio {
+  aspect-ratio: 1; border-radius: 7px; border: 1px dashed var(--line); display: grid; place-items: center;
+  font-size: 10px; color: var(--ink-3); text-align: center; padding: 4px;
+}
+.esp-quadro.peq figcaption { display: none; }
+.esp-comparar { display: grid; gap: 5px; margin-bottom: 6px; }
+.esp-comp-cab, .esp-comp-linha { display: grid; grid-template-columns: 62px 1fr 1fr; gap: 6px; align-items: center; }
+.esp-comp-cab b { font-size: 11px; text-align: center; }
+.esp-comp-fase { font-size: 10.5px; color: var(--ink-2); }
+
+@media (max-width: 420px) {
+  .esp-grade { grid-template-columns: 1fr 1fr; }
+  .esp-comp-cab, .esp-comp-linha { grid-template-columns: 54px 1fr 1fr; }
+}
+
+/* VBT sem marcador: inclinação e marcação de 2 pontos sobre o vídeo */
+.esp-incl { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin: 6px 0 4px; }
+.esp-incl .ctl-label { margin: 0 2px 0 0; }
+.esp-incl .esp-sel.peq { max-width: 100%; }
+.esp-marcar { position: fixed; z-index: 4000; cursor: crosshair; touch-action: none; }
+.esp-marcar svg { position: absolute; inset: 0; pointer-events: none; }
+.esp-marcar-cab {
+  position: absolute; left: 50%; top: 10px; transform: translateX(-50%); display: flex; gap: 8px; align-items: center;
+  padding: 6px 10px; border-radius: 8px; background: rgba(2, 48, 44, .88); color: #f5f5f4; font-size: 12px;
+  max-width: calc(100% - 20px); flex-wrap: wrap; cursor: default;
+}

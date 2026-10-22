@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Treinar modelos · GPlanSiS|iaVision</title>
+<link rel="icon" type="image/svg+xml" href="/icons/favicon.svg">
+<script>
+  /* tema do iaVision (mesma chave do app: dark, light ou code) antes de pintar: sem «piscar» escuro→claro */
+  try { var t = localStorage.getItem('gplansis.theme'); if (t !== 'light' && t !== 'code') t = 'dark'; document.documentElement.setAttribute('data-theme', t); document.documentElement.style.colorScheme = t === 'light' ? 'light' : 'dark'; }
+  catch (e) { document.documentElement.setAttribute('data-theme', 'dark'); }
+</script>
+<link rel="stylesheet" href="treino.css?v=7">
+</head>
+<body>
+<header class="top">
+  <img src="/icons/favicon.svg" alt="" width="28" height="28">
+  <div class="tt">GPlanSiS|<b>iaVision</b> · Treinar modelos</div>
+  <span id="estado" class="pill"></span>
+  <span id="quem" class="pill quem" hidden></span>
+  <div class="grow"></div>
+  <button id="tema" class="btn ghost tema" type="button" title="Tema: Escuro (iaVision) · Claro · Code Dark — o mesmo do iaVision" aria-label="Tema">☾</button>
+  <a class="btn ghost" href="/">← Voltar ao GPlanSiS|iaVision</a>
+  <button id="sair" class="btn ghost" hidden>Sair</button>
+</header>
+
+<section id="login" class="login" hidden>
+  <div class="card">
+    <h2>Treinar modelos</h2>
+    <p class="mut">Área restrita: o treino roda no servidor. Digite a senha do treino.</p>
+    <form id="fLogin"><input id="senha" type="password" placeholder="Senha" autocomplete="current-password" required>
+      <button class="btn pri">Entrar</button></form>
+    <div id="lerr" class="err"></div>
+    <div class="sso"><button id="lsso" type="button" class="btn ghost">Entrar com a minha conta (admin)</button>
+      <span class="mut small">Administradores do iaVision entram sem senha, pela sessão já aberta.</span></div>
+  </div>
+</section>
+
+<main id="app" hidden>
+  <aside class="side">
+    <div class="sh"><b>Projetos</b><button id="novo" class="btn sm pri">＋ Novo</button></div>
+    <div id="projetos" class="plist"></div>
+    <div class="mut small pad">Cada projeto é um <b>detector</b> (RF-DETR livre ou YOLO26) com as suas classes, ou uma <b>inspeção de anomalia</b> (PatchCore) treinada só com peças boas. Cada projeto guarda vários treinos com nome.</div>
+  </aside>
+  <section class="main">
+    <nav class="tabs" id="tabs">
+      <button data-t="guia" class="on">📘 Como criar e treinar</button>
+      <button data-t="imgs">🖼 Imagens e rótulos</button>
+      <button data-t="yt">▶ Do YouTube</button>
+      <button data-t="treinar">🏋 Treinar</button>
+      <button data-t="modelos">📦 Modelos</button>
+    </nav>
+    <div id="vazio" class="empty">Crie um projeto em <b>＋ Novo</b> ou escolha um na lista. Comece pelo guia ao lado.</div>
+    <div id="t-guia" class="tab"></div>
+    <div id="t-imgs" class="tab" hidden></div>
+    <div id="t-yt" class="tab" hidden></div>
+    <div id="t-treinar" class="tab" hidden></div>
+    <div id="t-modelos" class="tab" hidden></div>
+  </section>
+</main>
+
+<div id="rotulador" class="rot" hidden>
+  <div class="rbar">
+    <button class="btn ghost" id="rPrev" title="Anterior (←)">◀</button>
+    <span id="rNome" class="mut"></span>
+    <button class="btn ghost" id="rNext" title="Próxima (→)">▶</button>
+    <div id="rClasses" class="rcls"></div>
+    <div class="grow"></div>
+    <button class="btn ghost" id="rVazio" title="Esta imagem não tem nenhum objeto das classes">Sem objetos</button>
+    <button class="btn ghost" id="rDel" title="Apagar caixa selecionada (Delete)">Apagar caixa</button>
+    <button class="btn pri" id="rFechar">Salvar e fechar</button>
+  </div>
+  <div id="rOrigem" class="rorig mut small"></div>
+  <div class="rwrap"><canvas id="rCanvas"></canvas></div>
+  <div class="rhelp mut small">Arraste para desenhar uma caixa · clique numa caixa para selecionar · <b>1–9</b> escolhe a classe · <b>Delete</b> apaga · <b>←/→</b> troca de imagem (salva sozinho) · <b>Esc</b> fecha</div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+<script src="treino.js?v=6"></script>
+<script src="treino-youtube.js?v=4"></script>
+<script src="treino-camera.js?v=1"></script>
+</body>
+</html>

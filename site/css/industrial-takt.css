@@ -1,0 +1,238 @@
+/* ==========================================================================
+   INDUSTRIAL — GPlanSiS|Takt, tempo de posto (CV-39)
+   Carregado sob demanda pelo painel e pela tela cheia (takt-comum.js ›
+   carregarCss). Tela .tkt no tema do iaVision: teal escuro no tema escuro,
+   branco e verde no claro — as mesmas variáveis do Studio BeltScan. O vídeo
+   fica no palco escuro; Gantt e planta leem --tkt-* e seguem o tema.
+   Estados com cor E padrão (como o Takt): ocioso hachurado, vago pontilhado.
+   ========================================================================== */
+
+.tkt {
+  --tkt-bg: #02302C; --tkt-sup: #04413C; --tkt-painel: rgba(4, 65, 60, .72);
+  --tkt-linha: rgba(255, 255, 255, .13); --tkt-linha2: rgba(255, 255, 255, .07);
+  --tkt-tinta: #FFFFFF; --tkt-tinta2: #CFEBE4; --tkt-tinta3: rgba(207, 235, 228, .66);
+  --tkt-acento: #FFD84D; --tkt-acento-tinta: #04413C; --tkt-campo: #022621;
+  --tkt-ok: #8CE0C8; --tkt-amb: #F2A900; --tkt-erro: #FF8A80;
+  position: fixed; inset: 0; z-index: 5000;
+  display: flex; flex-direction: column;
+  background: var(--tkt-bg); color: var(--tkt-tinta);
+  font-family: Archivo, "Helvetica Neue", Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+:root[data-theme="light"] .tkt {
+  --tkt-bg: #EAF3F1; --tkt-sup: #FFFFFF; --tkt-painel: #FFFFFF;
+  --tkt-linha: rgba(4, 65, 60, .18); --tkt-linha2: rgba(4, 65, 60, .09);
+  --tkt-tinta: #04413C; --tkt-tinta2: #285C56; --tkt-tinta3: #4A6F6A;
+  --tkt-acento: #04413C; --tkt-acento-tinta: #FFFFFF; --tkt-campo: #F6FAF9;
+  --tkt-ok: #176B53; --tkt-amb: #7A5600; --tkt-erro: #B3261E;
+}
+
+/* estados: cor + padrão (independe de cor) — valem no painel e na tela */
+.st-PRODUTIVO { background: #4FB387; }
+.st-OCIOSO_NO_POSTO { background: repeating-linear-gradient(135deg, #E0A13A 0 5px, #F0C67A 5px 8px); }
+.st-VAGO { background: radial-gradient(#F2B4A6 1.2px, #D8735D 1.5px) 0 0 / 6px 6px; }
+.st-PAUSA_PROGRAMADA { background: #93A0B5; }
+.st-NAO_OBSERVADO { background: repeating-linear-gradient(0deg, #6B7571 0 3px, #8A9490 3px 4px); }
+.tkt-sw { display: inline-block; width: 16px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; flex: 0 0 auto; }
+
+/* ---------------------------------------------------------------- barra */
+.tkt-barra {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 6px;
+  padding: 6px 10px; min-height: 46px;
+  background: var(--tkt-sup); border-bottom: 1px solid var(--tkt-linha);
+  overflow-x: auto; scrollbar-width: none;
+}
+.tkt-barra::-webkit-scrollbar { display: none; }
+.tkt-titulo { font-size: 14px; font-weight: 800; white-space: nowrap; padding-left: 8px; border-left: 4px solid #FFD84D; margin-right: 4px; letter-spacing: .02em; }
+.tkt-titulo .tkt-marca { font-weight: 500; font-size: .78em; color: var(--tkt-tinta2); margin-right: 4px; }
+.tkt-titulo i { font-style: normal; color: #FFD84D; font-weight: 300; margin: 0 1px; }
+:root[data-theme="light"] .tkt-titulo i { color: #C69A00; }
+.tkt-chip {
+  flex: 0 0 auto; font: 600 11px "IBM Plex Mono", ui-monospace, monospace; padding: 4px 8px; border-radius: 6px;
+  border: 1px solid var(--tkt-linha); color: var(--tkt-tinta2); white-space: nowrap;
+}
+.tkt-chip.ok { border-color: var(--tkt-ok); color: var(--tkt-ok); }
+.tkt-chip.amb { border-color: var(--tkt-amb); color: var(--tkt-amb); }
+.tkt-chip.erro { border-color: var(--tkt-erro); color: var(--tkt-erro); }
+.tkt-msg { flex: 1 1 auto; min-width: 100px; font-size: 12px; color: var(--tkt-acento); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; }
+:root[data-theme="light"] .tkt-msg { color: var(--tkt-tinta2); }
+
+.tkt-btn, .tkt-seg button {
+  flex: 0 0 auto; font: inherit; font-size: 12px; font-weight: 600; line-height: 1.2;
+  color: var(--tkt-tinta); background: var(--tkt-campo);
+  border: 1px solid var(--tkt-linha); border-radius: 7px; padding: 6px 10px; cursor: pointer; white-space: nowrap;
+}
+select.tkt-btn { padding: 5px 8px; max-width: 100%; color-scheme: dark; }
+:root[data-theme="light"] select.tkt-btn { color-scheme: light; }
+.tkt-btn:hover, .tkt-seg button:hover { border-color: var(--tkt-acento); }
+.tkt-btn.on, .tkt-seg button.on, .tkt-btn.acento { background: var(--tkt-acento); border-color: var(--tkt-acento); color: var(--tkt-acento-tinta); }
+.tkt-btn:focus-visible, .tkt-seg button:focus-visible, .tkt input:focus-visible { outline: 2px solid var(--tkt-acento); outline-offset: 2px; }
+.tkt-btn.mini { font-size: 11px; padding: 3px 8px; }
+label.tkt-btn { display: inline-block; }
+.tkt-fechar { font-size: 14px; padding: 5px 11px; }
+.tkt-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.tkt-seg { display: inline-flex; margin-left: auto; }
+.tkt-seg button { border-radius: 0; font-size: 11.5px; padding: 4px 9px; }
+.tkt-seg button:first-child { border-radius: 7px 0 0 7px; }
+.tkt-seg button:last-child { border-radius: 0 7px 7px 0; border-left: 0; }
+.tkt-menu-w { position: relative; flex: 0 0 auto; }
+.tkt-menu {
+  position: fixed; top: 46px; right: 60px; z-index: 5200; display: grid; min-width: 230px;
+  background: var(--tkt-sup); border: 1px solid var(--tkt-linha); border-radius: 9px; padding: 4px; box-shadow: 0 14px 40px rgba(0, 0, 0, .35);
+}
+.tkt-menu button { text-align: left; font: inherit; font-size: 12.5px; color: var(--tkt-tinta); background: none; border: 0; border-radius: 6px; padding: 8px 10px; cursor: pointer; }
+.tkt-menu button:hover, .tkt-menu button:focus-visible { background: var(--tkt-campo); outline: none; }
+
+.tkt-avisos { flex: 0 0 auto; display: grid; gap: 1px; }
+.tkt-aviso { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 6px 14px; font-size: 12.5px; background: rgba(255, 216, 77, .10); border-bottom: 1px solid rgba(255, 216, 77, .28); }
+.tkt-aviso.amb { background: rgba(242, 169, 0, .16); border-color: rgba(242, 169, 0, .4); }
+.tkt-aviso.erro { background: rgba(255, 138, 128, .16); border-color: rgba(255, 138, 128, .45); font-weight: 600; }
+:root[data-theme="light"] .tkt-aviso { background: #FFF6D6; border-color: rgba(166, 120, 0, .35); color: #5C4300; }
+:root[data-theme="light"] .tkt-aviso.erro { background: #FDECEA; border-color: rgba(179, 38, 30, .32); color: #8C1D18; }
+
+/* ---------------------------------------------------------------- grade */
+.tkt-grade {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  display: grid; gap: 10px; padding: 10px 12px 120px;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  grid-template-areas:
+    "vid kpi"
+    "vid post"
+    "gantt gantt"
+    "planta al";
+  align-content: start;
+}
+.tkt-vid { grid-area: vid; } .tkt-kpi { grid-area: kpi; } .tkt-post { grid-area: post; }
+.tkt-gantt { grid-area: gantt; } .tkt-planta { grid-area: planta; } .tkt-al { grid-area: al; }
+.tkt-p { background: var(--tkt-painel); border: 1px solid var(--tkt-linha); border-radius: 10px; padding: 9px 11px; min-width: 0; }
+.tkt-p h2 { margin: 0 0 7px; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tkt-p h2 small { font-weight: 400; font-size: 11px; color: var(--tkt-tinta3); }
+.tkt-p canvas { display: block; width: 100%; border-radius: 6px; }
+.tkt-cv-vid { aspect-ratio: 16 / 9; background: #02302C; }
+.tkt-cv-vid.cal { cursor: crosshair; outline: 2px dashed #7FB2FF; outline-offset: -2px; }
+.tkt-cv-gantt { height: 120px; }
+.tkt-cv-planta { height: 300px; }
+.tkt-acoes { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.tkt-acoes .tkt-btn { font-size: 11.5px; padding: 5px 9px; }
+.tkt-dica { margin: 6px 0; font-size: 11.5px; line-height: 1.5; color: var(--tkt-tinta3); }
+.tkt-ck { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 400; color: var(--tkt-tinta2); cursor: pointer; }
+.tkt-p h2 .tkt-ck { margin-left: auto; }
+
+/* calibração */
+.tkt-cal { margin-top: 8px; border-top: 1px solid var(--tkt-linha2); padding-top: 4px; }
+.tkt-tab { border-collapse: collapse; width: 100%; font-size: 12px; }
+.tkt-tab th { text-align: left; font-weight: 600; color: var(--tkt-tinta3); padding: 3px 5px; border-bottom: 1px solid var(--tkt-linha); }
+.tkt-tab td { padding: 3px 5px; border-bottom: 1px solid var(--tkt-linha2); }
+.tkt-tab tr.sel td { background: rgba(255, 216, 77, .12); }
+.tkt-tab td.vazio { color: var(--tkt-tinta3); }
+.tkt input[type="number"], .tkt input[type="text"], .tkt input[type="time"], .tkt input[type="datetime-local"] {
+  font: inherit; font-size: 12px; width: 100%; min-width: 0; box-sizing: border-box; color: var(--tkt-tinta); background: var(--tkt-campo);
+  border: 1px solid var(--tkt-linha); border-radius: 6px; padding: 5px 7px; color-scheme: dark;
+}
+:root[data-theme="light"] .tkt input { color-scheme: light; }
+.tkt-cal-st { margin: 6px 0; font-size: 12px; color: var(--tkt-tinta2); }
+.tkt-cal-st.ok { color: var(--tkt-ok); font-weight: 600; }
+.tkt-cal-st.amb { color: var(--tkt-amb); font-weight: 600; }
+
+/* KPIs */
+.tkt-kpi-prin { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.tkt-kpi-prin b { font: 600 44px/1 "IBM Plex Mono", ui-monospace, monospace; color: var(--tkt-ok); }
+.tkt-kpi-prin span { font-size: 12px; color: var(--tkt-tinta3); }
+.tkt-kpi-prin em.erro { font-style: normal; color: var(--tkt-erro); font-weight: 600; }
+.tkt-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.tkt-k { background: rgba(0, 0, 0, .18); border: 1px solid var(--tkt-linha2); border-radius: 8px; padding: 7px 8px; min-width: 0; }
+:root[data-theme="light"] .tkt-k { background: #F1F8F6; }
+.tkt-k b { display: block; font: 600 17px "IBM Plex Mono", ui-monospace, monospace; color: var(--tkt-tinta); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:root[data-theme="light"] .tkt-k b[style] { filter: brightness(.62); }
+.tkt-k em { font-style: normal; font-size: 10.5px; color: var(--tkt-tinta3); }
+.tkt-tempos { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 2px 14px; margin: 9px 0 0; font-size: 12px; }
+.tkt-tempos div { display: flex; justify-content: space-between; border-bottom: 1px solid var(--tkt-linha2); padding: 3px 0; }
+.tkt-tempos dt { color: var(--tkt-tinta2); display: flex; align-items: center; }
+.tkt-tempos dd { margin: 0; font-family: "IBM Plex Mono", ui-monospace, monospace; }
+
+/* postos */
+.tkt-postos { list-style: none; margin: 0; padding: 0; max-height: 330px; overflow: auto; }
+.tkt-postos li { display: grid; grid-template-columns: 22px minmax(0, 1fr) minmax(60px, 32%) 50px; gap: 8px; align-items: center; padding: 6px 2px; border-bottom: 1px solid var(--tkt-linha2); }
+.tkt-postos li.vazio { display: block; color: var(--tkt-tinta3); font-size: 12px; }
+.tkt-rank { font: 600 12px "IBM Plex Mono", monospace; color: var(--tkt-tinta3); text-align: center; }
+.tkt-pn { min-width: 0; }
+.tkt-pn b { display: block; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tkt-pn small { display: flex; align-items: center; font-size: 11px; color: var(--tkt-tinta3); white-space: nowrap; overflow: hidden; }
+.tkt-barra-est { display: flex; height: 12px; border-radius: 3px; overflow: hidden; background: rgba(127, 127, 127, .14); }
+.tkt-barra-est span { height: 100%; }
+.tkt-pp { font: 600 14px "IBM Plex Mono", monospace; text-align: right; }
+
+.tkt-legenda { display: flex; flex-wrap: wrap; gap: 4px 14px; list-style: none; margin: 7px 0 0; padding: 0; font-size: 11px; color: var(--tkt-tinta3); }
+.tkt-legenda li { display: flex; align-items: center; }
+
+/* alarmes */
+.tkt-alarmes { list-style: none; margin: 0; padding: 0; }
+.tkt-alarmes li { display: grid; grid-template-columns: 96px 1fr; gap: 2px 8px; padding: 6px 6px; border-left: 6px solid transparent; border-bottom: 1px solid var(--tkt-linha2); font-size: 12px; }
+.tkt-alarmes li.p1 { border-left-color: #FF4D4D; } .tkt-alarmes li.p2 { border-left-color: #F2A900; }
+.tkt-alarmes li small { grid-column: 2; color: var(--tkt-tinta3); font-size: 11px; }
+.tkt-alarmes li.nr { animation: tkt-pisca 1s steps(2, start) infinite; }
+.tkt-alarmes li.vazio { display: block; color: var(--tkt-tinta3); border-left: 0; }
+@keyframes tkt-pisca { to { background: rgba(255, 77, 77, .16); } }
+@media (prefers-reduced-motion: reduce) { .tkt-alarmes li.nr, .tkp-al li.nr { animation: none; outline: 2px solid #FF4D4D; } }
+.tkt-jt { max-height: 300px; overflow: auto; }
+.tkt-jt table { border-collapse: collapse; width: 100%; font-size: 11.5px; }
+.tkt-jt th { text-align: left; font-weight: 600; color: var(--tkt-tinta3); padding: 3px 5px; border-bottom: 1px solid var(--tkt-linha); position: sticky; top: 0; background: var(--tkt-sup); }
+.tkt-jt td { padding: 3px 5px; border-bottom: 1px solid var(--tkt-linha2); }
+
+/* ---------------------------------------------------------------- Configurar */
+.tkt-cfg {
+  position: absolute; top: 46px; right: 0; bottom: 0; width: min(440px, 100vw); z-index: 5150;
+  display: flex; flex-direction: column; background: var(--tkt-sup); border-left: 1px solid var(--tkt-linha);
+  box-shadow: -14px 0 40px rgba(0, 0, 0, .35);
+}
+.tkt-cfg-h { display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; border-bottom: 1px solid var(--tkt-linha); }
+.tkt-cfg-c { flex: 1 1 auto; overflow-y: auto; padding: 4px 12px 140px; }
+.tkt-cfg h3 { margin: 14px 0 6px; font-size: 12.5px; color: var(--tkt-tinta2); text-transform: uppercase; letter-spacing: .05em; }
+.tkt-campo { display: grid; grid-template-columns: 1fr 120px; gap: 8px; align-items: center; margin: 4px 0; font-size: 12px; color: var(--tkt-tinta2); }
+.tkt-campo:has(select) { grid-template-columns: 1fr; }
+.tkt-turno { border: 1px solid var(--tkt-linha2); border-radius: 8px; padding: 6px; margin: 6px 0; }
+.tkt-turno-l { display: grid; grid-template-columns: 54px 1fr 1fr auto; gap: 5px; align-items: center; }
+.tkt-dias { display: flex; flex-wrap: wrap; gap: 4px 9px; margin: 6px 0 2px; font-size: 11.5px; }
+.tkt-dias label { display: inline-flex; align-items: center; gap: 3px; }
+
+/* app por trás: a barra de vídeo fica por cima da tela, no canto */
+body.tkt-aberto .vctl:not(.moved) { bottom: 14px; left: 32%; }
+
+/* ---------------------------------------------------------------- painel do hub */
+.tkp-studio { display: block; width: 100%; margin: 0 0 7px; font-weight: 700; }
+.tkp-postos { list-style: none; margin: 0 0 6px; padding: 0; font-size: 11.5px; }
+.tkp-postos li { display: grid; grid-template-columns: auto minmax(0, auto) 1fr auto; gap: 6px; align-items: center; padding: 3px 0; border-bottom: 1px solid var(--line-2); }
+.tkp-postos li span { color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tkp-postos li em { font-style: normal; font-family: var(--mono); font-weight: 600; }
+.tkp-postos li.vazio { display: block; color: var(--ink-3); }
+.tkp-leg { display: flex; flex-wrap: wrap; gap: 3px 10px; font-size: 10px; color: var(--ink-3); margin-bottom: 8px; }
+.tkp-leg span { display: inline-flex; align-items: center; }
+.tkp-leg .tkt-sw { width: 12px; height: 8px; margin-right: 4px; }
+.tkp-al { list-style: none; margin: 0 0 8px; padding: 0; font-size: 11.5px; }
+.tkp-al li { padding: 3px 0; border-bottom: 1px solid var(--line-2); }
+.tkp-al li.nr { animation: tkt-pisca 1s steps(2, start) infinite; }
+
+/* ---------------------------------------------------------------- telas menores */
+@media (max-width: 900px) {
+  .tkt-grade {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "vid" "kpi" "post" "gantt" "planta" "al";
+    padding: 8px 8px 150px;
+  }
+  body.tkt-aberto .vctl:not(.moved) { left: 50%; bottom: 10px; }
+}
+@media (max-width: 600px) {
+  .tkt-titulo .tkt-marca, .tkt-titulo .tkt-gp { display: none; }
+  .tkt-barra { flex-wrap: wrap; overflow: visible; row-gap: 5px; }
+  .tkt-fechar { margin-left: auto; }
+  .tkt-msg { order: 99; flex: 1 1 100%; text-align: left; white-space: normal; font-size: 11.5px; }
+  .tkt-msg:empty { display: none; }
+  .tkt-chip { font-size: 10px; padding: 3px 6px; }
+  .tkt-cfg { top: 0; }
+  .tkt-menu { right: 8px; top: 96px; }
+  .tkt-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tkt-kpi-prin b { font-size: 36px; }
+  .tkt-postos li { grid-template-columns: 18px minmax(0, 1fr) 70px 42px; gap: 6px; }
+  .tkt-cv-planta { height: 240px; }
+  .tkt-campo { grid-template-columns: 1fr 100px; }
+}

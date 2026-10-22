@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GPlanSiS|iaVision · Relações — grafos de cena de vocabulário aberto (RelateAnything)</title>
+<meta name="description" content="RelateAnything predicts relations between the objects in a picture (person riding horse, cup on table) from any list of relation words you type. A detector plus a 53M-parameter relation model, running entirely client-side with ONNX Runtime Web. Nothing is uploaded.">
+<meta property="og:title" content="GPlanSiS|iaVision · Relações — grafos de cena de vocabulário aberto (RelateAnything)">
+<meta property="og:description" content="Any picture, any relation words, no upload. A detector plus an open-vocabulary relation model, running entirely in your browser.">
+<meta property="og:url" content="https://aivision.gplansis.com/relacoes/">
+<meta property="og:image" content="https://aivision.gplansis.com/relacoes/assets/screenshots/demo.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#ffffff">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='9' cy='22' r='6' fill='%230b4f8a'/%3E%3Ccircle cx='23' cy='10' r='6' fill='%230e7c86'/%3E%3Cpath d='M13 18 L19 14' stroke='%23111417' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E">
+<script src="coi-serviceworker.js"></script>
+</head>
+<body>
+
+<nav class="top">
+  <a class="brand" href="#top" aria-label="RelateAnything">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="9" cy="22" r="6" fill="var(--accent)"/><circle cx="23" cy="10" r="6" fill="var(--ref)"/><path d="M13 18 L19 14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+    GPlanSiS|iaVision <span class="tag">Relações · RelateAnything</span>
+  </a>
+  <div class="right">
+    <span id="backend" class="pill">starting…</span>
+    <a href="#about">How it works</a>
+    <a href="/app.html" title="Sistema GPlanSiS|iaVision (câmera, pipeline, operadores)">GPlanSiS|iaVision · sistema</a>
+    <a href="/" title="Página do GPlanSiS|iaVision">Início</a>
+    <a href="https://relacoes.gplansis.com/" rel="noopener" title="Mesmo modelo rodando no servidor (vps2): Gradio + API">servidor</a>
+    <a href="https://github.com/Maelic/RelateAnything" rel="noopener">GitHub</a>
+  </div>
+</nav>
+
+<div class="intro" id="top">
+  <p>RelateAnything reads a picture and says how the things in it relate:
+     <span class="trip-example">person <span class="p">riding</span> horse</span>. The relations are words
+     <em>you</em> choose. Type any list and the model scores every pair of objects against it.</p>
+  <p class="fine">The graph below is what the model produced for this photo. Nothing has been downloaded yet, and
+     nothing is uploaded. When you want it on your own images, the models load into this page and run there.</p>
+</div>
+
+<main>
+  <div class="work">
+    <div class="viewer">
+      <div id="stage">
+        <canvas id="canvas" hidden></canvas>
+        <video id="video" hidden playsinline muted></video>
+        <div id="placeholder">
+          <svg viewBox="0 0 64 64" class="ghost" aria-hidden="true"><rect x="6" y="14" width="24" height="20" rx="3"/><rect x="34" y="30" width="24" height="20" rx="3"/><path d="M30 26 L36 36" stroke-linecap="round"/></svg>
+          <p>loading a sample…</p>
+        </div>
+        <div id="hud" class="hud"></div>
+      </div>
+
+      <div class="viewbar">
+        <div id="graph-tabs" class="tabs" hidden>
+          <button data-g="merged" class="on">one graph</button>
+          <button data-g="spatial" class="sp">spatial</button>
+          <button data-g="semantic" class="se">semantic</button>
+        </div>
+        <span class="legend">
+          <span class="sp"><i></i>spatial — where things are</span>
+          <span class="se"><i></i>semantic — what things do</span>
+        </span>
+      </div>
+
+      <div id="triplets"></div>
+    </div>
+    <div id="hint" class="hint" hidden></div>
+  </div>
+
+  <aside class="panel">
+    <div id="mode" class="mode">
+      <span class="k" id="mode-k">precomputed · nothing downloaded</span>
+      <p id="mode-text">These are the relation head's own outputs for this photo, decoded in your browser as you
+        change the words. It is the same decode the live model uses. Load the models to run it on your own
+        images, video or webcam.</p>
+      <button id="btn-golive" class="btn primary">
+        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4 2.5v11l9-5.5z"/></svg>
+        Run it live · 129 MB
+      </button>
+      <progress id="mode-progress" hidden></progress>
+      <span id="mode-status" class="status"></span>
+    </div>
+
+    <div class="block">
+      <h2><span class="n">1</span> Picture</h2>
+      <div class="sources">
+        <label class="btn segbtn" id="lbl-image">Image<input type="file" id="file-image" accept="image/*" hidden></label>
+        <label class="btn segbtn" id="lbl-video">Video<input type="file" id="file-video" accept="video/*" hidden></label>
+        <button id="btn-cam" class="segbtn">Webcam</button>
+        <button id="btn-stop" class="segbtn stop" hidden>Stop</button>
+      </div>
+      <div class="thumbs" id="samples"></div>
+      <div class="row tight">
+        <span class="micro">objects from</span>
+        <div class="seg" id="detseg">
+          <button data-det="yoloe-11s-pf" class="on">names</button>
+          <button data-det="fastsam-s">colours</button>
+        </div>
+      </div>
+      <p class="micro" id="detnote" style="margin:6px 0 0"></p>
+      <label class="switch"><input type="checkbox" id="masks" checked><span>instance masks <em>which pixels each object owns; the relation model reads boxes, so masks change the picture, never the predictions</em></span></label>
+    </div>
+
+    <div class="block">
+      <h2><span class="n">2</span> Relation words <span id="badge-vocab" class="badge">default</span></h2>
+      <p class="why">This list is the model's entire vocabulary for this frame. Remove a word and it can never be
+        predicted; add one and it competes with the rest.</p>
+      <div class="presets" id="pred-presets"></div>
+      <textarea id="predicates" rows="4"></textarea>
+      <div class="row tight">
+        <button id="btn-apply-predicates" class="small">apply</button>
+        <span id="predicates-info" class="micro"></span>
+      </div>
+      <div id="pred-chips" class="chips"></div>
+    </div>
+
+    <details class="adv" id="advanced">
+      <summary>Advanced <span class="micro" style="text-transform:none;letter-spacing:0">models, detectors, decode</span></summary>
+      <div class="inner">
+        <div class="sub">
+          <h3>Relation model</h3>
+          <div id="relation-card"></div>
+        </div>
+        <div class="sub">
+          <h3>Object detector <span class="micro">pick one</span></h3>
+          <div id="detector-cards"></div>
+        </div>
+        <div class="sub">
+          <h3>Text encoders <span class="micro">optional — to type new words</span></h3>
+          <div id="encoder-cards"></div>
+        </div>
+        <div class="sub">
+          <h3>Object classes</h3>
+          <div class="row">
+            <label class="switch"><input type="radio" name="objmode" value="asis" checked><span>as-is</span></label>
+            <label class="switch"><input type="radio" name="objmode" value="custom"><span>custom list</span></label>
+          </div>
+          <textarea id="classes" rows="2" placeholder="person, chair, cup, laptop, dog, bicycle, forklift, hi-vis vest" disabled></textarea>
+          <div class="row tight">
+            <button id="btn-apply-classes" class="small" disabled>apply classes</button>
+            <span id="classes-info" class="micro"></span>
+          </div>
+        </div>
+        <div class="sub sliders">
+          <h3>Decode</h3>
+          <label><span>relation threshold <output id="thr-v">0.30</output></span><input type="range" id="thr" min="0.05" max="0.95" step="0.01" value="0.30"></label>
+          <label><span>max relations <output id="topk-v">12</output></span><input type="range" id="topk" min="1" max="60" step="1" value="12"></label>
+          <label><span>relatedness weight <output id="pairw-v">1.0</output></span><input type="range" id="pairw" min="0" max="2" step="0.1" value="1"></label>
+          <label><span>detector confidence <output id="detconf-v">0.25</output></span><input type="range" id="detconf" min="0.05" max="0.9" step="0.01" value="0.25"></label>
+          <label><span>max objects <output id="maxdet-v">32</output></span><input type="range" id="maxdet" min="2" max="32" step="1" value="32"></label>
+          <p class="micro" id="live-only-note">The last two need the live detector; the precomputed graphs ship with their boxes already chosen.</p>
+        </div>
+        <div class="sub toggles">
+          <h3>Graphs</h3>
+          <label class="switch"><input type="checkbox" id="decompose"><span>two-graph decode <em>the same forward pass ranked separately inside the spatial and semantic words, then cut at top-k per stream</em></span></label>
+          <label class="switch" title="Best-F1 threshold per predicate, measured for this checkpoint on 5,000 MegaSG val images with ground-truth boxes and the predicate score alone, then mapped through the same calibration affine as the displayed score."><input type="checkbox" id="bankthr"><span>per-predicate thresholds <em>calibrated on this checkpoint, stricter than the slider for most words</em></span></label>
+        </div>
+        <div class="sub">
+          <h3>Runtime</h3>
+          <div class="row">
+            <label class="micro">backend
+              <select id="backend-select">
+                <option value="auto">auto</option>
+                <option value="webgpu">WebGPU</option>
+                <option value="wasm">WebAssembly</option>
+              </select>
+            </label>
+            <button id="btn-clear-cache" class="small">clear cached models</button>
+          </div>
+        </div>
+      </div>
+    </details>
+  </aside>
+</main>
+
+<section id="about">
+  <div class="col">
+    <p class="kicker">How it works</p>
+    <h2>Two models, one calibrated score, no server</h2>
+    <div class="two">
+      <div class="body">
+        <h3>Reading the picture</h3>
+        <p>Coloured boxes are the objects a detector found; each arrow is a relation, drawn from subject to object.
+          <span style="color:var(--spatial);font-weight:600">Amber</span> arrows are spatial relations, about where things
+          are: <span class="pred sp">on</span>, <span class="pred sp">behind</span>, <span class="pred sp">to the left of</span>.
+          <span style="color:var(--semantic);font-weight:600">Green</span> arrows are semantic ones, about what things do:
+          <span class="pred se">riding</span>, <span class="pred se">holding</span>, <span class="pred se">looking at</span>. Only the strongest few arrows are
+          labelled on the image. The list under it has them all, and hovering a row highlights its arrow.</p>
+        <p>The number on each row is a calibrated score, <code>σ(a·(pred + w·pair) + b)</code>. The demo, the Python
+          pipeline and the evaluator all use it, so 0.60 means the same thing everywhere.</p>
+
+        <h3>Where the relation words come from</h3>
+        <p>The model has no fixed list of relations stored in its weights. A small distilled text encoder turns each
+          predicate string into a direction in the relation head's text space, and the head scores every object pair
+          against those directions. Editing the list points the model somewhere else without retraining it. Remove a
+          word and it can never be predicted; add one the model has no direction for and it loses to the rest.</p>
+        <p>The model is a DINOv3 ViT-S+/16 backbone (53M parameters) with a pair-sampling relation head, trained on
+          RA-4M (474k machine-annotated images), raw Visual Genome and a 5% share of HICO-DET train, with
+          source-aware negative masking. It is never given object class labels, at training or at inference. The
+          graph comes from pixels and box coordinates alone.</p>
+      </div>
+      <div class="body">
+        <h3>Precomputed, then live</h3>
+        <p>The page opens on a stored capture of the relation head's raw logits for the sample photos, so the decode
+          you drive with the words and sliders is the real one, with nothing downloaded. Pressing <em>Run it live</em>
+          fetches the relation model (105 MB), the YOLOE-11s prompt-free detector (24 MB) and a 28 MB WebAssembly
+          runtime; everything after that runs on your machine, webcam included. The browser caches the files, and
+          <em>clear cached models</em> frees the space.</p>
+
+        <h3>Detectors are interchangeable</h3>
+        <p><strong>YOLOE</strong> gives open-vocabulary boxes and instance masks, prompt-free over 4,585 classes or
+          re-targeted live to any class list you type. <strong>FastSAM</strong> returns segments with no class names
+          at all, so the page names each one by its own colour instead (<span class="pred">brown object 2</span>).
+          The relation head never reads object names, so the graph is the same either way; only the way you refer to
+          the nodes changes. <strong>YOLO26</strong>, <strong>YOLO12</strong> and <strong>YOLO-World</strong> are in
+          the advanced panel, from a 5 MB COCO detector upwards.</p>
+
+        <h3>Speed</h3>
+        <p>On WebAssembly a 1280-pixel frame costs roughly 300–500 ms in the detector and 580 ms in the relation head.
+          That is fine for a still image and slow for a webcam. Two things move it: the detector you pick and, for the
+          text-prompt model, how many class names you give it. Object count does not; the relation head costs the same
+          for 2 boxes as for 32. WebGPU is used where the browser exposes it, and the pill in the header says which
+          provider actually ran.</p>
+      </div>
+    </div>
+
+    <div class="faq">
+      <div><b>Is anything uploaded?</b><p>No. The models run in this page; images, video and webcam frames never leave your machine. There is no server to send them to.</p></div>
+      <div><b>Can I type a relation that is not in the list?</b><p>Yes, once the predicate text encoder (23 MB, in the advanced panel) is loaded; it encodes any string on the spot. Before that you have the words the shipped bank already carries (243 in this build), and in precomputed mode the 263 strings captured with the sample.</p></div>
+      <div><b>Why did it find only two objects?</b><p>That is the detector rather than the relation model. Lower the detector confidence, or switch detectors. Most of what limits a deployed graph is detector recall.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>Site code Apache-2.0. Relation model and predicate encoder are derivatives of Meta
+    <a href="https://ai.meta.com/resources/models-and-libraries/dinov3-license/" rel="noopener">DINOv3</a> weights.
+    Detectors are exported from <a href="https://github.com/ultralytics/ultralytics" rel="noopener">ultralytics</a>
+    checkpoints (<strong>AGPL-3.0</strong>). MobileCLIP text encoder and class bank: Apple
+    <a href="https://github.com/apple/ml-mobileclip/blob/main/LICENSE_MODELS" rel="noopener">MobileCLIP license</a>.
+    Full list in <a href="THIRD_PARTY.md">THIRD_PARTY.md</a> · <a href="LICENSE">LICENSE</a>.
+    Instalado no hub GPlanSiS|iaVision em 16/09/2026 a partir de
+    <a href="https://maelic.github.io/RelateAnythingProject/demo/" rel="noopener">maelic.github.io/RelateAnythingProject/demo</a>
+    (Maëlic Neau, <a href="https://arxiv.org/abs/2609.12552" rel="noopener">arXiv:2609.12552</a>); modelos e código sem alteração.</p>
+  <p>Sample photos from Wikimedia Commons: <span id="credits"></span></p>
+</footer>
+
+<script src="js/pipeline.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

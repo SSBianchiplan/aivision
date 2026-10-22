@@ -1,0 +1,636 @@
+/* ==========================================================================
+   TEMA CLARO
+   O padrão do sistema é escuro. Este arquivo só REDEFINE as variáveis —
+   nenhuma regra de layout muda, então não há como os dois temas divergirem
+   em espaçamento ou tamanho.
+   ========================================================================== */
+
+:root[data-theme="light"] {
+  --bg: #FFFFFF;
+  --bg-2: #F1F8F6;
+  --stage-bg: #EEF4F2;
+  --panel: rgba(255, 255, 255, .94);
+  --panel-solid: #FFFFFF;
+  /* bordas: com .18/.10 cartões e campos sumiam no branco */
+  --line: rgba(4, 65, 60, .24);
+  --line-2: rgba(4, 65, 60, .13);
+
+  /*
+   * TINTA — as três passam de 4,5:1 (WCAG AA) sobre o painel branco E sobre
+   * o fundo das abas (#EDEDED), o pior caso comum. O --ink-3 antigo
+   * (#6F9C96) dava 3:1 e deixava dicas, rótulos e metadados acinzentados.
+   */
+  --ink: #04413C;      /* 11,5:1 */
+  --ink-2: #285C56;    /*  7,6:1 */
+  --ink-3: #4A6F6A;    /*  5,6:1 (4,75 nas abas) */
+
+  /*
+   * No claro, o "sinal" de interface é o próprio verde — é o que a página de
+   * entrada faz nas seções invertidas (.inv). O amarelo #FFD84D sobre branco
+   * não passa em contraste para TEXTO (1,4:1); ele segue como PREENCHIMENTO
+   * (botão primário, com tinta escura) e nas caixas de detecção do vídeo.
+   */
+  --accent: #04413C;
+  --accent-ink: #FFFFFF;
+  --signal: #FFD84D;         /* preenchimento amarelo da marca */
+  --signal-ink: #04413C;     /* texto sobre o amarelo: 8,3:1 */
+  --signal-line: #D9AE00;    /* borda do amarelo, para ele não "vazar" no branco */
+  --signal-text: #7A5600;    /* o amarelo quando precisa ser TEXTO: âmbar escuro, 6,6:1 */
+
+  --cyan: #0B6577;
+  --warn: #7A5600;
+  --err: #B3261E;
+  --ok: #176B53;
+
+  /* superfícies de aviso: fundo, borda e texto (texto ≥ 8:1 sobre o fundo) */
+  --warn-bg: #FFF6D6;  --warn-line: rgba(166, 120, 0, .45); --warn-ink: #5C4300;
+  --err-bg: #FDECEA;   --err-line: rgba(179, 38, 30, .32);  --err-ink: #8C1D18;
+  --ok-bg: #E6F4EE;    --ok-line: rgba(23, 107, 83, .32);   --ok-ink: #0F5541;
+  --info-bg: #E5F1F3;  --info-line: rgba(11, 101, 119, .28); --info-ink: #0B5260;
+  --violet-ink: #5B3FA8;
+
+  /* tinta clara para o pouco que fica sobre fundo escuro (HUD da tela de acesso, vidro do desafio) */
+  --stage-ink: #CFEBE4;
+  --stage-ink-3: rgba(207, 235, 228, .78);
+}
+
+/*
+ * O PALCO TAMBÉM CLARO no tema claro (pedido do usuário, out/2026). Antes ele
+ * ficava escuro de propósito (fundo claro em volta da imagem muda o contraste
+ * percebido); quem precisa julgar exposição usa o tema escuro. O canvas do
+ * Viewport lê --stage-bg para o letterbox, então palco e página combinam.
+ */
+:root[data-theme="light"] .viewport {
+  background: radial-gradient(1100px 620px at 50% 42%, #FFFFFF 0%, var(--stage-bg) 72%);
+}
+
+:root[data-theme="light"] body {
+  background: var(--bg);
+}
+
+/* sombras precisam ser mais leves sobre fundo claro, ou viram borrão cinza */
+:root[data-theme="light"] .panel,
+:root[data-theme="light"] .menubar,
+:root[data-theme="light"] .vctl {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .16), 0 1px 3px rgba(0, 0, 0, .10);
+}
+:root[data-theme="light"] .mb-pop {
+  background: rgba(255, 255, 255, .98);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, .22);
+}
+
+/* o vidro dos botões de vídeo era claro-sobre-escuro; inverte a lógica */
+:root[data-theme="light"] .vctl {
+  /* .88 deixava o fundo atravessar: o status (buffer, AO VIVO) caía abaixo de 4,5:1 */
+  background: rgba(248, 248, 249, .95);
+  border-color: rgba(0, 0, 0, .10);
+}
+:root[data-theme="light"] .vctl-btn {
+  color: #1a1a1d;
+  background: linear-gradient(160deg, rgba(255, 255, 255, .95) 0%, rgba(228, 228, 232, .92) 100%);
+  border-color: rgba(0, 0, 0, .14);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, .9),
+    inset 0 -5px 12px rgba(0, 0, 0, .07),
+    0 2px 6px rgba(0, 0, 0, .16);
+}
+:root[data-theme="light"] .vctl-btn::before { display: none; }
+:root[data-theme="light"] .vctl-btn.active {
+  color: #fff;
+  background: linear-gradient(160deg, #0B5A53 0%, var(--accent) 100%);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(4, 65, 60, .16), 0 3px 8px rgba(0, 0, 0, .22);
+}
+:root[data-theme="light"] .vctl-track input[type="range"]::-webkit-slider-runnable-track {
+  background: linear-gradient(180deg, rgba(0, 0, 0, .12), rgba(0, 0, 0, .18));
+}
+:root[data-theme="light"] .vctl-track input[type="range"]::-webkit-slider-thumb {
+  background: linear-gradient(160deg, #fff, #dcdce0);
+  border-color: rgba(0, 0, 0, .18);
+}
+
+/* superfícies que usavam branco translúcido sobre escuro */
+:root[data-theme="light"] .mod,
+:root[data-theme="light"] .node,
+:root[data-theme="light"] .mdl,
+:root[data-theme="light"] .cfgmod,
+:root[data-theme="light"] .ctxobs,
+:root[data-theme="light"] .ident,
+:root[data-theme="light"] .kpi,
+:root[data-theme="light"] .sess,
+:root[data-theme="light"] .ctx-task,
+:root[data-theme="light"] .mb-pop-b {
+  background: rgba(0, 0, 0, .025);
+}
+:root[data-theme="light"] .mb-btn:hover,
+:root[data-theme="light"] .op:hover,
+:root[data-theme="light"] .cfgmod-head:hover,
+:root[data-theme="light"] .ctxobs-head:hover {
+  background: rgba(0, 0, 0, .05);
+}
+:root[data-theme="light"] .tabs,
+:root[data-theme="light"] .gate-tabs,
+:root[data-theme="light"] .gate-modes {
+  background: rgba(0, 0, 0, .07);
+}
+:root[data-theme="light"] .json,
+:root[data-theme="light"] .uri {
+  background: rgba(0, 0, 0, .05);
+  color: var(--ink-2);
+}
+:root[data-theme="light"] .gate-card input:not([type="checkbox"]),
+:root[data-theme="light"] .gate-card select,
+:root[data-theme="light"] .ctl select,
+:root[data-theme="light"] .txt {
+  background: #fff;
+  color: var(--ink);
+  border-color: var(--line);
+}
+:root[data-theme="light"] .pw-bars i,
+:root[data-theme="light"] .bar,
+:root[data-theme="light"] .mdl-bar {
+  background: rgba(0, 0, 0, .10);
+}
+:root[data-theme="light"] .ctx-step i,
+:root[data-theme="light"] .ctx-step u {
+  background: rgba(0, 0, 0, .14);
+}
+
+/* a tela de acesso mantém o clima escuro: é a moldura do vídeo */
+:root[data-theme="light"] .gate-card {
+  background: rgba(255, 255, 255, .95);
+  border-color: rgba(0, 0, 0, .10);
+}
+:root[data-theme="light"] .gate-brand,
+:root[data-theme="light"] .gate-lead b { color: var(--ink); }
+
+/* ---------------------------------------------------- botão do tema */
+
+.mb-theme {
+  width: 30px;
+  height: 30px;
+  margin-left: 2px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, .05);
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background .14s, color .14s, border-color .14s;
+}
+.mb-theme:hover {
+  background: rgba(255, 255, 255, .12);
+  color: var(--accent);
+  border-color: rgba(255, 216, 77, .45);
+}
+:root[data-theme="light"] .mb-theme { background: rgba(0, 0, 0, .04); }
+:root[data-theme="light"] .mb-theme:hover { background: rgba(0, 0, 0, .08); }
+
+.menubar.narrow .mb-theme { width: 36px; height: 36px; margin: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mb-theme { transition: none; }
+}
+
+/* avatar e menu da conta no claro: o verde vira o sinal (o amarelo não passa em contraste) */
+:root[data-theme="light"] .mb-avatar {
+  background: linear-gradient(150deg, #0B5A53, #04413C);
+  border-color: rgba(4, 65, 60, .55);
+  color: #FFD84D;
+}
+:root[data-theme="light"] .mb-avatar:hover,
+:root[data-theme="light"] .mb-avatar.aberto { border-color: #04413C; box-shadow: 0 0 0 3px rgba(4, 65, 60, .16); }
+:root[data-theme="light"] .mb-avatar-dot { background: #E0A800; border-color: #fff; }
+:root[data-theme="light"] .mb-mi:hover:not(:disabled),
+:root[data-theme="light"] .mb-mi:focus-visible { background: rgba(4, 65, 60, .07); }
+:root[data-theme="light"] .mb-mi.on > svg { filter: none; }
+:root[data-theme="light"] .mb-mi kbd { background: rgba(4, 65, 60, .04); }
+:root[data-theme="light"] .mb-mi.danger { color: #B3261E; }
+:root[data-theme="light"] .mb-mi.danger:hover,
+:root[data-theme="light"] .mb-mi.danger:focus-visible { background: rgba(179, 38, 30, .08); color: #8C1D18; }
+:root[data-theme="light"] .mb-conta-quem small { border-color: rgba(4, 65, 60, .3); }
+:root[data-theme="light"] .mb-tema-seg { background: rgba(4, 65, 60, .07); }
+:root[data-theme="light"] .mb-tema-op:hover { background: rgba(4, 65, 60, .07); }
+:root[data-theme="light"] .mb-tema-op.on { background: #FFFFFF; border-color: var(--signal-line); color: var(--ink); box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
+:root[data-theme="light"] .mb-tema-amostra { border-color: rgba(4, 65, 60, .3); }
+:root[data-theme="light"] .mb-pop.mb-conta { background: #fff; }
+:root[data-theme="light"] .mb-pop-b.danger { color: #B3261E; }
+
+/* ==========================================================================
+   LEGIBILIDADE DO TEMA CLARO
+   Os componentes abaixo têm cor FIXA pensada para o fundo escuro (texto
+   amarelo-claro #FDE68A, rosa #FCA5A5, verde #4ADE80...). Sobre branco elas
+   somem. Aqui cada família é ligada aos tokens semânticos do claro — o
+   tema escuro não é tocado.
+   Os blocos de avisos, erro, ok, info, primário, acesso e placeholder valem
+   também para o tema Code Dark (mesmos tokens semânticos; ver o fim do arquivo).
+   ========================================================================== */
+
+/* --------------------------------------------- avisos (amarelo / âmbar) */
+:root:is([data-theme="light"], [data-theme="code"]) .notice,
+:root:is([data-theme="light"], [data-theme="code"]) .toast,
+:root:is([data-theme="light"], [data-theme="code"]) .warn-box,
+:root:is([data-theme="light"], [data-theme="code"]) .via-aviso,
+:root:is([data-theme="light"], [data-theme="code"]) .ferr-aviso {
+  background: var(--warn-bg);
+  border-color: var(--warn-line);
+  color: var(--warn-ink);
+}
+:root:is([data-theme="light"], [data-theme="code"]) .toast { box-shadow: 0 14px 36px rgba(0, 0, 0, .18); }
+:root:is([data-theme="light"], [data-theme="code"]) .warn-box b { color: var(--warn); }
+:root:is([data-theme="light"], [data-theme="code"]) .notice code,
+:root:is([data-theme="light"], [data-theme="code"]) .warn-box code,
+:root:is([data-theme="light"], [data-theme="code"]) .toast code { color: inherit; background: rgba(122, 86, 0, .08); }
+:root:is([data-theme="light"], [data-theme="code"]) .cfg-dl dd.warnish,
+:root:is([data-theme="light"], [data-theme="code"]) .qd-ev-arremesso,
+:root:is([data-theme="light"], [data-theme="code"]) .qd-ev-quique,
+:root:is([data-theme="light"], [data-theme="code"]) .pw-meter span.s2,
+:root:is([data-theme="light"], [data-theme="code"]) .presets-agpl,
+:root:is([data-theme="light"], [data-theme="code"]) .cfgmod-flag.sens { color: var(--signal-text); }
+
+/* --------------------------------------------- erro / perigo (vermelho) */
+:root:is([data-theme="light"], [data-theme="code"]) .node-err,
+:root:is([data-theme="light"], [data-theme="code"]) .confirm,
+:root:is([data-theme="light"], [data-theme="code"]) .mod-note .blocked,
+:root:is([data-theme="light"], [data-theme="code"]) .agpl-warn,
+:root:is([data-theme="light"], [data-theme="code"]) .gate-err,
+:root:is([data-theme="light"], [data-theme="code"]) .ctx-prob,
+:root:is([data-theme="light"], [data-theme="code"]) .via-nota.erro {
+  background: var(--err-bg);
+  border-color: var(--err-line);
+  color: var(--err-ink);
+}
+:root:is([data-theme="light"], [data-theme="code"]) .agpl-warn b { color: var(--err); }
+:root:is([data-theme="light"], [data-theme="code"]) .agpl-warn b + b,
+:root:is([data-theme="light"], [data-theme="code"]) .agpl-warn b:not(:first-child) { color: var(--err-ink); }
+:root:is([data-theme="light"], [data-theme="code"]) .btn.danger,
+:root:is([data-theme="light"], [data-theme="code"]) .vctl-exit,
+:root:is([data-theme="light"], [data-theme="code"]) .cfgmod-flag,
+:root:is([data-theme="light"], [data-theme="code"]) .lic-agpl,
+:root:is([data-theme="light"], [data-theme="code"]) .ctx-find.erro,
+:root:is([data-theme="light"], [data-theme="code"]) .qd-ev-perda,
+:root:is([data-theme="light"], [data-theme="code"]) .pw-meter span.s0,
+:root:is([data-theme="light"], [data-theme="code"]) .pw-meter span.s1 { color: var(--err); }
+:root:is([data-theme="light"], [data-theme="code"]) .btn.danger { border-color: var(--err-line); }
+:root:is([data-theme="light"], [data-theme="code"]) .btn.danger:hover { background: var(--err-bg); }
+:root:is([data-theme="light"], [data-theme="code"]) .vctl-exit:hover { color: #fff; }
+:root:is([data-theme="light"], [data-theme="code"]) .ctx-conf.baixa { background: var(--err-bg); color: var(--err-ink); }
+:root:is([data-theme="light"], [data-theme="code"]) .agpl-tag { background: var(--err-bg); color: var(--err-ink); }
+:root:is([data-theme="light"], [data-theme="code"]) .agpl.on .agpl-tag { background: var(--warn-bg); color: var(--warn-ink); }
+
+/* --------------------------------------------- ok / ao vivo (verde) */
+:root:is([data-theme="light"], [data-theme="code"]) .ident-hit {
+  background: var(--ok-bg);
+  border-color: var(--ok-line);
+}
+:root:is([data-theme="light"], [data-theme="code"]) .fonte-sec-ativa,
+:root:is([data-theme="light"], [data-theme="code"]) .vctl-status span.live,
+:root:is([data-theme="light"], [data-theme="code"]) .diag-l.ok b,
+:root:is([data-theme="light"], [data-theme="code"]) .pw-meter span.s3,
+:root:is([data-theme="light"], [data-theme="code"]) .pw-meter span.s4 { color: var(--ok); }
+:root:is([data-theme="light"], [data-theme="code"]) .diag-l.ok { border-left-color: var(--ok); }
+
+/* --------------------------------------------- informação (ciano) */
+:root:is([data-theme="light"], [data-theme="code"]) .gate-info {
+  background: var(--info-bg);
+  border-color: var(--info-line);
+  color: var(--info-ink);
+}
+:root:is([data-theme="light"], [data-theme="code"]) .badge.operador { background: var(--info-bg); color: var(--info-ink); }
+:root:is([data-theme="light"], [data-theme="code"]) .badge.analista { background: rgba(91, 63, 168, .10); color: var(--violet-ink); }
+:root:is([data-theme="light"], [data-theme="code"]) .badge.admin { background: var(--warn-bg); color: var(--warn-ink); }
+
+/* --------------------------------------------- botão primário: o amarelo da marca */
+:root:is([data-theme="light"], [data-theme="code"]) .btn.accent,
+:root:is([data-theme="light"], [data-theme="code"]) .gate-btn:not(.ghost) {
+  background: var(--signal);
+  border: 1px solid var(--signal-line);
+  color: var(--signal-ink);
+}
+:root:is([data-theme="light"], [data-theme="code"]) .btn.accent:hover,
+:root:is([data-theme="light"], [data-theme="code"]) .gate-btn:not(.ghost):hover:not(:disabled) { filter: brightness(.96); }
+:root:is([data-theme="light"], [data-theme="code"]) .gate-btn.ghost { border-color: var(--line); }
+:root:is([data-theme="light"], [data-theme="code"]) .gate-tabs button.on,
+:root:is([data-theme="light"], [data-theme="code"]) .gate-modes button.on,
+:root:is([data-theme="light"], [data-theme="code"]) .cap-renew:hover { background: var(--signal); color: var(--signal-ink); }
+
+/* --------------------------------------------- tela de acesso */
+:root:is([data-theme="light"], [data-theme="code"]) .gate-brand span { color: var(--signal-text); }
+:root:is([data-theme="light"], [data-theme="code"]) .gate-check b,
+:root:is([data-theme="light"], [data-theme="code"]) .gate-modes button:hover { color: var(--ink); }
+:root:is([data-theme="light"], [data-theme="code"]) .gate-check a { color: var(--signal-text); }
+/* o HUD (telemetria) fica sobre a câmera escura: tinta clara, como no escuro */
+:root:is([data-theme="light"], [data-theme="code"]) .gate-telemetry { color: var(--stage-ink-3); }
+/* o botão de novo desafio fica sobre a imagem do desafio (vidro escuro) */
+:root:is([data-theme="light"], [data-theme="code"]) .chal-novo { color: var(--stage-ink); }
+
+/* --------------------------------------------- campos */
+:root:is([data-theme="light"], [data-theme="code"]) ::placeholder { color: var(--ink-3); opacity: 1; }
+
+/* --------------------------------------------- cores de série vindas do JS (style inline) */
+/*
+ * Esportes e BeltScan pintam números e cabeçalhos com a cor da série
+ * (#22D3EE, #FB923C, #4ADE80, #94A3B8...) direto no style — cores feitas
+ * para o fundo escuro. Escurecer mantém o matiz (a legenda continua
+ * casando com o gráfico) e leva o texto acima de 4,5:1 no branco.
+ * Só pega a propriedade `color` (não `background-color`).
+ */
+:root[data-theme="light"] :is(.panel, .bss) :is(b, em, span, th, td, i, strong)[style^="color: rgb"],
+:root[data-theme="light"] :is(.panel, .bss) :is(b, em, span, th, td, i, strong)[style*="; color: rgb"] {
+  filter: brightness(.55) saturate(1.3);
+}
+/* "SEM REF" do BeltScan usa o --ink-3 do escuro gravado como rgba: no claro vira o --ink-3 do claro */
+:root[data-theme="light"] :is(.panel, .bss, .bsc) [style*="color: rgba(207, 235, 228"] { color: var(--ink-3) !important; filter: none; }
+/* placar da Academia: fundo inline rgba(0,0,0,.18) vira cinza-médio no branco */
+:root[data-theme="light"] .panel [style*="background: rgba(0, 0, 0, 0.18)"] { background: rgba(4, 65, 60, .05) !important; }
+
+/* --------------------------------------------- botões-pílula do YouTube na barra de vídeo (qualidade, fila) */
+:root[data-theme="light"] .vctl-yt { border-color: var(--line); background: rgba(4, 65, 60, .04); }
+:root[data-theme="light"] .vctl-yt:hover { border-color: var(--signal-line); background: rgba(255, 216, 77, .22); }
+
+/* faixa de atalhos sobre o palco claro: a opacidade .8 a derrubava para 3,4:1 */
+:root[data-theme="light"] .hotkeys { opacity: 1; }
+
+/* ==========================================================================
+   TEMA CODE DARK  (<html data-theme="code">)
+   Os cinzas do Visual Studio Code (Dark Modern / Dark+) com a identidade do
+   iaVision por cima:
+     · realce principal = o amarelo da marca #FFD84D (estado ativo, foco,
+       borda de seleção, botão primário com tinta escura #1E1E1E);
+     · cor secundária  = turquesa #4EC9B0 (links, "em uso", ao vivo, info);
+     · aviso âmbar #CCA700 (distinto do amarelo de realce), erro #F48771/#F14C4C,
+       sucesso #89D185.
+   Nada de azul como destaque. Como no claro, este bloco só redefine as
+   variáveis e neutraliza o que tinha verde-petróleo FIXO; os avisos, erros,
+   ok/info, primário e placeholders reaproveitam as regras do claro acima
+   (seletor :root:is([data-theme="light"], [data-theme="code"])).
+   Tinta: --ink-3 #ABABAB passa 4,5:1 até sobre o campo #3C3C3C (4,8:1).
+   ========================================================================== */
+
+:root[data-theme="code"] {
+  --bg: #1F1F1F;               /* editor (Dark Modern) */
+  --bg-2: #181818;             /* barra lateral (Dark Modern) */
+  --stage-bg: #1E1E1E;         /* palco do vídeo: o editor do Dark+ */
+  --panel: rgba(37, 37, 38, .97);   /* #252526, painel/barra lateral do Dark+ */
+  --panel-solid: #252526;
+  --line: #3C3C3C;
+  --line-2: #2B2B2B;
+
+  --ink: #CCCCCC;              /* foreground do VS Code   9,5:1 no painel */
+  --ink-2: #BBBBBB;            /*                         7,9:1 */
+  --ink-3: #ABABAB;            /* descrição/dica          6,7:1 (4,8 no campo #3C3C3C) */
+
+  --accent: #FFD84D;           /* o sinal do iaVision: 11:1 no painel */
+  --accent-ink: #1E1E1E;       /* tinta sobre o amarelo: 12:1 */
+  --signal: #FFD84D;
+  --signal-ink: #1E1E1E;
+  --signal-line: #FFD84D;
+  --signal-text: #FFD84D;
+
+  --cyan: #4EC9B0;             /* turquesa (secundária): links, em uso, ao vivo */
+  --warn: #CCA700;             /* âmbar do VS Code (editorWarning) */
+  --err: #F48771;              /* errorForeground do VS Code: 6,2:1 (o #F14C4C fica só em preenchimento) */
+  --ok: #89D185;
+
+  --warn-bg: #352A05;  --warn-line: rgba(204, 167, 0, .55);  --warn-ink: #E2C08D;
+  --err-bg: #3A1D1D;   --err-line: rgba(241, 76, 76, .55);   --err-ink: #F48771;
+  --ok-bg: #1E3320;    --ok-line: rgba(137, 209, 133, .45);  --ok-ink: #89D185;
+  --info-bg: #14302B;  --info-line: rgba(78, 201, 176, .45); --info-ink: #4EC9B0;
+  --violet-ink: #C586C0;
+
+  --stage-ink: #CCCCCC;
+  --stage-ink-3: rgba(204, 204, 204, .78);
+
+  /* barra de rolagem do VS Code (scrollbarSlider) */
+  --rolagem: rgba(121, 121, 121, .40);
+  --rolagem-2: rgba(100, 100, 100, .70);
+}
+
+:root[data-theme="code"] body { background: var(--bg); }
+:root[data-theme="code"] ::selection { background: #4A4430; }
+
+/* palco liso, como o editor (sem o degradê do escuro) */
+:root[data-theme="code"] .viewport { background: var(--stage-bg); }
+:root[data-theme="code"] .hotkeys { opacity: 1; }
+
+/* cantos mais secos, como no VS Code (só o raio muda: nenhum tamanho ou espaçamento) */
+:root[data-theme="code"] :is(.panel, .menubar, .ferr, .mb-pop, .idle-card) { border-radius: 8px; }
+:root[data-theme="code"] :is(.mb-btn, .ferr-b, .btn, .tabs button, .mb-pop-b, .mb-mi) { border-radius: 4px; }
+:root[data-theme="code"] .tabs { border-radius: 6px; }
+
+/* --------------------------------------------- barra do topo = barra de título */
+:root[data-theme="code"] .menubar {
+  background: rgba(44, 44, 44, .98);           /* #2C2C2C */
+  border-color: var(--line);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .5);
+}
+:root[data-theme="code"] .mb-btn:hover { background: rgba(255, 255, 255, .08); }
+/* ativo: fundo de item ativo do VS Code (#37373D) + filete amarelo embaixo, como a aba ativa */
+:root[data-theme="code"] .mb-btn.on {
+  background: #37373D;
+  border-color: transparent;
+  color: #FFFFFF;
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+:root[data-theme="code"] .mb-btn.on > svg { color: var(--accent); }
+:root[data-theme="code"] .mb-btn.primary.on { background: var(--accent); color: var(--accent-ink); box-shadow: none; }
+:root[data-theme="code"] .mb-btn.primary.on > svg { color: inherit; }
+:root[data-theme="code"] .mb-pop,
+:root[data-theme="code"] .mb-pop.mb-conta {
+  background: #252526;
+  border-color: #454545;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, .6);
+}
+:root[data-theme="code"] .mb-pop-b { background: rgba(255, 255, 255, .03); }
+:root[data-theme="code"] .mb-pop-b.on { background: #3A3520; border-color: rgba(255, 216, 77, .6); }
+:root[data-theme="code"] .mb-mi:hover:not(:disabled),
+:root[data-theme="code"] .mb-mi:focus-visible { background: #37373D; }
+:root[data-theme="code"] .mb-mi.on > svg { filter: none; }
+:root[data-theme="code"] .mb-mi.danger { color: var(--err); }
+:root[data-theme="code"] .mb-mi.danger:hover,
+:root[data-theme="code"] .mb-mi.danger:focus-visible { background: rgba(241, 76, 76, .14); color: #FFB4A8; }
+:root[data-theme="code"] .mb-tema-seg { background: #1E1E1E; }
+:root[data-theme="code"] .mb-tema-op:hover { background: #37373D; }
+:root[data-theme="code"] .mb-tema-op.on { background: #3A3520; border-color: rgba(255, 216, 77, .6); }
+:root[data-theme="code"] .mb-tema-amostra { border-color: #555555; }
+:root[data-theme="code"] .mb-avatar {
+  background: #37373D;
+  border-color: rgba(255, 216, 77, .55);
+  color: var(--accent);
+}
+
+/* --------------------------------------------- abas: aba ativa do editor */
+:root[data-theme="code"] .tabs { background: #1E1E1E; }
+:root[data-theme="code"] .tabs button:hover:not(:disabled) { background: rgba(255, 255, 255, .06); }
+:root[data-theme="code"] .tabs button.on {
+  background: #37373D;
+  color: #FFFFFF;
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+/* --------------------------------------------- campos: input do VS Code */
+:root[data-theme="code"] .gate-card input:not([type="checkbox"]),
+:root[data-theme="code"] .gate-card select,
+:root[data-theme="code"] .ctl select,
+:root[data-theme="code"] .txt {
+  background: #313131;
+  color: var(--ink);
+  border-color: var(--line);
+}
+:root[data-theme="code"] .txt:focus,
+:root[data-theme="code"] .gate-card input:focus { border-color: var(--accent); }
+:root[data-theme="code"] .json,
+:root[data-theme="code"] .uri { background: #1E1E1E; }
+
+/* --------------------------------------------- barra de vídeo: lisa, cinza */
+:root[data-theme="code"] .vctl {
+  background: rgba(37, 37, 38, .94);
+  border-color: var(--line);
+}
+
+/* --------------------------------------------- Ferramentas de mouse = barra de atividade */
+:root[data-theme="code"] .ferr {
+  background: rgba(51, 51, 51, .97);           /* #333333 */
+  border-color: var(--line);
+}
+:root[data-theme="code"] .ferr-b {
+  color: var(--ink-2);
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+:root[data-theme="code"] .ferr-b:hover:not(:disabled) { color: #FFFFFF; background: rgba(255, 255, 255, .08); border-color: transparent; }
+/* ferramenta ativa: o indicador lateral da barra de atividade, em amarelo */
+:root[data-theme="code"] .ferr-b.on {
+  color: var(--accent);
+  background: #37373D;
+  border-color: transparent;
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+:root[data-theme="code"] .ferr-b.g-ini::before { background: var(--line); }
+:root[data-theme="code"] .ferr-badge { color: var(--accent-ink); }
+:root[data-theme="code"] .ferr-b[data-tip]:hover::after,
+:root[data-theme="code"] .ferr-dica,
+:root[data-theme="code"] .ferr-cor,
+:root[data-theme="code"] .ferr-texto {
+  background: #252526;
+  border-color: #454545;
+  color: var(--ink);
+}
+:root[data-theme="code"] .ferr-itens li.sel { background: #3A3520; border-color: var(--accent); }
+
+/* --------------------------------------------- tela de acesso */
+:root[data-theme="code"] .gate-card { background: rgba(37, 37, 38, .96); border-color: var(--line); }
+:root[data-theme="code"] .gate-tabs,
+:root[data-theme="code"] .gate-modes { background: #1E1E1E; }
+:root[data-theme="code"] .cap-renew { background: rgba(30, 30, 30, .8); }
+:root[data-theme="code"] .pw-bars i.on.s3,
+:root[data-theme="code"] .pw-bars i.on.s4 { background: var(--ok); }
+:root[data-theme="code"] .chal-img { background: #1E1E1E; }
+:root[data-theme="code"] .chal-load { background: linear-gradient(100deg, #1E1E1E 30%, #2D2D2D 50%, #1E1E1E 70%); }
+
+/* --------------------------------------------- módulos com verde-petróleo fixo */
+:root[data-theme="code"] .esp-marcar-cab { background: rgba(37, 37, 38, .92); }
+:root[data-theme="code"] .ytpl-fundo { background: rgba(0, 0, 0, .6); }
+:root[data-theme="code"] .pj-mini b,
+:root[data-theme="code"] .pje-mini b { background: rgba(30, 30, 30, .85); }
+:root[data-theme="code"] .pje-ocupado { background: rgba(30, 30, 30, .88); }
+:root[data-theme="code"] .pje-estado { color: #1E1E1E; }
+
+/* +Projeto: indicador de classe ativa como item selecionado de lista */
+:root[data-theme="code"] .pj-classes li.on,
+:root[data-theme="code"] .pje-cls.on { background: #3A3520; }
+
+/* Bike Fit 3D */
+:root[data-theme="code"] .bf3d {
+  --b3-raised: #2D2D2D;
+  --b3-input: #313131;
+  --b3-line-2: rgba(255, 255, 255, .10);
+  --b3-ok: #89D185;
+  --b3-warn: #CCA700;
+  --b3-err: #F48771;
+}
+:root[data-theme="code"] .bf3d-video { background: #181818; }
+:root[data-theme="code"] .bf3d-canvas3d { background: #1E1E1E; }
+
+/* Studio Bike Fit: força os tokens do Code (o .sbf fixava os do escuro) */
+:root[data-theme="code"] .sbf {
+  --panel: rgba(37, 37, 38, .98); --panel-solid: #252526;
+  --line: #3C3C3C; --line-2: #2B2B2B;
+  --ink: #CCCCCC; --ink-2: #BBBBBB; --ink-3: #ABABAB;
+  --accent: #FFD84D; --accent-ink: #1E1E1E; --ok: #89D185; --warn: #CCA700; --err: #F48771;
+  background: #1E1E1E;
+}
+:root[data-theme="code"] .sbf-barra { background: #2C2C2C; }
+:root[data-theme="code"] :is(.sbf-btn, .sbf-seg button):not(.on):not(.rec) { background: #3C3C3C; }
+:root[data-theme="code"] .sbf-btn.on,
+:root[data-theme="code"] .sbf-seg button.on { color: #1E1E1E; }
+:root[data-theme="code"] .sbf-ajustes,
+:root[data-theme="code"] .sbf-pipe { background: rgba(37, 37, 38, .98); }
+:root[data-theme="code"] .sbf-ajustes h4,
+:root[data-theme="code"] .sbf-ajustes label,
+:root[data-theme="code"] .sbf-logo,
+:root[data-theme="code"] .sbf-titulo .sbf-marca,
+:root[data-theme="code"] .sbf-pipe-cab span,
+:root[data-theme="code"] .sbf-pipe-corpo .empty { color: #CCCCCC; }
+:root[data-theme="code"] .sbf-nota { color: #ABABAB; }
+:root[data-theme="code"] .sbf-ajustes select,
+:root[data-theme="code"] .sbf-pipe-corpo .ctl select,
+:root[data-theme="code"] .sbf-pipe-corpo select,
+:root[data-theme="code"] .sbf-logo img { background: #313131; }
+
+/* Studios industriais e o editor de vídeo: cada um tem a sua paleta em tokens */
+:root[data-theme="code"] .bsc {
+  --bsc-bg: #1E1E1E; --bsc-sup: #2C2C2C; --bsc-painel: #252526;
+  --bsc-linha: #3C3C3C; --bsc-linha2: #2B2B2B;
+  --bsc-tinta: #CCCCCC; --bsc-tinta2: #BBBBBB; --bsc-tinta3: #ABABAB;
+  --bsc-acento: #FFD84D; --bsc-acento-tinta: #1E1E1E; --bsc-campo: #313131;
+  --bsc-ok: #89D185;
+}
+:root[data-theme="code"] .bss {
+  --bss-bg: rgba(37, 37, 38, .95); --bss-linha: #3C3C3C;
+  --bss-tinta: #CCCCCC; --bss-tinta2: #BBBBBB; --bss-tinta3: #ABABAB;
+  --bss-acento: #FFD84D; --bss-acento-tinta: #1E1E1E; --bss-campo: #313131;
+  background: #252526;
+}
+:root[data-theme="code"] .cvs {
+  --cvs-bg: #1E1E1E; --cvs-sup: #2C2C2C; --cvs-painel: #252526;
+  --cvs-linha: #3C3C3C; --cvs-linha2: #2B2B2B;
+  --cvs-tinta: #CCCCCC; --cvs-tinta2: #BBBBBB; --cvs-tinta3: #ABABAB;
+  --cvs-acento: #FFD84D; --cvs-acento-tinta: #1E1E1E; --cvs-campo: #313131;
+  --cvs-ok: #89D185;
+}
+:root[data-theme="code"] .ins {
+  --ins-bg: #1E1E1E; --ins-sup: #2C2C2C; --ins-painel: #252526;
+  --ins-linha: #3C3C3C; --ins-linha2: #2B2B2B;
+  --ins-tinta: #CCCCCC; --ins-tinta2: #BBBBBB; --ins-tinta3: #ABABAB;
+  --ins-acento: #FFD84D; --ins-acento-tinta: #1E1E1E; --ins-campo: #313131;
+}
+:root[data-theme="code"] .tkt {
+  --tkt-bg: #1E1E1E; --tkt-sup: #2C2C2C; --tkt-painel: #252526;
+  --tkt-linha: #3C3C3C; --tkt-linha2: #2B2B2B;
+  --tkt-tinta: #CCCCCC; --tkt-tinta2: #BBBBBB; --tkt-tinta3: #ABABAB;
+  --tkt-acento: #FFD84D; --tkt-acento-tinta: #1E1E1E; --tkt-campo: #1E1E1E;
+  --tkt-ok: #89D185; --tkt-amb: #CCA700; --tkt-erro: #F48771;
+}
+:root[data-theme="code"] .vde {
+  --vde-bg: #1E1E1E; --vde-sup: #2C2C2C; --vde-painel: #252526;
+  --vde-linha: #3C3C3C; --vde-linha2: #2B2B2B;
+  --vde-tinta: #CCCCCC; --vde-tinta2: #BBBBBB; --vde-tinta3: #ABABAB;
+  --vde-acento: #FFD84D; --vde-acento-tinta: #1E1E1E; --vde-campo: #313131;
+  --vde-erro: #F48771; --vde-ok: #89D185;
+  --vde-tl-fundo: #181818; --vde-tl-trilha: #252526; --vde-regua: #1E1E1E;
+}
+:root[data-theme="code"] :is(.bsc-p canvas, .bsp-cv, .bss-cv, .cvs-p canvas, .ins-cv, .ins-item img, .ins-semimg, .ins-rev-mini, .tkt-cv-vid) { background: #1E1E1E; }
+:root[data-theme="code"] :is(.ins-item img, .ins-semimg, .ins-rev-mini) { color: #CCCCCC; }
+:root[data-theme="code"] .vde-carregando,
+:root[data-theme="code"] .vde-inicio:not(.embutida) .vde-recentes { color: #CCCCCC; }
+:root[data-theme="code"] .vde-inicio > .vde-dica,
+:root[data-theme="code"] .vde-op span { color: #BBBBBB; }
+:root[data-theme="code"] .vde-inicio { background: var(--vde-bg); }
+:root[data-theme="code"] .vde-tl { background: #181818; }
+:root[data-theme="code"] .vde-recorte-barra { background: rgba(24, 24, 24, .9); }
+:root[data-theme="code"] .vde-recorte-barra .vde-chip.on,
+:root[data-theme="code"] .vde-recorte-barra .vde-chip.acento { color: #1E1E1E; }
+:root[data-theme="code"] .vde-soltar-aviso { background: rgba(30, 30, 30, .85); }

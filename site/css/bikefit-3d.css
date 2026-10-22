@@ -1,0 +1,310 @@
+/* ==========================================================================
+   BIKE FIT 3D — PROTÓTIPO (components/esportes/BikeFit3D.js)
+   Tela cheia no tema do iaVision (o mesmo do Studio Bike Fit): fundo
+   verde-petróleo, painéis #04413C, destaque amarelo com texto escuro.
+   As cores saem das variáveis do app (app.css / theme.css), com as do
+   tema escuro como reserva, então o tema claro também funciona. O palco 3D
+   e os vídeos ficam escuros nos dois temas, como o .viewport do app.
+   Colunas: câmeras · 3D · métricas; no celular viram abas.
+   ========================================================================== */
+
+.bf3d {
+  --b3-bg: var(--bg, #02302C);
+  --b3-panel: var(--panel-solid, #04413C);
+  --b3-raised: #022621;
+  --b3-input: #0a4e48;
+  --b3-line: var(--line, rgba(255, 255, 255, .16));
+  --b3-line-2: rgba(255, 255, 255, .12);
+  --b3-ink: var(--ink, #FFFFFF);
+  --b3-ink-2: var(--ink-2, #CFEBE4);
+  --b3-ink-3: var(--ink-3, rgba(207, 235, 228, .62));
+  --b3-accent: var(--accent, #FFD84D);
+  --b3-accent-ink: var(--accent-ink, #04413C);
+  --b3-ok: #4ade80;
+  --b3-warn: #FFD84D;
+  --b3-err: #FF8A80;
+
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: flex;
+  flex-direction: column;
+  background: var(--b3-bg);
+  color: var(--b3-ink);
+  font: 13px/1.4 var(--sans, "Archivo", "Helvetica Neue", Arial, sans-serif);
+}
+:root[data-theme="light"] .bf3d {
+  --b3-raised: #F1F8F6;
+  --b3-input: #FFFFFF;
+  --b3-line-2: rgba(4, 65, 60, .12);
+  --b3-ok: #1E7A5F;
+  --b3-warn: #8A6D00;
+  --b3-err: #B3261E;
+}
+
+/* ---- barra do topo */
+.bf3d-barra {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  min-height: 44px;
+  background: var(--b3-panel);
+  border-bottom: 1px solid var(--b3-line-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.bf3d-barra::-webkit-scrollbar { display: none; }
+
+/* título no estilo do Studio: "iaVision" pequeno, GPlanSiS|BikeFit3D com a barra amarela */
+.bf3d-titulo {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  padding-left: 8px;
+  border-left: 4px solid var(--b3-accent);
+}
+.bf3d-titulo .bf3d-marca {
+  font-weight: 500;
+  font-size: .78em;
+  letter-spacing: .04em;
+  color: var(--b3-ink-2);
+  margin-right: 2px;
+  text-transform: none;
+}
+.bf3d-titulo i { font-style: normal; color: #FFD84D; font-weight: 300; margin: 0 1px; }
+:root[data-theme="light"] .bf3d-titulo i { color: var(--b3-accent); }
+.bf3d-titulo em {
+  font-style: normal;
+  font-size: 9.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--b3-accent-ink);
+  background: var(--b3-accent);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-left: 6px;
+  vertical-align: 2px;
+}
+.bf3d-sep { flex: 1 1 auto; }
+.bf3d-mini { font-size: 11px; color: var(--b3-ink-3); white-space: nowrap; font-family: var(--mono, monospace); }
+
+/* ---- botões */
+.bf3d-btn {
+  flex: 0 0 auto;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--b3-ink);
+  background: var(--b3-input);
+  border: 1px solid var(--b3-line);
+  border-radius: 7px;
+  padding: 6px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+.bf3d-btn:hover:not(:disabled) { border-color: var(--b3-accent); }
+.bf3d-btn:focus-visible { outline: 2px solid var(--b3-accent); outline-offset: 1px; }
+.bf3d-btn:disabled { opacity: .45; cursor: default; }
+.bf3d-btn.on { background: var(--b3-accent); border-color: var(--b3-accent); color: var(--b3-accent-ink); }
+.bf3d-btn.fechar {
+  font-size: 14px;
+  padding: 5px 10px;
+  position: sticky;   /* a barra rola na horizontal no celular: o fechar fica sempre à vista */
+  right: 0;
+  box-shadow: -10px 0 10px var(--b3-panel);
+}
+
+/* ---- faixa de aviso do protótipo: destaque translúcido */
+.bf3d-aviso {
+  flex: 0 0 auto;
+  padding: 6px 12px 6px 10px;
+  font-size: 12px;
+  color: var(--b3-ink-2);
+  background: rgba(255, 216, 77, .10);
+  border-bottom: 1px solid rgba(255, 216, 77, .28);
+  border-left: 3px solid #FFD84D;
+}
+.bf3d-aviso b { color: var(--b3-warn); }
+:root[data-theme="light"] .bf3d-aviso { background: rgba(4, 65, 60, .06); border-color: rgba(4, 65, 60, .2); border-left-color: var(--b3-accent); }
+
+.bf3d-abas { display: none; }
+
+/* ---- corpo em três colunas */
+.bf3d-corpo {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(300px, 1fr) minmax(360px, 1.35fr) minmax(280px, 340px);
+  gap: 1px;
+  background: var(--b3-line-2);
+}
+.bf3d-col {
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  background: var(--b3-bg);
+  padding: 10px;
+}
+.bf3d-col-3d { display: flex; flex-direction: column; }
+
+.bf3d-vista,
+.bf3d-ajustes {
+  border: 1px solid var(--b3-line-2);
+  border-radius: 10px;
+  padding: 8px;
+  margin-bottom: 10px;
+  background: var(--b3-panel);
+}
+.bf3d-vista header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.bf3d-vista header b { font-size: 13px; }
+.bf3d-st {
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 99px;
+  background: var(--b3-raised);
+  color: var(--b3-ink-2);
+  border: 1px solid var(--b3-line-2);
+}
+.bf3d-st.ok { background: rgba(74, 222, 128, .14); border-color: rgba(74, 222, 128, .4); color: var(--b3-ok); }
+.bf3d-st.meio { background: rgba(255, 216, 77, .12); border-color: rgba(255, 216, 77, .4); color: var(--b3-warn); }
+
+.bf3d-fonte {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.bf3d-fonte select,
+.bf3d-campos input,
+.bf3d-campos select {
+  font: inherit;
+  font-size: 12px;
+  color: var(--b3-ink);
+  background: var(--b3-raised);
+  border: 1px solid var(--b3-line);
+  border-radius: 7px;
+  padding: 5px 6px;
+  min-width: 0;
+}
+.bf3d-campos input { font-family: var(--mono, monospace); }
+.bf3d-fonte select:focus,
+.bf3d-campos input:focus,
+.bf3d-campos select:focus { outline: none; border-color: var(--b3-accent); }
+.bf3d-fonte select { flex: 1 1 180px; max-width: 100%; }
+.bf3d-chk { display: inline-flex; gap: 4px; align-items: center; font-size: 12px; color: var(--b3-ink-2); }
+.bf3d-chk input { accent-color: #FFD84D; }
+
+.bf3d-video {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+  background: #022621;
+}
+.bf3d-video.mira { cursor: crosshair; outline: 2px solid var(--b3-accent); }
+
+.bf3d-dica { margin: 6px 0 0; font-size: 11.5px; color: var(--b3-ink-3); }
+.bf3d-dica b { color: var(--b3-ink); }
+.bf3d .warn { color: var(--b3-warn); }
+.bf3d .err { color: var(--b3-err); }
+
+.bf3d-ajustes summary { cursor: pointer; font-weight: 700; font-size: 12.5px; padding: 2px 0; }
+.bf3d-ajustes summary::marker { color: var(--b3-accent); }
+.bf3d-campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+  margin: 8px 0;
+}
+.bf3d-campos label { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: var(--b3-ink-3); }
+.bf3d-linha { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ---- palco 3D (escuro nos dois temas; as cores do desenho estão em BikeFit3D.js) */
+.bf3d-3d { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+.bf3d-3d-barra { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+.bf3d-canvas3d {
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 320px;
+  border-radius: 10px;
+  border: 1px solid var(--b3-line-2);
+  background: #02302C;
+  touch-action: none;
+  cursor: grab;
+}
+.bf3d-canvas3d:active { cursor: grabbing; }
+
+/* ---- métricas */
+.bf3d-met h3 { margin: 0 0 8px; font-size: 14px; }
+.bf3d-met h3 small { font-weight: 400; color: var(--b3-ink-3); font-size: 11.5px; }
+.bf3d-tab { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 12px; }
+.bf3d-tab th, .bf3d-tab td { padding: 4px 4px; border-bottom: 1px solid var(--b3-line-2); text-align: right; white-space: nowrap; }
+.bf3d-tab th:first-child { text-align: left; white-space: normal; font-weight: 500; color: var(--b3-ink-2); }
+.bf3d-tab thead th { color: var(--b3-ink-3); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.bf3d-tab td { font-family: var(--mono, monospace); font-variant-numeric: tabular-nums; color: var(--b3-ink); }
+
+/* ---- celular / janela estreita: abas */
+@media (max-width: 900px) {
+  .bf3d-abas {
+    display: flex;
+    flex: 0 0 auto;
+    background: var(--b3-panel);
+    border-bottom: 1px solid var(--b3-line-2);
+  }
+  .bf3d-abas button {
+    flex: 1 1 0;
+    font: inherit;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--b3-ink-3);
+    background: none;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    padding: 9px 4px;
+    cursor: pointer;
+  }
+  .bf3d-abas button.on { color: var(--b3-ink); border-bottom-color: var(--b3-accent); }
+  .bf3d-corpo { display: block; overflow: hidden; background: var(--b3-bg); }
+  .bf3d-col { display: none; height: 100%; padding: 10px 16px; }
+  .bf3d-corpo.aba-vistas .bf3d-col-vistas,
+  .bf3d-corpo.aba-3d .bf3d-col-3d,
+  .bf3d-corpo.aba-met .bf3d-col-met { display: block; }
+  .bf3d-corpo.aba-3d .bf3d-col-3d { display: flex; }
+  .bf3d-canvas3d { min-height: 0; }
+  .bf3d-aviso { font-size: 11px; padding: 5px 16px 5px 13px; }
+  .bf3d-barra { gap: 4px; padding: 6px 8px 6px 12px; }
+  .bf3d-barra .bf3d-mini { display: none; }
+  .bf3d-titulo { font-size: 12px; padding-left: 6px; letter-spacing: .03em; }
+  .bf3d-titulo em { margin-left: 4px; }
+  .bf3d-barra .bf3d-btn { padding: 6px 7px; font-size: 11.5px; }
+}
+/* bem estreito: some o "GPlanSiS|" (fica "iaVision BikeFit3D"), para caber os botões */
+@media (max-width: 480px) {
+  .bf3d-titulo .bf3d-gp { display: none; }
+}
+
+/* legenda dos lados: só o quadrado na cor do lado (o amarelo não lê sobre branco no tema claro) */
+.bf3d-leg { color: var(--b3-ink-2); white-space: nowrap; }
+.bf3d-leg i { font-style: normal; }
+@media (max-width: 480px) {
+  .bf3d-larga { display: none; }
+  .bf3d-barra { padding-left: 10px; }
+  .bf3d-titulo em { font-size: 8.5px; padding: 1px 4px; }
+}
+
+/* título com a grafia oficial (GPlanSiS|BikeFit3D), sem caixa alta */
+.bf3d-titulo { text-transform: none !important; letter-spacing: .02em !important; }
+.bf3d-titulo em { text-transform: uppercase; }

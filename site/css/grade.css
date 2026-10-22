@@ -1,0 +1,60 @@
+/* ==========================================================================
+   GRADE INVISÍVEL, GUIAS E BOTÃO DE RECOLHER PADRÃO
+   Carregado por js/layout/grade.js. Só geometria: as cores vêm das
+   variáveis do tema (--accent, --ink-*), nada é redefinido aqui.
+   ========================================================================== */
+
+/* guias do ímã: aparecem só durante o arrasto */
+.grade-guias { position: fixed; inset: 0; pointer-events: none; z-index: 950; }
+.grade-guia { position: absolute; display: block; background: var(--accent, #FFD84D); opacity: .9; }
+.grade-guia.x { width: 1px; }
+.grade-guia.y { height: 1px; }
+
+/*
+ * Botão de RECOLHER padrão (▾ aberto / ▸ recolhido), o mesmo em todo painel
+ * e widget: canto superior direito, ao lado do ✕ quando houver, 20×20.
+ */
+:root .panel-rec { width: 20px; height: 20px; font-size: 14px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+:root .vctl-min, :root .ferr-min, :root .bss-min, :root .via-rec {
+  width: 20px; height: 20px; font-size: 14px; line-height: 1; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+:root .vctl.mini .vctl-min { top: 50%; transform: translateY(-50%); }
+
+/*
+ * Faixa fina no lugar padrão: cabe SEMPRE na área livre do vídeo (entre as
+ * colunas e a Via). Se a área é estreita, a fileira de botões quebra e a
+ * linha do tempo desce para uma segunda linha, em vez de passar por baixo
+ * de uma coluna ou da Via.
+ */
+@media (min-width: 1000px) {
+  :root .vctl.mini:not(.moved) { width: max-content; max-width: calc(var(--area-w, 100vw) - 8px); flex-wrap: wrap; justify-content: center; row-gap: 4px; }
+  :root .vctl.mini:not(.moved) .vctl-row { max-width: 100%; flex-wrap: wrap; justify-content: center; row-gap: 4px; }
+}
+
+/* barra de vídeo no lugar padrão: ACIMA da linha de atalhos (que só aparece com teclado e janela larga) */
+@media (min-width: 1101px) and (pointer: fine) {
+  :root .vctl:not(.moved) { bottom: max(28px, env(safe-area-inset-bottom)); }
+}
+
+/* Ferramentas de mouse: punho (pontos na vertical) à esquerda e ▾ à direita, na mesma linha do alto */
+:root .ferr { padding-top: 28px; }
+:root .ferr-grip { left: 2px; top: 3px; transform: none; flex-direction: column; gap: 2px; padding: 3px 4px; }
+:root .ferr-min { left: auto; right: 3px; top: 3px; transform: none; }
+:root .ferr.mini { padding-top: 28px; }
+
+/* painel solto recolhido: só o cabeçalho, no mesmo lugar */
+.panel.floating.recolhido { height: auto !important; min-height: 0 !important; }
+
+/* Via recolhida: só o cabeçalho, no canto de sempre */
+.panel.via-gaveta.recolhido { bottom: auto; }
+.panel.via-gaveta.recolhido > :not(.panel-head) { display: none; }
+.panel.via-gaveta.recolhido > .panel-head { border-bottom: 0; }
+.via-rec {
+  border: 0; border-radius: 6px; background: transparent; color: var(--ink-3); cursor: pointer;
+}
+.via-rec:hover { color: var(--ink); background: rgba(255, 255, 255, .09); }
+:root[data-theme="light"] .via-rec:hover { background: rgba(0, 0, 0, .06); }
+
+/* atalho de teclado à direita no menu de contexto (menu da tela) */
+.mctx-i .mctx-tecla { margin-left: auto; padding-left: 14px; font-style: normal; font-size: 10.5px; opacity: .6; font-family: var(--mono, ui-monospace, monospace); }

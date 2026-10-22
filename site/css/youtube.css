@@ -1,0 +1,323 @@
+/* ==========================================================================
+   FONTE YOUTUBE — player oficial + seção do painel Fonte (js/camera/youtube.js,
+   js/components/YouTubeSource.js).
+   ========================================================================== */
+
+/*
+ * O player fica no <body>, antes do #root, posicionado pelo JS exatamente na
+ * área onde o Viewport desenha o vídeo.
+ *
+ *   .yt-frente  por cima do canvas, por baixo dos painéis (assistir, ou
+ *               Region Capture em tela dividida)
+ *   .yt-atras   por baixo do canvas (Element Capture): a pessoa vê o quadro
+ *               processado; a captura continua recebendo o player limpo
+ *
+ * `isolation: isolate` e a ausência de transform 3D são exigências do Element
+ * Capture: o alvo precisa formar um contexto de empilhamento plano.
+ */
+.yt-host {
+  position: fixed;
+  isolation: isolate;
+  transform-style: flat;
+  background: #000;
+  overflow: hidden;
+}
+.yt-host.yt-atras  { z-index: 0; pointer-events: none; }
+.yt-host.yt-frente { z-index: 20; }
+.yt-host iframe { display: block; width: 100%; height: 100%; border: 0; }
+
+/* com o player aberto (body.yt-player, camera/youtube.js), o cartão de espera do
+   Viewport some: senão ele aparece em volta do vídeo, por cima e por baixo */
+body.yt-player .viewport > .idle { display: none; }
+
+/* Region Capture: o canvas processado vai para a metade direita; o player fica na esquerda */
+body.yt-lado .viewport > .stage {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 50%;
+}
+
+/* ---------------------------------------------------------------- seção */
+
+.yt-aviso { margin-bottom: 10px; }
+
+.yt-busca { display: flex; gap: 7px; margin: 8px 0; }
+.yt-busca input {
+  flex: 1; min-width: 0; box-sizing: border-box; padding: 7px 9px;
+  border: 1px solid var(--line); border-radius: 8px; background: rgba(255,255,255,.05);
+  color: var(--ink); font: inherit; font-size: 12.5px;
+}
+.yt-busca input:focus { outline: none; border-color: var(--accent); }
+.yt-busca .btn { flex: none; }
+
+.yt-lista {
+  list-style: none; margin: 6px 0 10px; padding: 0;
+  max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;
+}
+.yt-vazio { font-size: 12px; color: var(--ink-3); padding: 6px 2px; }
+.yt-item {
+  display: flex; gap: 8px; width: 100%; padding: 4px; text-align: left; align-items: flex-start;
+  border: 1px solid transparent; border-radius: 8px; background: transparent; cursor: pointer;
+}
+.yt-item:hover { background: rgba(255,255,255,.06); }
+.yt-item.on { border-color: var(--accent); }
+.yt-mini {
+  position: relative; flex: none; width: 96px; aspect-ratio: 16 / 9;
+  border-radius: 5px; overflow: hidden; background: rgba(0,0,0,.35);
+}
+.yt-mini img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.yt-mini em {
+  position: absolute; right: 3px; bottom: 3px; padding: 0 4px; border-radius: 3px;
+  background: rgba(0,0,0,.78); color: #fff; font: 600 10px var(--mono); font-style: normal;
+}
+.yt-txt { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.yt-txt b {
+  font-size: 12px; font-weight: 600; line-height: 1.3; color: var(--ink);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.yt-txt small { font-size: 11px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.yt-atual {
+  display: flex; gap: 8px; align-items: baseline; justify-content: space-between;
+  margin: 8px 0; padding: 7px 9px; border: 1px solid var(--line-2); border-radius: 8px;
+}
+.yt-atual-tit { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.yt-atual-tit b { font-size: 12px; font-weight: 600; overflow-wrap: anywhere; }
+.yt-atual-tit small { font-size: 11px; color: var(--ink-3); }
+.yt-link { flex: none; font-size: 11px; color: var(--accent); text-decoration: none; }
+.yt-link:hover { text-decoration: underline; }
+
+.yt-ctl { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; margin: 8px 0; }
+.yt-ctl .btn { padding: 6px 9px; min-width: 36px; }
+.yt-ctl select {
+  padding: 6px 4px; border: 1px solid var(--line); border-radius: 7px;
+  background: var(--panel-solid); font-size: 12px;
+}
+.yt-tempo { margin-left: auto; font: 500 11px var(--mono); color: var(--ink-2); }
+
+/* quadros */
+.yt-quadros { margin-top: 12px; }
+.yt-quadros .cfg-sub b { font-family: var(--mono); color: var(--accent); margin-left: 4px; }
+.yt-auto { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11.5px; color: var(--ink-2); }
+.yt-auto input {
+  width: 58px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px;
+  background: rgba(255,255,255,.05); color: var(--ink); font: inherit;
+}
+.yt-grade {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 5px;
+  margin: 10px 0; max-height: 240px; overflow-y: auto;
+}
+.yt-grade figure { position: relative; margin: 0; border-radius: 5px; overflow: hidden; background: #000; }
+.yt-grade img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: contain; }
+.yt-grade figcaption {
+  position: absolute; left: 3px; bottom: 2px; font: 600 9.5px var(--mono); color: #fff;
+  text-shadow: 0 0 3px #000;
+}
+.yt-x {
+  position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; padding: 0;
+  border: 0; border-radius: 50%; background: rgba(0,0,0,.7); color: #fff;
+  font-size: 13px; line-height: 20px; cursor: pointer;
+}
+.yt-x:hover { background: var(--err); }
+
+.yt-treino {
+  margin-top: 8px; padding: 9px; border: 1px solid var(--line); border-radius: 9px;
+  background: rgba(255,255,255,.03);
+}
+.yt-treino-cab { position: relative; display: flex; align-items: center; min-height: 22px; font-size: 12px; }
+.yt-treino-cab .yt-x { top: 0; right: 0; }
+.yt-grupo { display: flex; gap: 14px; font-size: 12px; margin: 4px 0 2px; }
+.yt-msg { color: var(--ink-2); }
+
+/* ==========================================================================
+   PLAYLISTS (js/components/YouTubePlaylists.js, js/youtube/playlists.js)
+   ========================================================================== */
+
+.ytpl-topo { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ytpl-topo .cfg-sub { margin-bottom: 0; }
+.ytpl-topo .btn b, .ytpl-pl em { font: 600 10.5px var(--mono); color: var(--accent); font-style: normal; margin-left: 3px; }
+
+.yt-atual { align-items: flex-start; }
+.ytpl-atual-acts { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.btn.ytpl-salvo { border-color: var(--accent); color: var(--accent); }
+
+.ytpl-txt {
+  min-width: 0; box-sizing: border-box; padding: 7px 9px;
+  border: 1px solid var(--line); border-radius: 8px; background: rgba(255,255,255,.05);
+  color: var(--ink); font: inherit; font-size: 12.5px;
+}
+.ytpl-txt:focus { outline: none; border-color: var(--accent); }
+
+.ytpl-salvar {
+  margin: 8px 0; padding: 10px; border: 1px solid var(--accent); border-radius: 9px;
+  background: rgba(255,255,255,.03);
+}
+.ytpl-salvar-cab { position: relative; display: flex; align-items: center; min-height: 22px; margin-bottom: 8px; font-size: 12px; }
+.ytpl-salvar-cab .yt-x { top: 0; right: 0; }
+.ytpl-salvar .ctl { margin-bottom: 8px; }
+.ytpl-salvar .ctl-label small { color: var(--ink-3); font-size: 10.5px; }
+.ytpl-salvar > .ytpl-txt { display: block; width: 100%; margin: -2px 0 9px; }
+
+.ytpl-link {
+  padding: 0; border: 0; background: none; color: var(--accent); font: inherit;
+  text-decoration: underline; cursor: pointer;
+}
+.ytpl-ok { color: var(--ok); }
+
+.ytpl-oferta {
+  position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  margin: 8px 0; padding: 8px 32px 8px 10px; border: 1px dashed var(--accent); border-radius: 9px;
+  font-size: 12px; color: var(--ink-2);
+}
+.ytpl-oferta .yt-x { top: 6px; right: 6px; }
+
+.ytpl-fila {
+  margin: 8px 0; padding: 8px 10px; border: 1px solid var(--line); border-left: 3px solid var(--accent);
+  border-radius: 9px; background: rgba(255,255,255,.03);
+}
+.ytpl-fila-l { display: flex; align-items: center; gap: 4px; }
+.ytpl-fila-l .btn.tiny { padding: 5px 7px; }
+.ytpl-fila-t { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.ytpl-fila-n { font: 600 11px var(--mono); color: var(--accent); margin-right: 2px; }
+.ytpl-fila .hint { margin-bottom: 0; }
+.ytpl .btn.on, .ytpl-fila .btn.on { border-color: var(--accent); color: var(--accent); }
+
+/* ---------------------------------------------------------------- modal */
+
+.ytpl-fundo {
+  position: fixed; inset: 0; z-index: 6000;
+  display: grid; place-items: center; padding: 3vh 2vw;
+  background: rgba(1, 20, 18, .72);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+.ytpl {
+  display: flex; flex-direction: column;
+  width: min(1040px, 100%); height: min(760px, 94vh);
+  border: 1px solid var(--line); border-radius: 14px;
+  background: var(--panel-solid); color: var(--ink);
+  font-family: var(--sans);
+  box-shadow: 0 24px 70px rgba(0,0,0,.5);
+  overflow: hidden;
+}
+.ytpl:focus { outline: none; }
+.ytpl :focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.ytpl-cab {
+  position: relative; flex: none; display: flex; align-items: center;
+  padding: 12px 52px 12px 18px; border-bottom: 1px solid var(--line);
+}
+.ytpl-cab h2 { margin: 0; font-size: 16px; font-weight: 700; letter-spacing: .01em; }
+.ytpl-cab h2 small { margin-left: 8px; font: 500 11.5px var(--mono); color: var(--ink-3); }
+.ytpl-cab .ytpl-fechar { top: 50%; right: 14px; width: 28px; height: 28px; margin-top: -14px; font-size: 18px; line-height: 28px; }
+
+.ytpl-corpo { flex: 1; min-height: 0; display: grid; grid-template-columns: 250px 1fr; }
+
+.ytpl-lado {
+  min-height: 0; overflow-y: auto; padding: 12px; border-right: 1px solid var(--line);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.ytpl-pls { display: flex; flex-direction: column; gap: 3px; }
+.ytpl-pl {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 7px 9px; border: 1px solid transparent; border-radius: 8px;
+  background: transparent; color: var(--ink); font: inherit; font-size: 12.5px; text-align: left; cursor: pointer;
+}
+.ytpl-pl span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ytpl-pl:hover { background: rgba(255,255,255,.06); }
+.ytpl-pl.on { border-color: var(--accent); background: rgba(255, 216, 77, .08); }
+
+.ytpl-form { display: flex; gap: 6px; }
+.ytpl-form .ytpl-txt { flex: 1; padding: 6px 8px; font-size: 12px; }
+
+.ytpl-cats { border-top: 1px solid var(--line-2); padding-top: 8px; }
+.ytpl-cats summary { cursor: pointer; font-size: 12px; font-weight: 600; color: var(--ink-2); }
+.ytpl-cats summary small { font: 500 10.5px var(--mono); color: var(--ink-3); margin-left: 4px; }
+.ytpl-cats ul { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.ytpl-cats li { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 12px; padding: 3px 2px; }
+.ytpl-cats li small { color: var(--ink-3); font-size: 10.5px; }
+.ytpl-mini-x {
+  flex: none; width: 20px; height: 20px; padding: 0; border: 1px solid var(--line); border-radius: 50%;
+  background: transparent; color: var(--ink-2); font-size: 13px; line-height: 18px; cursor: pointer;
+}
+.ytpl-mini-x:hover { background: var(--err); border-color: var(--err); color: #fff; }
+
+.ytpl-backup { margin-top: auto; display: flex; gap: 6px; flex-wrap: wrap; border-top: 1px solid var(--line-2); padding-top: 10px; }
+
+.ytpl-main { min-height: 0; overflow-y: auto; padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
+.ytpl-main-cab { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.ytpl-main-cab h3 { margin: 0; font-size: 14px; font-weight: 700; min-width: 0; overflow-wrap: anywhere; }
+.ytpl-acts { display: flex; gap: 6px; flex-wrap: wrap; }
+.ytpl-renomear { flex: 1; max-width: 460px; }
+.btn.ytpl-perigo:hover { background: var(--err); border-color: var(--err); color: #fff; }
+
+.ytpl-filtros { display: flex; gap: 8px; }
+.ytpl-filtros .ytpl-txt { flex: 1; }
+.ytpl-filtros select, .ytpl-v-mais select {
+  padding: 6px 8px; border: 1px solid var(--line); border-radius: 7px;
+  background: var(--panel-solid); color: var(--ink); font: inherit; font-size: 12px;
+}
+
+.ytpl-msg { padding: 7px 10px; border-radius: 8px; font-size: 12px; }
+.ytpl-msg.ok { border: 1px solid var(--ok); color: var(--ok); }
+.ytpl-msg.erro { border: 1px solid var(--err); color: var(--err); }
+
+.ytpl-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ytpl-v { border: 1px solid var(--line-2); border-radius: 10px; padding: 6px; }
+.ytpl-v.atual { border-color: var(--accent); }
+.ytpl-v-lin { display: flex; align-items: center; gap: 10px; }
+.ytpl-mini { width: 128px; }
+.ytpl-v-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.ytpl-v-txt b {
+  font-size: 12.5px; font-weight: 600; line-height: 1.3;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.ytpl-v-txt small { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 11px; color: var(--ink-3); }
+.ytpl-chip {
+  padding: 1px 7px; border: 1px solid var(--accent); border-radius: 999px;
+  color: var(--accent); font-size: 10.5px; font-weight: 600;
+}
+.ytpl-de { font-style: italic; }
+.ytpl-v-acts { flex: none; display: flex; gap: 4px; align-items: center; }
+.ytpl-v-acts .btn.tiny { min-width: 30px; }
+.ytpl-v-mais {
+  display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 12px;
+  margin-top: 6px; padding: 8px 4px 2px; border-top: 1px dashed var(--line);
+}
+.ytpl-v-mais label { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: var(--ink-2); }
+.ytpl-v-mais-bt { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+.ytpl-v-mais a.btn { text-decoration: none; }
+
+/* celular: tela cheia, tudo numa coluna com rolagem */
+@media (max-width: 600px) {
+  .ytpl-fundo { padding: 0; place-items: stretch; }
+  .ytpl { width: 100%; height: 100%; height: 100dvh; border-radius: 0; border: 0; }
+  .ytpl-corpo { display: block; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .ytpl-lado { overflow: visible; border-right: 0; border-bottom: 1px solid var(--line); }
+  .ytpl-pls { flex-direction: row; flex-wrap: wrap; }
+  .ytpl-pl { flex: 0 1 auto; max-width: 100%; border-color: var(--line-2); }
+  .ytpl-main { overflow: visible; padding: 12px; }
+  .ytpl-filtros { flex-direction: column; }
+  .ytpl-mini { width: 96px; }
+  .ytpl-v-lin { flex-wrap: wrap; }
+  .ytpl-v-txt { flex-basis: calc(100% - 110px); }
+  .ytpl-v-acts { width: 100%; justify-content: flex-end; }
+  .ytpl-v-acts .btn.tiny { min-height: 34px; min-width: 40px; }
+  .ytpl-v-mais-bt { margin-left: 0; }
+}
+
+/* tema claro: superfícies sobre branco e o destaque passa a ser o verde (css/theme.css) */
+:root[data-theme="light"] .ytpl-fundo { background: rgba(4, 65, 60, .45); }
+:root[data-theme="light"] .ytpl { box-shadow: 0 24px 60px rgba(0,0,0,.25); }
+:root[data-theme="light"] .ytpl-txt,
+:root[data-theme="light"] .ytpl-filtros select,
+:root[data-theme="light"] .ytpl-v-mais select { background: #fff; color: var(--ink); }
+:root[data-theme="light"] .ytpl-pl:hover { background: rgba(0,0,0,.05); }
+:root[data-theme="light"] .ytpl-pl.on { background: rgba(4, 65, 60, .07); }
+:root[data-theme="light"] .ytpl-salvar,
+:root[data-theme="light"] .ytpl-fila { background: rgba(0,0,0,.025); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ytpl-fundo { backdrop-filter: none; -webkit-backdrop-filter: none; }
+}

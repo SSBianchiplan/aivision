@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Marcador ArUco para VBT — iaVision</title>
+<link rel="icon" href="../favicon.ico">
+<style>
+  :root { --ink: #0f172a; --ink-2: #475569; --line: #cbd5e1; --bg: #fff; --acc: #0e7490; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); background: var(--bg); }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 40px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--ink-2); margin: 0 0 18px; }
+  form { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: flex-end; padding: 14px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 16px; }
+  label { display: grid; gap: 4px; font-size: 13px; color: var(--ink-2); }
+  input, select { font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 7px; width: 120px; color: var(--ink); background: #fff; }
+  button { font: inherit; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--acc); background: var(--acc); color: #fff; cursor: pointer; }
+  button.sec { background: #fff; color: var(--acc); }
+  ol { padding-left: 20px; margin: 0 0 18px; }
+  li { margin-bottom: 4px; }
+  #folha { display: flex; flex-wrap: wrap; gap: 8mm; align-items: flex-start; }
+  .cartao { display: grid; justify-items: center; gap: 2mm; font-size: 9pt; color: var(--ink-2); }
+  .regua { margin-top: 10mm; font-size: 9pt; color: var(--ink-2); }
+  .nota { font-size: 13px; color: var(--ink-2); }
+  @media print {
+    @page { size: A4; margin: 12mm; }
+    main { padding: 0; max-width: none; }
+    .tela { display: none !important; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="tela">
+    <h1>Marcador ArUco para o VBT</h1>
+    <p class="sub">GPlanSiS iaVision · módulo CV-34 VBT (velocidade da barra) · dicionário ArUco 4×4 (DICT_4X4_50)</p>
+    <form id="cfg" onsubmit="return false">
+      <label>Lado do quadrado preto (cm)<input id="lado" type="number" min="2" max="18" step="0.5" value="5"></label>
+      <label>Id do marcador (0–49)<input id="id" type="number" min="0" max="49" step="1" value="7"></label>
+      <label>Cópias<input id="copias" type="number" min="1" max="12" step="1" value="2"></label>
+      <button type="button" onclick="print()">Imprimir</button>
+      <button type="button" class="sec" id="png">Baixar PNG (300 dpi)</button>
+    </form>
+    <ol>
+      <li>Imprima em <b>tamanho real</b> (100%, sem "ajustar à página") e confira a régua de 10 cm abaixo com uma régua de verdade.</li>
+      <li>Meça o lado do <b>quadrado preto</b> e informe no painel VBT (campo "Lado do marcador"). É essa medida que calibra a velocidade.</li>
+      <li>Recorte deixando a <b>margem branca</b> em volta (a linha tracejada) — sem ela o marcador some contra uma anilha preta.</li>
+      <li>Cole plano na ponta da barra (tampa da manga), virado para a câmera. Papel fosco reflete menos; plastificar ajuda.</li>
+      <li>Filme de lado, câmera parada e perpendicular à barra. Use um id diferente para cada barra, se houver mais de uma no quadro.</li>
+    </ol>
+  </div>
+  <div id="folha"></div>
+  <div class="regua" id="regua"></div>
+  <p class="nota tela">Pronto para imprimir: <a href="aruco-4x4-id7-5cm-300dpi.png" download>PNG do id 7 com 5 cm (300 dpi)</a>. O marcador é gerado aqui mesmo, no navegador. O padrão de bits é o do dicionário DICT_4X4_50 do OpenCV:
+    qualquer gerador ArUco 4×4_50 serve, com a mesma calibração.</p>
+</main>
+<script>
+const DICT = [46386, 3994, 13101, 39238, 21662, 31181, 40494, 50418, 65242, 53078, 63889, 4519, 3767, 10767, 9393, 9790,
+  18021, 26112, 27742, 30383, 34443, 45099, 52437, 56706, 65095, 38001, 44260, 42324, 8483, 13423, 17429, 22450, 40655,
+  61643, 2222, 2345, 6261, 1279, 3574, 7258, 5912, 10792, 12940, 14514, 9448, 12011, 11583, 19300, 20526, 20499];
+const $ = (s) => document.querySelector(s);
+const clamp = (v, a, b, d) => { v = Number(v); return Number.isFinite(v) ? Math.min(b, Math.max(a, v)) : d; };
+function celulas(id) {
+  // 6×6: borda preta + 4×4 bits (1 = branco)
+  const v = DICT[id], m = [];
+  for (let r = 0; r < 6; r++) for (let c = 0; c < 6; c++) {
+    const borda = r === 0 || r === 5 || c === 0 || c === 5;
+    m.push(borda ? 0 : (v >> (15 - ((r - 1) * 4 + (c - 1)))) & 1);
+  }
+  return m;
+}
+function svgMarcador(id, ladoCm) {
+  const cel = ladoCm / 6, total = ladoCm + 2 * cel;   // margem branca de 1 célula
+  const m = celulas(id);
+  let rects = '';
+  for (let r = 0; r < 6; r++) for (let c = 0; c < 6; c++) if (!m[r * 6 + c]) rects += `<rect x="${(c + 1) * cel}" y="${(r + 1) * cel}" width="${cel + 0.002}" height="${cel + 0.002}"/>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${total}cm" height="${total}cm" viewBox="0 0 ${total} ${total}" shape-rendering="crispEdges">
+    <rect width="${total}" height="${total}" fill="#fff"/>
+    <rect x="0.01" y="0.01" width="${total - 0.02}" height="${total - 0.02}" fill="none" stroke="#94a3b8" stroke-width="0.02" stroke-dasharray="0.15 0.12"/>
+    <g fill="#000">${rects}</g></svg>`;
+}
+function desenhar() {
+  const lado = clamp($('#lado').value, 2, 18, 5), id = Math.round(clamp($('#id').value, 0, 49, 7)), n = Math.round(clamp($('#copias').value, 1, 12, 2));
+  $('#folha').innerHTML = Array.from({ length: n }, () => `<div class="cartao">${svgMarcador(id, lado)}<span>ArUco 4×4 · id ${id} · quadrado preto ${String(lado).replace('.', ',')} cm</span></div>`).join('');
+  $('#regua').innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="10.4cm" height="1.2cm" viewBox="0 0 10.4 1.2">
+    <g stroke="#000" stroke-width="0.02">${Array.from({ length: 101 }, (_, i) => `<line x1="${0.2 + i / 10}" x2="${0.2 + i / 10}" y1="0.1" y2="${i % 10 === 0 ? 0.6 : i % 5 === 0 ? 0.45 : 0.3}"/>`).join('')}
+    <line x1="0.2" x2="10.2" y1="0.1" y2="0.1"/></g>
+    ${Array.from({ length: 11 }, (_, i) => `<text x="${0.2 + i}" y="0.95" font-size="0.32" text-anchor="middle" font-family="sans-serif">${i}</text>`).join('')}
+  </svg><div>régua de conferência: 10 cm</div>`;
+}
+function baixarPng() {
+  const lado = clamp($('#lado').value, 2, 18, 5), id = Math.round(clamp($('#id').value, 0, 49, 7));
+  const dpi = 300, cel = Math.round(((lado / 2.54) * dpi) / 6), N = 8 * cel;
+  const c = document.createElement('canvas'); c.width = N; c.height = N;
+  const g = c.getContext('2d');
+  g.fillStyle = '#fff'; g.fillRect(0, 0, N, N); g.fillStyle = '#000';
+  const m = celulas(id);
+  for (let r = 0; r < 6; r++) for (let k = 0; k < 6; k++) if (!m[r * 6 + k]) g.fillRect((k + 1) * cel, (r + 1) * cel, cel, cel);
+  c.toBlob((b) => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(b);
+    a.download = `aruco4x4-id${id}-${String(lado).replace('.', ',')}cm-300dpi.png`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }, 'image/png');
+}
+const q = new URLSearchParams(location.search);
+if (q.get('cm')) $('#lado').value = q.get('cm');
+if (q.get('id')) $('#id').value = q.get('id');
+for (const s of ['#lado', '#id', '#copias']) $(s).addEventListener('input', desenhar);
+$('#png').addEventListener('click', baixarPng);
+desenhar();
+</script>
+</body>
+</html>
