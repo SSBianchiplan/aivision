@@ -69,7 +69,7 @@ export const motion3dCaptura = {
         if (fv.video && state.tUlt != null && t === state.tUlt) return null;   // mesmo quadro do vídeo
         state.tUlt = t;
         const prep = state.rast.preparar(src, performance.now(), { esp, detectarMs: p.detectarMs });
-        return { ...prep, tFonte: t, t0: performance.now(), maos: state.maos, img: canalMotion.studioAberto() ? clone(src) : null };
+        return { ...prep, tFonte: t, t0: performance.now(), maos: state.maos, img: canalMotion.precisaQuadro() ? clone(src) : null };
       },
       async (prep) => {
         const r = await state.rast.estimar(prep);

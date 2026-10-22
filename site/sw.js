@@ -24,7 +24,7 @@
  * ========================================================================
  */
 
-const VERSION = 'iav-v96-vps';   // 22/10/2026: Motion 3D Studio (CV-88): captura de movimento 3D, MoCap do GPlanSiS|ROBO, BVH/GLB/FreeMoCap; 84 módulos/151 operadores
+const VERSION = 'iav-v97-vps';   // 22/10/2026: Motion 3D Studio: vídeo em resolução cheia (canvas de exibição), redesenho por quadro pintado, sem clone do quadro por pose
 const SHELL = `${VERSION}-shell`;
 /*
  * Pesos dos modelos num cache de nome FIXO: sobrevivem às publicações. Antes o

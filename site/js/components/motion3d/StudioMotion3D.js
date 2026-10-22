@@ -119,7 +119,7 @@ function injetarPose(W, t, latMs = 8) {
   canalMotion.publicar({ t, P, W, w: 640, h: 480, latMs });
 }
 
-export function StudioMotion3D({ onClose }) {
+export function StudioMotion3D({ onClose, displayCanvas }) {
   const raiz = useRef(null), cvVid = useRef(null), host3d = useRef(null), cena = useRef(null), fundo = useRef(null), cvHist = useRef(null);
   const inputImport = useRef(null), inputVideoServ = useRef(null);
   const [vista, setVista] = useState('video');          // video | 3d | ambos
@@ -162,7 +162,7 @@ export function StudioMotion3D({ onClose }) {
   // ------------------------------------------------------------------ montagem
   useEffect(() => {
     carregarCss();
-    canalMotion.definirStudio(true);
+    canalMotion.definirStudio(true, { precisaQuadro: !(displayCanvas && displayCanvas.current) });
     document.body.classList.add('studio-aberto', 'm3d-aberto');
     const n = store.get().nodes.find((x) => x.op === OP);
     if (!n || !n.enabled) ativarMotion3D();
@@ -210,7 +210,7 @@ export function StudioMotion3D({ onClose }) {
 
   // ------------------------------------------------------------------ laço de desenho
   useEffect(() => {
-    let id = 0, ultimaChave = '', ultimaCena = null, tPlay = performance.now(), tHist = 0, tChao = 0, chaoVivo = 0;
+    let id = 0, ultimaChave = '', ultimaChaveVid = '', ultimaCena = null, tPlay = performance.now(), tHist = 0, tChao = 0, chaoVivo = 0;
     const pintar = () => {
       id = requestAnimationFrame(pintar);
       const p = playRef.current;
@@ -230,11 +230,15 @@ export function StudioMotion3D({ onClose }) {
       const tR = r ? r.tWall : -1;
       const cvv = cvVid.current, caixa = cvv && cvv.parentElement ? cvv.parentElement.getBoundingClientRect() : null;
       const tam = caixa ? `${Math.round(caixa.width)}x${Math.round(caixa.height)}` : '';
-      const chave = (p ? `p${p.tomada.id}:${p.quadro}` : `l${tR}`) + `|${tam}|${opc.borrar}`;
+      // Vídeo e 3D com chaves separadas: o vídeo acompanha cada quadro PINTADO pelo app
+      // (display.quadros, como no Studio Bike Fit), o 3D só muda quando chega pose nova.
+      const dcq = !p && displayCanvas && displayCanvas.current ? displayCanvas.current.quadros | 0 : 0;
+      const chave = (p ? `p${p.tomada.id}:${p.quadro}` : `l${tR}`) + `|${opc.borrar}|${opc.retarget}|${opc.chao}`;
+      const chaveVid = chave + `|${tam}|d${dcq}`;
       const cenaNova = cena.current && cena.current !== ultimaCena;
+      if (chaveVid !== ultimaChaveVid) { ultimaChaveVid = chaveVid; desenharVideo(r, p); }
       if (cenaNova || chave !== ultimaChave) {
         ultimaChave = chave; ultimaCena = cena.current;
-        desenharVideo(r, p);
         if (cena.current) {
           // "pés no chão" (só exibição; os dados ficam como foram medidos): o monocular tem o quadril
           // numa altura fixa e flutua; desloca a cena inteira pela altura do chão da tomada/buffer
@@ -280,7 +284,9 @@ export function StudioMotion3D({ onClose }) {
       const pts = p.tomada.p2d && p.tomada.p2d[p.quadro + ((p.tomada.corte && p.tomada.corte.ini) || 0)];
       if (pts) P = pts.map((q) => (q ? { x: q.x * iw, y: q.y * ih, v: q.v } : null));
     } else if (r) {
-      const img = canalMotion.quadro();
+      const usaDc = displayCanvas && displayCanvas.current && displayCanvas.current.width > 2;
+      const img = usaDc ? null : canalMotion.quadro();
+      if (usaDc && r.w) { iw = r.w; ih = r.h; }
       if (img) {
         if (!fundo.current) fundo.current = document.createElement('canvas');
         const f = fundo.current;
@@ -291,8 +297,22 @@ export function StudioMotion3D({ onClose }) {
       P = r.P; maos = r.maos;
     }
     const k = Math.min(W / iw, H / ih), ox = (W - iw * k) / 2, oy = (H - ih * k) / 2;
-    if (temImg) {
+    // Resolução: o quadro publicado pelo operador é o quadro REDUZIDO que vai ao modelo de pose
+    // (procWidth). Para exibir, copia o vídeo do canvas de exibição do app em resolução cheia,
+    // como o Studio Bike Fit (mesma conta "contém, centrado" do Viewport); o reduzido fica de reserva.
+    const dc = r && !p && displayCanvas && displayCanvas.current;
+    const temDc = dc && dc.width > 2 && dc.height > 2 && iw > 2 && ih > 2;
+    if (temDc) {
+      const fit = Math.min(dc.width / iw, dc.height / ih);
+      const dw = iw * fit, dh = ih * fit, dx = (dc.width - dw) / 2, dy = (dc.height - dh) / 2;
+      g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+      try { g.drawImage(dc, dx, dy, dw, dh, ox, oy, iw * k, ih * k); temImg = true; } catch (_) { /* canvas sumiu: cai no reduzido */ }
+    }
+    if (temImg && !temDc && fundo.current) {
+      g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
       g.drawImage(fundo.current, ox, oy, iw * k, ih * k);
+    }
+    if (temImg) {
       if (opc.borrar && P) {
         // borrão de rosto (LGPD): círculo em volta dos pontos da cabeça
         const cab = CABECA.map((i) => P[i]).filter((q) => q && q.v > 0.2);
@@ -302,7 +322,10 @@ export function StudioMotion3D({ onClose }) {
           const rr = Math.max(18, Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) * 0.9);
           g.save(); g.beginPath(); g.arc(ox + cx * k, oy + cy * k, rr * k, 0, 2 * Math.PI); g.clip();
           g.filter = `blur(${Math.max(8, rr * k * 0.25)}px)`;
-          g.drawImage(fundo.current, ox, oy, iw * k, ih * k);
+          if (temDc) {
+            const fit = Math.min(dc.width / iw, dc.height / ih);
+            g.drawImage(dc, (dc.width - iw * fit) / 2, (dc.height - ih * fit) / 2, iw * fit, ih * fit, ox, oy, iw * k, ih * k);
+          } else g.drawImage(fundo.current, ox, oy, iw * k, ih * k);
           g.restore();
         }
       }

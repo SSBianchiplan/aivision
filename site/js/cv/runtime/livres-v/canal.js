@@ -20,7 +20,7 @@ const BUFFER_MS = 10000;
 const HIST = 120;
 
 const ouvintes = new Set();
-let retrato = null, ultimoQuadro = null, studio = false, timer = null, ultimoAviso = 0;
+let retrato = null, ultimoQuadro = null, studio = false, precisa = false, timer = null, ultimoAviso = 0;
 let filtros = null, cfgFiltro = { ligado: true, minCorte: 1.2, beta: 0.4 };
 const buffer = [];          // { t, tWall, W, Wf, P2, vis }
 const latencias = [];       // ms
@@ -74,8 +74,10 @@ export const canalMotion = {
   instantaneo: () => retrato,
   quadro: () => ultimoQuadro,
   assinar(fn) { ouvintes.add(fn); return () => ouvintes.delete(fn); },
-  definirStudio(v) { studio = Boolean(v); if (!studio) ultimoQuadro = null; },
+  /** opc.precisaQuadro: o Studio sem canvas de exibição pede a cópia do quadro reduzido; com ele, não (economiza um clone por quadro). */
+  definirStudio(v, opc = {}) { studio = Boolean(v); precisa = studio && opc.precisaQuadro !== false; if (!studio) ultimoQuadro = null; },
   studioAberto: () => studio,
+  precisaQuadro: () => precisa,
   recente: (ms = 1500) => Boolean(retrato) && performance.now() - retrato.tWall < ms,
   /** Filtro One Euro do robo (minCorte em Hz, beta). Mudar zera o estado do filtro. */
   configurarFiltro(c) { cfgFiltro = { ...cfgFiltro, ...c }; filtros = null; },
