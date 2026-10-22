@@ -52,10 +52,10 @@ const copia = (q) => q.map((p) => (p ? [p[0], p[1], p[2]] : null));
  */
 export function reamostrar(amostras, fps = 30, lacunaMs = 250) {
   const am = amostras.filter((a) => a && fin(a.t)).sort((x, y) => x.t - y.t);
-  if (!am.length) return { trilha: [], tempos: [], p2d: [] };
+  if (!am.length) return { trilha: [], tempos: [], p2d: [], extras: [] };
   const t0 = am[0].t, tN = am[am.length - 1].t, passo = 1000 / fps;
   const nq = Math.max(1, Math.floor((tN - t0) / passo) + 1);
-  const trilha = [], tempos = [], p2d = [];
+  const trilha = [], tempos = [], p2d = [], extras = [];
   let j = 0;
   for (let f = 0; f < nq; f++) {
     const t = t0 + f * passo;
@@ -74,8 +74,9 @@ export function reamostrar(amostras, fps = 30, lacunaMs = 250) {
     tempos.push(t - t0);
     const perto = u < 0.5 ? a : b;
     p2d.push(perto.P2 || null);
+    extras.push(perto.ex || null);   // mãos/rosto (Studio v2): o mais próximo, sem interpolar
   }
-  return { trilha, tempos, p2d };
+  return { trilha, tempos, p2d, extras };
 }
 
 /** Corte [ini, fim] (quadros, inclusive) aplicado à trilha (e aos 2D, se houver). */
@@ -83,7 +84,7 @@ export function cortar(tomada) {
   const n = tomada.trilha.length;
   const ini = Math.max(0, Math.min(n - 1, tomada.corte ? tomada.corte.ini : 0));
   const fim = Math.max(ini, Math.min(n - 1, tomada.corte ? tomada.corte.fim : n - 1));
-  return { ...tomada, trilha: tomada.trilha.slice(ini, fim + 1), p2d: tomada.p2d ? tomada.p2d.slice(ini, fim + 1) : null, corte: { ini: 0, fim: fim - ini } };
+  return { ...tomada, trilha: tomada.trilha.slice(ini, fim + 1), p2d: tomada.p2d ? tomada.p2d.slice(ini, fim + 1) : null, extras: tomada.extras ? tomada.extras.slice(ini, fim + 1) : null, corte: { ini: 0, fim: fim - ini } };
 }
 
 /** Pós-processamento do robo; sem Butterworth quando `filtro` = false (só lacunas e ossos). */

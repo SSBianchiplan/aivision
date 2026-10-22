@@ -45,7 +45,7 @@ export const FONTES_MULTI = { 'RTMO (todas)': 'rtmo', 'BlazePose por recorte': '
 export const caixaUtil = (b, H, alturaMin = 0.1) => (b.y2 - b.y1) >= alturaMin * H && (b.x2 - b.x1) <= 1.1 * (b.y2 - b.y1);
 
 export class MotorMulti {
-  /** o = { fonte: 'rtmo'|'recorte', maxPessoas, conf, kpConf, detectarMs } */
+  /** o = { fonte: 'rtmo'|'recorte', maxPessoas, conf, kpConf, detectarMs, fabrica? (() => rastreador por pessoa) } */
   constructor(o = {}) { this.o = { fonte: 'rtmo', maxPessoas: 6, conf: 0.35, kpConf: 0.3, detectarMs: 1500, alturaMin: 0.1, ...o }; this.zerar(); }
   zerar() {
     this.rast = new RastreadorPessoas({ vidaMs: 1500 });
@@ -168,7 +168,8 @@ export class MotorMulti {
     }
     const res = [];
     for (const id of novas.keys()) {
-      if (!this.rps.has(id)) { const r = new RastreadorPose(); r.usarQuadro(this.fc); this.rps.set(id, r); }
+      // o.fabrica: outro rastreador por pessoa (o Motion 3D usa o RastreadorMotion, que dá também os 33 pontos 3D)
+      if (!this.rps.has(id)) { const r = this.o.fabrica ? this.o.fabrica() : new RastreadorPose(); r.usarQuadro(this.fc); this.rps.set(id, r); }
     }
     for (const [id, rp] of this.rps) {
       if (prep.alvoId != null && id !== prep.alvoId) continue;
@@ -177,7 +178,7 @@ export class MotorMulti {
       if (r.sem) { this.rps.delete(id); continue; }
       const caixa = caixaPose(r.P);
       if (!r.incoerente) this.rast.observar(id, caixa, t);
-      res.push({ id, P: r.P, pontos: 33, caixa, incoerente: Boolean(r.incoerente), aquecendo: Boolean(r.aquecendo), motivo: r.motivo });
+      res.push({ id, P: r.P, W: r.W || null, pontos: 33, caixa, incoerente: Boolean(r.incoerente), aquecendo: Boolean(r.aquecendo), motivo: r.motivo });
     }
     this.ultimas = res;
     return res;

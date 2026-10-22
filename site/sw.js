@@ -24,7 +24,7 @@
  * ========================================================================
  */
 
-const VERSION = 'iav-v99-vps';   // 22/10/2026: Via em todos os módulos e Studios (registro genérico, botão ✦) e geração de animações por texto no Motion 3D
+const VERSION = 'iav-v100-vps';   // 22/10/2026: Motion 3D v2: vídeo→3D realista (levantar.js), várias pessoas, avatar VRM/GLB/FBX, marionete 2D, estúdio (câmera virtual, fundo, gravação, OBS, VMC)
 const SHELL = `${VERSION}-shell`;
 /*
  * Pesos dos modelos num cache de nome FIXO: sobrevivem às publicações. Antes o

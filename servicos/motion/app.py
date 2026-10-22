@@ -24,6 +24,18 @@ ROTAS (prefixo /api/v1/motion — o Caddy repassa `handle /api/v1/motion/*` para
     GET    /jobs/{id}                   estado e progresso
     POST   /jobs/{id}/cancel            cancela                               200 | 409
     GET    /jobs/{id}/artifacts         artefatos (JSON motionai.pose.v1)
+    POST   /vmc/canais                  (1.1) canal de repasse VMC: { canal, token, expira }       201
+    WS     /vmc/ws?canal=&papel=emissor (1.1) o Studio (cookie da sessão, dono do canal) envia OSC
+    WS     /vmc/ws?token=&papel=receptor (1.1) a ponte_vmc.py no PC do 3D recebe e solta em UDP
+
+REPASSE VMC (1.1)
+  O servidor só REPASSA mensagens binárias (pacotes OSC prontos, ≤ 2 KB) do emissor para os
+  receptores do mesmo canal: não interpreta, não grava, não loga conteúdo. Emissor: sessão do
+  iaVision (cookie) e dono do canal. Receptor: o token do canal (32 bytes aleatórios, comparação em
+  tempo constante), que o Studio mostra só ao dono. Canal expira em AIV_MOTION_VMC_H horas (12);
+  até 3 canais por usuário, 1 emissor e 2 receptores por canal, até 240 mensagens/s (o excesso
+  é descartado). Nenhuma porta nova: é a mesma 8988 atrás do Caddy (WebSocket passa pelo
+  reverse_proxy sem configuração extra).
 
 AUTENTICAÇÃO
   Igual ao aivision-via/aivision-yt: o cabeçalho Cookie vai para a API PHP de login (AIV_ME_URL) e
@@ -47,14 +59,18 @@ import uuid
 from collections import OrderedDict
 from typing import Any, Optional
 
+import asyncio
+import hmac
+import secrets
+
 import httpx
-from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi import Depends, FastAPI, HTTPException, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from motores import ESTADOS, MOTORES, SO_IMPORTACAO
 
-VERSAO = "1.0.0"
+VERSAO = "1.1.0"
 ME_URL = os.environ.get("AIV_ME_URL", "https://gplansis.com/aivision-api/api/me")
 DADOS = os.environ.get("AIV_MOTION_DADOS", "/dados")
 MAX_UPLOAD_MB = int(os.environ.get("AIV_MOTION_MAX_MB", "300"))
@@ -510,6 +526,115 @@ def baixar_artefato(job_id: str, artifact_id: str, u: dict = Depends(leitura)):
         raise HTTPException(404, "Artefato não encontrado.")
     with open(a["caminho"], "rb") as f:
         return Response(f.read(), media_type="application/json")
+
+
+# ------------------------------------------------------------------ repasse VMC (1.1)
+
+VMC_H = float(os.environ.get("AIV_MOTION_VMC_H", "12"))
+VMC_MAX_MSG = 2048
+VMC_MAX_HZ = 240
+CANAIS: dict[str, dict] = {}
+_lim_vmc = Limite(20)
+
+
+def _expurgar_canais():
+    agora = time.time()
+    for cid, c in list(CANAIS.items()):
+        if c["expira"] < agora:
+            CANAIS.pop(cid, None)
+
+
+@app.post(PREFIXO + "/vmc/canais", status_code=201)
+def criar_canal_vmc(u: dict = Depends(escrita)):
+    _lim_vmc.checar(u["ip"])
+    with _lock:
+        _expurgar_canais()
+        meus = sorted((c for c in CANAIS.values() if c["dono"] == u["id"]), key=lambda c: c["criado"])
+        while len(meus) >= 3:
+            CANAIS.pop(meus.pop(0)["id"], None)
+        cid = novo_id("vmc")
+        c = {"id": cid, "dono": u["id"], "pseud": u["pseud"], "token": secrets.token_urlsafe(32), "criado": time.time(),
+             "expira": time.time() + VMC_H * 3600, "emissor": None, "receptores": set(), "janela": [0.0, 0]}
+        CANAIS[cid] = c
+    log.info("vmc canal=%s user=%s", cid, u["pseud"])
+    return {"canal": cid, "token": c["token"], "expira_em_h": VMC_H, "max_receptores": 2}
+
+
+def _canal_por_token(token: str) -> Optional[dict]:
+    if not token or len(token) > 100:
+        return None
+    for c in CANAIS.values():
+        if hmac.compare_digest(c["token"], token):
+            return c
+    return None
+
+
+@app.websocket(PREFIXO + "/vmc/ws")
+async def vmc_ws(ws: WebSocket, papel: str = "", canal: str = "", token: str = ""):
+    _expurgar_canais()
+    ip = (ws.headers.get("x-forwarded-for", "").split(",")[0].strip()) or (ws.client.host if ws.client else "?")
+    c = None
+    if papel == "emissor":
+        try:
+            u = await asyncio.to_thread(validar_cookie, ws.headers.get("cookie", ""), ip)
+        except (LoginIndisponivel, HTTPException):
+            u = None
+        c = CANAIS.get(canal) if ID_RE.match(canal or "") else None
+        if not u or not c or c["dono"] != u["id"] or c["emissor"] is not None:
+            await ws.close(code=4401 if not u else 4404)
+            return
+    elif papel == "receptor":
+        c = _canal_por_token(token)
+        if not c or len(c["receptores"]) >= 2:
+            await ws.close(code=4404 if not c else 4409)
+            return
+    else:
+        await ws.close(code=4400)
+        return
+    await ws.accept()
+    log.info("vmc canal=%s papel=%s user=%s conectou", c["id"], papel, c["pseud"])
+    if papel == "receptor":
+        c["receptores"].add(ws)
+        try:
+            while True:
+                m = await ws.receive()   # o receptor só escuta; mensagens dele são ignoradas
+                if m.get("type") == "websocket.disconnect":
+                    break
+        except WebSocketDisconnect:
+            pass
+        finally:
+            c["receptores"].discard(ws)
+        return
+    c["emissor"] = ws
+    try:
+        while True:
+            m = await ws.receive()
+            if m.get("type") == "websocket.disconnect":
+                break
+            dados = m.get("bytes")
+            if not dados or len(dados) > VMC_MAX_MSG:
+                continue
+            if time.time() > c["expira"]:
+                await ws.close(code=4410)
+                break
+            agora = time.monotonic()
+            j = c["janela"]
+            if agora - j[0] >= 1:
+                j[0], j[1] = agora, 0
+            j[1] += 1
+            if j[1] > VMC_MAX_HZ:
+                continue
+            for r in list(c["receptores"]):
+                try:
+                    await asyncio.wait_for(r.send_bytes(dados), 0.5)
+                except Exception:  # noqa: BLE001 — receptor lento ou caído sai do canal
+                    c["receptores"].discard(r)
+    except WebSocketDisconnect:
+        pass
+    finally:
+        if c.get("emissor") is ws:
+            c["emissor"] = None
+        log.info("vmc canal=%s emissor saiu", c["id"])
 
 
 @app.exception_handler(HTTPException)

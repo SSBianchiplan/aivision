@@ -5,3 +5,5 @@ uvicorn==0.54.0
 pydantic==2.13.5
 httpx==0.28.1
 python-multipart==0.0.32
+# 1.1: WebSocket do repasse VMC (o uvicorn usa a biblioteca websockets). 17.2 publicada em 03/10/2026.
+websockets==17.2

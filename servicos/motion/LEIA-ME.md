@@ -26,6 +26,23 @@ Diferenças do contrato, de propósito: autenticação pelo cookie de sessão do
 HttpOnly — o que o documento 04 prefere) em vez de bearer; `exmr` aceito na lista de motores; upload
 explícito em `/uploads` (o contrato só cita `input_artifact_id`).
 
+## Repasse VMC (1.1) — saída ao vivo do avatar para Unity/Unreal/Blender
+
+| Rota | Resposta |
+|---|---|
+| `POST /vmc/canais` | 201 `{canal, token, expira_em_h, max_receptores}` (sessão do iaVision; até 3 canais por usuário) |
+| `WS /vmc/ws?papel=emissor&canal=` | o Studio (cookie da sessão, dono do canal) envia pacotes OSC prontos (≤ 2 KB) |
+| `WS /vmc/ws?papel=receptor&token=` | a `ponte_vmc.py --remoto` (no PC do 3D) recebe e solta cada pacote em UDP |
+
+O servidor só REPASSA (não interpreta, não grava, não loga conteúdo), até 240 mensagens/s por canal,
+1 emissor e 2 receptores, canal expira em `AIV_MOTION_VMC_H` (12) h. Mesma porta 8988 e mesma rota do
+Caddy (`handle /api/v1/motion/*`): o `reverse_proxy` passa WebSocket sem configuração extra. Exige
+`websockets==17.2` (o uvicorn usa para WebSocket). `ponte_vmc.py` (só biblioteca padrão do Python) também
+roda em modo LOCAL (`ws://127.0.0.1:39541` → `udp 127.0.0.1:39539`) quando o Studio está no mesmo PC;
+o site serve uma cópia em `/codigo-fonte/ponte_vmc.py`.
+
+Teste: com o serviço no ar (AIV_ME_URL de teste), `python testes/teste_vmc.py` (8 verificações).
+
 ## Autenticação e limites
 Igual ao `aivision-via`/`aivision-yt`: o `Cookie` vai para `AIV_ME_URL` (API PHP de login) e exige
 `{"authenticated": true}`; usuário sempre de `/api/me`; cache de 60 s por hash do cookie; 503 se o login

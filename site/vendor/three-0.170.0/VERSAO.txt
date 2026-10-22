@@ -5,3 +5,13 @@ Origem: npm pack three@0.170.0 (sha512 do registro npm), arquivos sem alteraçã
   nos dois, só o especificador `from 'three'` foi trocado por `from '../three.module.min.js'`
   (o iaVision é ES modules sem build e sem importmap).
 Usado por: Motion 3D Studio (CV-88), carregado sob demanda — não entra na abertura do app.
+
+Acrescentados no Motion 3D Studio v2 (mesma origem npm pack three@0.170.0, sem alteração exceto os especificadores):
+  addons/GLTFLoader.js          = examples/jsm/loaders/GLTFLoader.js
+  addons/FBXLoader.js           = examples/jsm/loaders/FBXLoader.js
+  addons/NURBSCurve.js          = examples/jsm/curves/NURBSCurve.js      (dependência do FBXLoader)
+  addons/NURBSUtils.js          = examples/jsm/curves/NURBSUtils.js      (dependência do NURBSCurve)
+  addons/BufferGeometryUtils.js = examples/jsm/utils/BufferGeometryUtils.js (dependência do GLTFLoader)
+  addons/RGBELoader.js          = examples/jsm/loaders/RGBELoader.js     (fundo HDRI .hdr)
+  addons/fflate.module.js       = examples/jsm/libs/fflate.module.js     (fflate, MIT, 101arrowz — dependência do FBXLoader)
+  `from 'three'` → `from '../three.module.min.js'`; `../utils/`, `../libs/`, `../curves/` → `./`.

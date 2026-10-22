@@ -11,6 +11,9 @@
  * nomes dos ossos, o esqueleto RETARGETADO (BVH do robo) por cima dos marcadores, presets de
  * câmera (perspectiva, frente, lado, topo, "atrás" = como espelho), iluminação (lit/unlit/
  * wireframe), transformação do SK_Character (mover/girar/escala por arrasto) e render sob demanda.
+ * Studio v2: o MODELO do usuário (avatar.js) no lugar das cápsulas, atores extras (várias
+ * pessoas), câmera virtual que segue o ator (predefinições), fundo (cor, gradiente, imagem,
+ * HDRI .hdr, chroma) e um gancho por quadro (molas do VRM, saída VMC, gravação contínua).
  */
 import * as THREE from '../../../vendor/three-0.170.0/three.module.min.js';
 import { OrbitControls } from '../../../vendor/three-0.170.0/addons/OrbitControls.js';
@@ -57,7 +60,7 @@ export const CORES = {
 };
 const temaAtual = () => { const t = document.documentElement.getAttribute('data-theme'); return t === 'light' || t === 'code' ? t : 'dark'; };
 
-function rotulo(texto) {
+function rotulo(texto, k = 1) {
   const c = document.createElement('canvas');
   const g = c.getContext('2d');
   g.font = '600 28px Archivo, Arial, sans-serif';
@@ -69,7 +72,7 @@ function rotulo(texto) {
   const tx = new THREE.CanvasTexture(c);
   tx.colorSpace = THREE.SRGBColorSpace;
   const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tx, depthTest: false, transparent: true }));
-  s.scale.set(w / 40 * 0.05, 0.05, 1);
+  s.scale.set((w / 40) * 0.05 * k, 0.05 * k, 1);
   s.renderOrder = 10;
   return s;
 }
@@ -125,6 +128,11 @@ export class CenaMotion3D {
     this.cams = new THREE.Group(); this.cams.name = 'Cameras';
     this.cena.add(this.cams);
 
+    this.extras = new THREE.Group(); this.extras.name = 'Atores';
+    this.cena.add(this.extras);
+    this.modelo = null;
+    this.seguirModo = 'livre'; this.alvoAtor = null; this._tAnt = performance.now(); this.continuo = false; this.aoQuadro = null;
+    this.fundoCfg = { tipo: 'tema' };
     this._aplicarTema();
     this._mo = new MutationObserver(() => this._aplicarTema());
     this._mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
@@ -134,8 +142,12 @@ export class CenaMotion3D {
     this._ligarArrasto();
     const laco = () => {
       this.raf = requestAnimationFrame(laco);
+      const agora = performance.now(), dt = Math.min(0.1, (agora - this._tAnt) / 1000);
+      this._tAnt = agora;
+      if (this.aoQuadro) { try { if (this.aoQuadro(dt)) this.sujo = true; } catch (_) { /* o gancho não derruba o laço */ } }
+      if (this._seguir(dt)) this.sujo = true;
       const mexeu = this.controles.update();
-      if (mexeu || this.sujo) { this.sujo = false; this.renderer.render(this.cena, this.camera); this.quadrosDesenhados = (this.quadrosDesenhados || 0) + 1; }
+      if (mexeu || this.sujo || this.continuo) { this.sujo = false; this.renderer.render(this.cena, this.camera); this.quadrosDesenhados = (this.quadrosDesenhados || 0) + 1; }
     };
     laco();
   }
@@ -167,7 +179,7 @@ export class CenaMotion3D {
   _aplicarTema() {
     const c = CORES[temaAtual()];
     this.cores = c;
-    this.cena.background = new THREE.Color(c.fundo);
+    if (!this.fundoCfg || this.fundoCfg.tipo === 'tema') this.cena.background = new THREE.Color(c.fundo);
     this.ossos.material.color.setHex(c.marca);
     this.juntas.material.color.setHex(c.junta);
     this.retarget.material.color.setHex(c.retarget);
@@ -194,7 +206,8 @@ export class CenaMotion3D {
     this.gradeObj.visible = this.opc.grade;
     this.pisoObj.visible = this.opc.piso;
     this.ossos.visible = this.juntas.visible = this.opc.esqueleto;
-    this.avatar.visible = this.opc.avatar !== 'nenhum';
+    this.avatar.visible = this.opc.avatar !== 'nenhum' && !this.modelo;
+    if (this.modelo) this.modelo.base.visible = this.opc.avatar !== 'nenhum';
     this.nomes.visible = this.opc.nomes;
     this.retarget.visible = this.opc.retarget;
     this.com.visible = this.comChao.visible = this.rastro.visible = this.base.visible = this.opc.com && this._temCom;
@@ -352,6 +365,162 @@ export class CenaMotion3D {
     if (cab) { this.cabeca.position.set(cab[0], cab[1] + 0.02, cab[2]); this.cabeca.scale.set(0.095, 0.115, 0.105); }
   }
 
+  // ------------------------------------------------------------------ Studio v2
+
+  /** Põe (ou tira, com null) o modelo do usuário (AvatarRig) no lugar das cápsulas. */
+  definirModelo(rig) {
+    if (this.modelo && this.modelo !== rig) this.ator.remove(this.modelo.base);
+    this.modelo = rig || null;
+    if (rig) { this.ator.add(rig.base); rig.base.visible = this.opc.avatar !== 'nenhum'; }
+    this.avatar.visible = this.opc.avatar !== 'nenhum' && !rig;
+    this.sujo = true;
+  }
+
+  /**
+   * Atores extras (várias pessoas): [{ id, q (33 pontos), desl [x,y,z], rig? }]. Sem modelo, um
+   * esqueleto de linhas com a cor de cada ator.
+   */
+  mostrarExtras(lista) {
+    const vistos = new Set();
+    this._extras = this._extras || new Map();
+    // a mesma cor do vídeo: Ator 1 no acento, 2 amarelo, 3 rosa, 4 azul
+    const CORES_EX = [this.cores.marca, 0xffd84d, 0xf472b6, 0x60a5fa];
+    (lista || []).forEach((a, k) => {
+      vistos.add(a.id);
+      let e = this._extras.get(a.id);
+      const cor = CORES_EX[(a.cor ?? k + 1) % 4];
+      if (!e) {
+        const g = new THREE.Group(); g.name = 'Ator_' + a.id;
+        const l = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: cor }));
+        const j = new THREE.InstancedMesh(new THREE.SphereGeometry(0.02, 8, 6), new THREE.MeshStandardMaterial({ color: cor }), 33);
+        l.frustumCulled = false; j.frustumCulled = false; g.add(l, j);
+        const sp = rotulo(a.rotulo || `Ator ${k + 2}`, 2.2); g.add(sp);
+        this.extras.add(g);
+        e = { g, l, j, sp, rig: null, rot: a.rotulo };
+        this._extras.set(a.id, e);
+      }
+      e.l.material.color.setHex(cor); e.j.material.color.setHex(cor);
+      if (a.rotulo && a.rotulo !== e.rot) { e.g.remove(e.sp); e.sp.material.map.dispose(); e.sp.material.dispose(); e.sp = rotulo(a.rotulo, 2.2); e.g.add(e.sp); e.rot = a.rotulo; }
+      const m4 = new THREE.Matrix4();
+      for (let i = 0; i < 33; i++) { const p = a.q && a.q[i]; m4.makeTranslation(p ? p[0] : 0, p ? p[1] : -10, p ? p[2] : 0); e.j.setMatrixAt(i, m4); }
+      e.j.instanceMatrix.needsUpdate = true;
+      e.j.visible = !a.rig;
+      const cab = a.q && (a.q[0] || a.q[11]);
+      e.sp.visible = Boolean(cab);
+      if (cab) e.sp.position.set(cab[0], cab[1] + 0.32, cab[2]);
+      if (a.rig && e.rig !== a.rig) { if (e.rig) e.g.remove(e.rig.base); e.rig = a.rig; e.g.add(a.rig.base); }
+      e.g.position.set(...(a.desl || [0, 0, 0]));
+      const seg = [];
+      if (a.q && (!e.rig || this.opc.esqueleto)) for (const [x, y] of LIGACOES) if (a.q[x] && a.q[y]) seg.push(...a.q[x], ...a.q[y]);
+      e.l.geometry.dispose(); e.l.geometry = new THREE.BufferGeometry(); e.l.geometry.setAttribute('position', new THREE.Float32BufferAttribute(seg, 3));
+    });
+    for (const [id, e] of this._extras) if (!vistos.has(id)) { if (e.rig) e.g.remove(e.rig.base); this.extras.remove(e.g); e.l.geometry.dispose(); e.j.geometry.dispose(); e.sp.material.map.dispose(); this._extras.delete(id); }
+    if (!this._extras.size && this._rotPri) this._rotPri.visible = false;
+    this.sujo = true;
+  }
+  /** Rótulo do ator principal (várias pessoas), acima da cabeça dele. */
+  rotuloPrincipal(texto) {
+    if (!this._rotPri || this._rotPriTxt !== texto) {
+      if (this._rotPri) { this.ator.remove(this._rotPri); this._rotPri.material.map.dispose(); this._rotPri.material.dispose(); }
+      this._rotPri = rotulo(texto, 2.2); this._rotPriTxt = texto; this.ator.add(this._rotPri);
+    }
+    const q = this._q, cab = q && (q[0] || q[11]);
+    this._rotPri.visible = Boolean(cab);
+    if (cab) this._rotPri.position.set(cab[0], cab[1] + 0.32, cab[2]);
+  }
+
+  /**
+   * Câmera virtual: 'livre' | 'seguir' (o alvo acompanha o quadril, a órbita do usuário vale) |
+   * 'rosto' (close) | 'americano' (plano americano) | 'geral' (plano geral) | 'lateral'
+   * (travelling de lado) | 'orbita' (gira em volta do ator).
+   */
+  definirSeguir(modo) {
+    this.seguirModo = modo || 'livre';
+    this._offset = null;
+    this.sujo = true;
+  }
+  /** Posição (no mundo) do ator a seguir, chamada a cada pose. */
+  alvo(p) { if (p && p.every(Number.isFinite)) { this.alvoAtor = this.alvoAtor || new THREE.Vector3(); this.alvoAtor.set(p[0], p[1], p[2]).applyMatrix4(this.ator.matrixWorld); } }
+  _seguir(dt) {
+    const m = this.seguirModo;
+    if (m === 'livre' || !this.alvoAtor) return false;
+    const PRE = { rosto: [0.25, 0.25, 0.95, 0.55], americano: [0.5, 0.15, 2.4, 0.2], geral: [1.2, 0.6, 5.2, 0.05], lateral: [3.0, 0.2, 0.01, 0.1] };
+    const k = 1 - Math.exp(-dt * 4);   // suavização exponencial (sem tranco)
+    const alvo = this.alvoAtor.clone();
+    if (m === 'rosto') alvo.y += 0.62; else if (m === 'americano') alvo.y += 0.15; else if (m === 'lateral') alvo.y += 0.1;
+    const t = this.controles.target;
+    if (m === 'seguir') {
+      // mantém o deslocamento da câmera escolhido pelo usuário (órbita livre continua valendo)
+      const off = this.camera.position.clone().sub(t);
+      t.lerp(alvo, k);
+      this.camera.position.copy(t).add(off);
+      return true;
+    }
+    if (m === 'orbita') {
+      this._ang = (this._ang || 0) + dt * 0.35;
+      const d = 3.4;
+      t.lerp(alvo, k);
+      this.camera.position.set(t.x + Math.sin(this._ang) * d, t.y + 0.5, t.z + Math.cos(this._ang) * d);
+      return true;
+    }
+    const [lx, ly, dz, py] = PRE[m];
+    const desejada = new THREE.Vector3(alvo.x + lx * 0.3, alvo.y + ly, alvo.z + dz);
+    if (m === 'lateral') desejada.set(alvo.x + lx, alvo.y + ly, alvo.z + dz);
+    t.lerp(alvo, k);
+    this.camera.position.lerp(desejada, k);
+    void py;
+    return true;
+  }
+
+  /**
+   * Fundo: { tipo: 'tema' | 'cor' | 'gradiente' | 'imagem' | 'hdri' | 'chroma', cor, imagem
+   * (HTMLImageElement/ImageBitmap/canvas), hdr (ArrayBuffer .hdr) }. HDRI e imagem 2:1 viram
+   * panorama (equiretangular) e também iluminam o modelo (ambiente PMREM).
+   */
+  async definirFundo(cfg) {
+    this.fundoCfg = { ...cfg };
+    const velho = this._fundoTex;
+    this._fundoTex = null;
+    this.cena.environment = null;
+    if (this._env) { this._env.dispose(); this._env = null; }
+    let bg = null;
+    if (cfg.tipo === 'cor' || cfg.tipo === 'chroma') bg = new THREE.Color(cfg.tipo === 'chroma' ? (cfg.cor || '#00b140') : cfg.cor || '#202830');
+    else if (cfg.tipo === 'gradiente') {
+      const c = document.createElement('canvas'); c.width = 16; c.height = 256;
+      const g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 256);
+      gr.addColorStop(0, cfg.cor || '#4b79a8'); gr.addColorStop(0.55, cfg.cor2 || '#c9d8e4'); gr.addColorStop(1, cfg.cor3 || '#e8e2d4');
+      g.fillStyle = gr; g.fillRect(0, 0, 16, 256);
+      bg = new THREE.CanvasTexture(c); bg.colorSpace = THREE.SRGBColorSpace;
+    } else if (cfg.tipo === 'imagem' && cfg.imagem) {
+      bg = new THREE.Texture(cfg.imagem); bg.colorSpace = THREE.SRGBColorSpace; bg.needsUpdate = true;
+      const w = cfg.imagem.width, h = cfg.imagem.height;
+      if (w && h && Math.abs(w / h - 2) < 0.05) { bg.mapping = THREE.EquirectangularReflectionMapping; this._ambiente(bg); }
+    } else if (cfg.tipo === 'hdri' && cfg.hdr) {
+      const { RGBELoader } = await import('../../../vendor/three-0.170.0/addons/RGBELoader.js');
+      const d = new RGBELoader().parse(cfg.hdr);
+      const t = new THREE.DataTexture(d.data, d.width, d.height, THREE.RGBAFormat, d.type);
+      t.colorSpace = THREE.LinearSRGBColorSpace; t.minFilter = t.magFilter = THREE.LinearFilter; t.generateMipmaps = false; t.flipY = true; t.needsUpdate = true;
+      t.mapping = THREE.EquirectangularReflectionMapping;
+      bg = t; this._ambiente(t);
+    }
+    if (!bg) bg = new THREE.Color(this.cores.fundo);
+    this.cena.background = bg;
+    if (bg.isTexture) this._fundoTex = bg;
+    if (velho && velho !== bg) velho.dispose();
+    this.sujo = true;
+  }
+  _ambiente(tex) {
+    try {
+      const pm = new THREE.PMREMGenerator(this.renderer);
+      this._env = pm.fromEquirectangular(tex).texture;
+      this.cena.environment = this._env;
+      pm.dispose();
+    } catch (_) { /* sem ambiente: só o fundo */ }
+  }
+
+  /** Canvas do viewport (gravação, OBS). */
+  get canvas() { return this.renderer.domElement; }
+
   /** PNG do viewport (miniatura do cartão, "salvar quadro"). */
   png(larg = 0) {
     this.renderer.render(this.cena, this.camera);
@@ -370,7 +539,9 @@ export class CenaMotion3D {
   }
 
   destruir() {
-    cancelAnimationFrame(this.raf); this._mo.disconnect(); this.ro.disconnect(); this.controles.dispose();
+    cancelAnimationFrame(this.raf);
+    if (this._env) this._env.dispose();
+    if (this.modelo) { this.ator.remove(this.modelo.base); this.modelo = null; } this._mo.disconnect(); this.ro.disconnect(); this.controles.dispose();
     this.cena.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => { if (m.map) m.map.dispose(); m.dispose(); }); });
     this.renderer.dispose(); this.renderer.forceContextLoss && this.renderer.forceContextLoss(); this.renderer.domElement.remove();
   }

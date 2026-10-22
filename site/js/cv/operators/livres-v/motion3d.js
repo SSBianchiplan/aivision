@@ -6,7 +6,8 @@
  * "do mundo" (runtime/livres-v/pose3d.js — o mesmo modelo, nenhuma inferência a mais). Cada
  * pose vai para o canal (runtime/livres-v/canal.js), que suaviza com o One Euro do
  * GPlanSiS|ROBO, mede taxa e latência e grava a tomada que o Studio pede. As mãos da cadeia
- * (maos.gestos antes deste nó) vão junto, para o Studio desenhar os dedos.
+ * (maos.gestos antes deste nó) vão junto, para o Studio desenhar os dedos; a malha do rosto
+ * (rosto.malha antes deste nó) também, para a cabeça e as expressões do avatar (Studio v2).
  *
  * Fora do Studio o nó desenha o esqueleto verde-água sobre o vídeo; com o Studio aberto quem
  * desenha é o Studio. Processamento NO APARELHO: nenhum quadro sai do navegador. Ângulos e 3D
@@ -20,6 +21,7 @@ import { tempoDaFonte } from '../../runtime/livres-m/canal.js';
 import { RastreadorMotion } from '../../runtime/livres-v/pose3d.js';
 import { canalMotion } from '../../runtime/livres-v/canal.js';
 import { bannerista } from '../livres-h/comum.js';
+import { MotorMulti } from '../../runtime/livres-h/multi-pose.js';
 
 const G = 'CV-88';
 export const COR_MOCAP = '#2EF2D0';   // verde-água do Studio (acento do tema escuro)
@@ -29,6 +31,49 @@ export const LIGACOES = [
   [11, 12], [11, 23], [12, 24], [23, 24], [11, 13], [13, 15], [15, 19], [15, 17], [17, 19], [12, 14], [14, 16], [16, 20], [16, 18], [18, 20],
   [23, 25], [25, 27], [27, 29], [29, 31], [27, 31], [24, 26], [26, 28], [28, 30], [30, 32], [28, 32], [0, 2], [0, 5], [2, 7], [5, 8], [9, 10],
 ];
+
+/**
+ * Várias pessoas: estima todas, dá a cada uma uma VAGA estável (Ator 1…4) e publica, com o
+ * Ator de menor número como principal: o principal no canal como sempre (suavização, gravação, retarget) e todos em
+ * `atores` = [{ id, W, P, cx (centro do quadril, 0..1 da imagem NÃO espelhada), alt (altura 0..1) }].
+ */
+async function estimarAtores(state, prep, esp) {
+  const lista = (await state.multi.estimar(prep)).filter((a) => a.W && a.P && !a.incoerente);
+  const latMs = performance.now() - prep.t0;
+  if (!lista.length) {
+    canalMotion.publicar({ t: prep.tFonte, P: null, W: null, w: prep.w, h: prep.h, latMs, img: prep.img, maos: prep.maos, rosto: prep.rosto, esp, atores: [] });
+    return { sem: true };
+  }
+  // VAGAS estáveis "Ator 1…4": o ID do rastreador muda quando a trilha morre (pose a poucos Hz por
+  // pessoa); a vaga fica com quem tem o mesmo ID ou, senão, com quem está mais perto de onde ela foi
+  // vista (centro do quadril, tolerância pelo tamanho da pessoa), e sobrevive 6 s sem ser vista.
+  const tS = prep.tFonte, vagas = state.vagas || (state.vagas = []);
+  for (let k = vagas.length - 1; k >= 0; k--) if (tS - vagas[k].t > 6000 || tS < vagas[k].t - 2000) vagas.splice(k, 1);
+  const obs = lista.map((a) => ({ a, x: (a.P[23].x + a.P[24].x) / 2, y: (a.P[23].y + a.P[24].y) / 2, tam: Math.max(20, a.caixa.y2 - a.caixa.y1) }));
+  const livres = new Set(vagas);
+  for (const o of obs) { const v = vagas.find((g) => g.idMM === o.a.id && livres.has(g)); if (v) { o.vaga = v; livres.delete(v); } }
+  const pares = [];
+  for (const o of obs) if (!o.vaga) for (const v of livres) { const d = Math.hypot(o.x - v.x, o.y - v.y) / o.tam; if (d < 1.5) pares.push({ o, v, d }); }
+  pares.sort((a, b) => a.d - b.d);
+  for (const { o, v, d } of pares) if (!o.vaga && livres.has(v)) { o.vaga = v; livres.delete(v); void d; }
+  for (const o of obs) {
+    if (o.vaga) continue;
+    const usados = new Set(vagas.map((g) => g.n));
+    let n = 1; while (usados.has(n)) n++;
+    if (n > 4) continue;
+    o.vaga = { n }; vagas.push(o.vaga);
+  }
+  for (const o of obs) if (o.vaga) Object.assign(o.vaga, { x: o.x, y: o.y, t: tS, idMM: o.a.id });
+  const atores = obs.filter((o) => o.vaga).sort((a, b) => a.vaga.n - b.vaga.n).map(({ a, vaga }) => {
+    const hx = (a.P[23].x + a.P[24].x) / 2 / prep.w;
+    return { id: vaga.n, W: a.W, P: a.P, cx: esp ? 1 - hx : hx, alt: (a.caixa.y2 - a.caixa.y1) / prep.h };
+  });
+  if (!atores.length) { canalMotion.publicar({ t: prep.tFonte, P: null, W: null, w: prep.w, h: prep.h, latMs, img: prep.img, maos: prep.maos, rosto: prep.rosto, esp, atores: [] }); return { sem: true }; }
+  const pri = atores[0];
+  canalMotion.publicar({ t: prep.tFonte, P: pri.P, W: pri.W, w: prep.w, h: prep.h, latMs, img: prep.img, maos: prep.maos, rosto: prep.rosto, esp, atores });
+  state.principal = pri.id;
+  return { P: pri.P, W: pri.W, w: prep.w, h: prep.h, atores };
+}
 
 export const motion3dCaptura = {
   op: 'motion3d.captura',
@@ -49,6 +94,7 @@ export const motion3dCaptura = {
     minCorte: { type: 'float', min: 0.1, max: 10, step: 0.1, default: 1.2, label: 'One Euro: corte mín. (Hz)' },
     beta: { type: 'float', min: 0, max: 5, step: 0.05, default: 0.4, label: 'One Euro: beta' },
     desenhar: { type: 'bool', default: true, label: 'Desenhar esqueleto (fora do Studio)' },
+    pessoas: { type: 'int', min: 1, max: 4, step: 1, default: 1, label: 'Atores (várias pessoas: YOLOX + um BlazePose por pessoa)' },
   },
   apply(src, p, state, ctx) {
     if (!ensure('yolox', state, ctx)) return clone(src);
@@ -59,6 +105,12 @@ export const motion3dCaptura = {
     const f = canalMotion.filtro();
     if (f.ligado !== p.suavizar || f.minCorte !== p.minCorte || f.beta !== p.beta) canalMotion.configurarFiltro({ ligado: p.suavizar, minCorte: p.minCorte, beta: p.beta });
     state.maos = Array.isArray(ctx.hands) ? ctx.hands : null;
+    state.rosto = Array.isArray(ctx.faceMesh) ? ctx.faceMesh : null;   // rosto.malha antes na cadeia: expressões e cabeça do avatar
+    // várias pessoas (Studio v2): o MotorMulti da Corrida em modo recorte, um RastreadorMotion por pessoa
+    const multi = (p.pessoas | 0) > 1;
+    if (multi && !state.multi) state.multi = new MotorMulti({ fonte: 'recorte', maxPessoas: p.pessoas | 0, detectarMs: 1500, fabrica: () => new RastreadorMotion() });
+    if (multi) state.multi.configurar({ maxPessoas: p.pessoas | 0 });
+    else if (state.multi) { state.multi = null; state.principal = null; }
 
     schedule(state, p.everyMs,
       () => {
@@ -68,17 +120,22 @@ export const motion3dCaptura = {
         const t = fv.video ? fv.t * 1000 : performance.now();
         if (fv.video && state.tUlt != null && t === state.tUlt) return null;   // mesmo quadro do vídeo
         state.tUlt = t;
-        const prep = state.rast.preparar(src, performance.now(), { esp, detectarMs: p.detectarMs });
-        return { ...prep, tFonte: t, t0: performance.now(), maos: state.maos, img: canalMotion.precisaQuadro() ? clone(src) : null };
+        // várias pessoas: o relógio é o da FONTE (vídeo em câmera lenta ou pausado não "envelhece" as trilhas)
+        // vídeo voltou (laço, busca para trás): o rastreio multipessoa recomeça
+        if (multi && state.tMulti != null && t < state.tMulti - 500) { state.multi.zerar(); state.vagas = []; }
+        if (multi) state.tMulti = t;
+        const prep = multi ? { ...state.multi.preparar(src, t, { esp }), multi: true } : state.rast.preparar(src, performance.now(), { esp, detectarMs: p.detectarMs });
+        return { ...prep, tFonte: t, t0: performance.now(), maos: state.maos, rosto: state.rosto, img: canalMotion.precisaQuadro() ? clone(src) : null };
       },
       async (prep) => {
+        if (prep.multi && state.multi) return estimarAtores(state, prep, esp);
         const r = await state.rast.estimar(prep);
         const latMs = performance.now() - prep.t0;
         if (r.sem) {
-          canalMotion.publicar({ t: prep.tFonte, P: null, W: null, w: prep.w, h: prep.h, latMs, img: prep.img, maos: prep.maos, esp });
+          canalMotion.publicar({ t: prep.tFonte, P: null, W: null, w: prep.w, h: prep.h, latMs, img: prep.img, maos: prep.maos, rosto: prep.rosto, esp });
           return { sem: true };
         }
-        canalMotion.publicar({ t: prep.tFonte, P: r.P, W: r.W, w: prep.w, h: prep.h, vis: r.vis, latMs, img: prep.img, maos: prep.maos, esp, aquecendo: Boolean(r.aquecendo) });
+        canalMotion.publicar({ t: prep.tFonte, P: r.P, W: r.W, w: prep.w, h: prep.h, vis: r.vis, latMs, img: prep.img, maos: prep.maos, rosto: prep.rosto, esp, aquecendo: Boolean(r.aquecendo) });
         return { P: r.P, W: r.W, w: prep.w, h: prep.h };
       });
 

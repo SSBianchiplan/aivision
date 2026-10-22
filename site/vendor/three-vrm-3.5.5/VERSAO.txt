@@ -1,0 +1,6 @@
+@pixiv/three-vrm 3.5.5 (MIT, pixiv Inc.) — VRM 0.x e 1.0 para three.js (VRMLoaderPlugin, humanoide, expressões, lookAt, spring bones, MToon).
+Origem: npm pack @pixiv/three-vrm@3.5.5 (publicada em 09/07/2026; peerDependency three >=0.137).
+Arquivo: lib/three-vrm.module.min.js sem alteração, exceto o especificador `from"three"` trocado por
+`from"../three-0.170.0/three.module.min.js"` (ES modules sem build e sem importmap).
+NÃO vendorizado: lib/nodes/* (importa three/webgpu e three/tsl).
+Usado por: Motion 3D Studio (CV-88), avatar.js, carregado só quando um modelo é importado.

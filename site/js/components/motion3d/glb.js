@@ -50,13 +50,13 @@ export function bvhParaAnimacao(txt) {
 }
 
 /** Cena com o esqueleto (nós) e o avatar de cápsulas + o clipe de animação. */
-export function montarPersonagem(anim, { nome = 'SK_Character', cor = 0x8fa6a8, raio = 0.035 } = {}) {
+export function montarPersonagem(anim, { nome = 'SK_Character', cor = 0x8fa6a8, raio = 0.035, prefixo = '' } = {}) {
   const raizCena = new THREE.Group(); raizCena.name = nome;
   const mat = new THREE.MeshStandardMaterial({ color: cor, roughness: 0.55, metalness: 0.05 });
   const nos = new Map();
   for (const j of anim.juntas) {
     const no = new THREE.Group();
-    no.name = j.nome;
+    no.name = prefixo + j.nome;
     no.position.copy(j.off);
     (j.pai ? nos.get(j.pai.nome) : raizCena).add(no);
     nos.set(j.nome, no);
@@ -71,14 +71,14 @@ export function montarPersonagem(anim, { nome = 'SK_Character', cor = 0x8fa6a8, 
       const g = new THREE.CapsuleGeometry(raio, Math.max(1e-3, L - 2 * raio), 3, 8);
       g.normalizeNormals();   // o glTF exige normais unitárias (sem isto o exportador avisa no console)
       const m = new THREE.Mesh(g, mat);
-      m.name = `${j.nome}_osso`;
+      m.name = `${prefixo}${j.nome}_osso`;
       m.position.copy(alvo).multiplyScalar(0.5);
       m.quaternion.setFromUnitVectors(up, alvo.clone().normalize());
       nos.get(j.nome).add(m);
     }
   }
-  const trilhas = anim.juntas.map((j, k) => new THREE.QuaternionKeyframeTrack(`${j.nome}.quaternion`, anim.tempos, anim.quats[k]));
-  trilhas.push(new THREE.VectorKeyframeTrack(`${anim.juntas[0].nome}.position`, anim.tempos, anim.raiz));
+  const trilhas = anim.juntas.map((j, k) => new THREE.QuaternionKeyframeTrack(`${prefixo}${j.nome}.quaternion`, anim.tempos, anim.quats[k]));
+  trilhas.push(new THREE.VectorKeyframeTrack(`${prefixo}${anim.juntas[0].nome}.position`, anim.tempos, anim.raiz));
   const clipe = new THREE.AnimationClip('Take', anim.tempos.length ? anim.tempos[anim.tempos.length - 1] : 0, trilhas);
   return { cena: raizCena, clipe, nos };
 }
@@ -90,6 +90,21 @@ export async function bvhParaGLB(txt, opc = {}) {
   clipe.name = opc.nomeClipe || 'Take';
   const exp = new GLTFExporter();
   return exp.parseAsync(cena, { binary: true, animations: [clipe], onlyVisible: true });
+}
+
+/** Vários BVH (um por ator) → UM .glb com todos os personagens e um clipe só (nós com prefixo A1_, A2_…). */
+export async function bvhsParaGLB(lista, opc = {}) {
+  const cena = new THREE.Group(); cena.name = opc.nome || 'Atores';
+  const trilhas = [];
+  let dur = 0;
+  const cores = [0x8fa6a8, 0xd9b84a, 0xd46a9a, 0x5a8fd6];
+  lista.forEach(({ bvh, nome }, k) => {
+    const anim = bvhParaAnimacao(bvh);
+    const { cena: c, clipe } = montarPersonagem(anim, { nome: nome || `Ator_${k + 1}`, prefixo: `A${k + 1}_`, cor: cores[k % 4] });
+    cena.add(c); trilhas.push(...clipe.tracks); dur = Math.max(dur, clipe.duration);
+  });
+  const clipe = new THREE.AnimationClip(opc.nomeClipe || 'Take', dur, trilhas);
+  return new GLTFExporter().parseAsync(cena, { binary: true, animations: [clipe], onlyVisible: true });
 }
 
 /** Confere um .glb: assinatura, versão, JSON com nós, animação e canais. */

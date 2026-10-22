@@ -23,6 +23,22 @@
  *
  * Créditos: o MoCap (multicâmera, calibração pelo corpo, triangulação, pós-processamento, BVH,
  * cena) vem do GPlanSiS|ROBO (vendor/gplansis-robo-mocap). Gancho de teste: window.aivMotion3D.
+ *
+ * STUDIO v2 (retarget direto e avatares, marionete 2D, estúdio):
+ *   - Characters: modelo 3D do usuário (GLB/GLTF, VRM 0.x/1.0, FBX) ou os exemplos gerados em
+ *     código, com miniatura; retarget direto (retarget.js/avatar.js) ao vivo e nas tomadas, editor
+ *     de mapeamento ossos × juntas (PainelAvatar), dedos (maos.gestos) e rosto (rosto.malha),
+ *     spring bones do VRM; exportar a tomada como GLB do PRÓPRIO avatar animado;
+ *   - vista "Marionete 2D" (Marionete2D.js): imagem → recorte → esqueleto → malha → movimento;
+ *   - Estúdio (PainelEstudio): câmera virtual, fundo, gravação do viewport, janela limpa (OBS),
+ *     saída VMC/OSC, várias pessoas;
+ *   - desempenho: tamanho do vídeo por ResizeObserver, cores do tema em cache (MutationObserver),
+ *     vídeo não é redesenhado com a vista só 3D, o "Show Retarget" ao vivo é calculado direto
+ *     (retargetRobo) em vez de gerar e reler texto BVH a cada pose.
+ *
+ * API ESTÁVEL para outras partes do iaVision (a Via, outros módulos): api.js (motion3dAPI) —
+ *   criarTomada(trilha 33×3, opc) · listarTomadas() · lerTomada(id) · aplicarTomada(id, opc) ·
+ *   estado(). O Studio se registra lá ao montar (registrarStudio) e sai ao desmontar.
  */
 import { html, useState, useEffect, useRef, useCallback } from '../../vendor.js';
 import { store, persist } from '../../state/store.js';
@@ -40,8 +56,29 @@ import * as armazem from '../../cv/runtime/livres-v/armazem.js';
 import { MOTORES, ROTULO_ESTADO, capacidades, pedirJob, enviarVideo } from '../../cv/runtime/livres-v/conectores.js';
 import { paraBVH, lerBVH, baseDeSuporte } from '../../../vendor/gplansis-robo-mocap/mocap-robo.mjs';
 import { CenaMotion3D } from './cena3d.js';
-import { bvhParaGLB } from './glb.js';
+import { bvhParaGLB, bvhsParaGLB } from './glb.js';
+import { montarZip } from './gravador.js';
 import { MotorMulticam } from './multicam.js';
+import { retargetRobo, comprimentosRobo } from './retarget.js';
+import { carregarModelo, mapaAutomatico, AvatarRig, miniaturaModelo } from './avatar.js';
+import { gerarAvatar } from './avatar-gerado.js';
+import { PainelAvatar } from './PainelAvatar.js';
+import { PainelEstudio } from './PainelEstudio.js';
+import { Marionete2D } from './Marionete2D.js';
+import { SaidaVMC } from './vmc.js';
+import { registrarStudio } from './api.js';
+import * as THREE from '../../../vendor/three-0.170.0/three.module.min.js';
+import { GLTFExporter } from '../../../vendor/three-0.170.0/addons/GLTFExporter.js';
+
+/** Modelos de exemplo gerados em código (CC0; nada baixado). */
+const EXEMPLOS = [
+  { id: 'ex:vrm', nome: 'SK_Exemplo_VRM', tipo: 'VRM 1.0', desc: 'Humanoide gerado em código: VRM 1.0 em pose T, dedos, expressões e cabelo com spring bones (CC0).' },
+  { id: 'ex:glb', nome: 'SK_Exemplo_Mixamo', tipo: 'GLB', desc: 'Humanoide gerado em código: GLB com nomes Mixamo em pose A (testa a correção T/A), dedos e morph targets ARKit (CC0).' },
+];
+const pernaDe = (L) => (L && L.LeftLeg + L.LeftFoot > 0.3 ? (L.LeftLeg + L.LeftFoot + (L.RightLeg || L.LeftLeg) + (L.RightFoot || L.LeftFoot)) / 2 : 0.85);
+const RE_MODELO = /\.(glb|gltf|vrm|fbx)$/i, RE_IMAGEM = /\.(png|jpe?g|webp|gif|bmp)$/i;
+/** Cor de cada ator (vídeo, 3D, Sources): Ator 1 no acento do tema, depois amarelo, rosa, azul. */
+const COR_ATOR = [null, '#FFD84D', '#F472B6', '#60A5FA'];
 import { ligarViaMotion } from './via-motion.js';   // [VIA] gancho da Via (js/components/motion3d/via-motion.js)
 import { BotaoVia } from '../../via/BotaoVia.js';   // [VIA] botão «✦ Via» da barra
 
@@ -160,6 +197,28 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
   const ultimoLive = useRef(null);
   const renomeando = useRef(null);
   const [, setFonteV] = useState(0);
+  // ---- Studio v2
+  const [modelosCB, setModelosCB] = useState([]);       // modelos 3D e marionetes salvos (metadados)
+  const [avatar, setAvatar] = useState(null);           // { id, nome, tipo, rig, mapa, origem, ossos, vrm }
+  const avatarRef = useRef(null); avatarRef.current = avatar;
+  const [conferencia, setConferencia] = useState(null);
+  const [verRepouso, setVerRepouso] = useState(false);
+  const verRepousoRef = useRef(false); verRepousoRef.current = verRepouso;
+  const [seguir, setSeguir] = useState('livre');
+  const [limpo, setLimpo] = useState(false);
+  const [pupAbrir, setPupAbrir] = useState(null);       // { id } de uma marionete salva
+  const [pupArquivo, setPupArquivo] = useState(null);   // imagem nova para a marionete
+  const [cenaV, setCenaV] = useState(0);
+  const vmc = useRef(null); if (!vmc.current) vmc.current = new SaidaVMC();
+  const tamVid = useRef({ w: 0, h: 0 });                // tamanho da caixa do vídeo (ResizeObserver)
+  const coresRef = useRef(null);                        // cores do tema em cache (MutationObserver)
+  const extrasRig = useRef(new Map());                  // índice do ator extra → { rig } (várias pessoas)
+  const ultimaPose = useRef(null);                      // { W, ex, perna, chave }: marionete, VMC
+  const vistaRef = useRef('video'); vistaRef.current = vista;
+  const [atorAvatar, setAtorAvatar] = useState(null);   // id do ator que dirige o avatar (várias pessoas)
+  const atorAvatarRef = useRef(null); atorAvatarRef.current = atorAvatar;
+  const [qualidade, setQualidade] = useState(null);     // progresso do passe de qualidade (0..1) ou null
+  const layoutRef = useRef('padrao'); layoutRef.current = layout;
 
   // ------------------------------------------------------------------ montagem
   useEffect(() => {
@@ -180,8 +239,35 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
       document.body.classList.remove('studio-aberto', 'm3d-aberto', 'studio-ocioso');
       if (cena.current) { cena.current.destruir(); cena.current = null; }
       if (motorMc.current) { motorMc.current.destruir(); motorMc.current = null; }
+      if (vmc.current) vmc.current.desconectar();
+      if (avatarRef.current) avatarRef.current.rig.destruir();
+      for (const e of extrasRig.current.values()) if (e.rig) e.rig.destruir();
+      extrasRig.current.clear();
     };
   }, []);
+  // cores do tema em cache (nada de getComputedStyle por quadro) e tamanho do vídeo por ResizeObserver
+  useEffect(() => {
+    const ler = () => {
+      const est = getComputedStyle(raiz.current || document.body);
+      const v = (n, d) => est.getPropertyValue(n).trim() || d;
+      coresRef.current = { esqueleto: v('--m3d-esqueleto', '#2EF2D0'), palco: v('--m3d-palco', '#05090a'), tinta3: v('--m3d-tinta3', '#7a9'), acento: v('--m3d-acento', '#2EF2D0') };
+    };
+    ler();
+    const mo = new MutationObserver(() => requestAnimationFrame(ler));
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    const caixa = cvVid.current && cvVid.current.parentElement;
+    let ro = null;
+    if (caixa) {
+      tamVid.current = { w: caixa.clientWidth, h: caixa.clientHeight };
+      ro = new ResizeObserver((es) => { const r = es[0].contentRect; tamVid.current = { w: r.width, h: r.height }; });
+      ro.observe(caixa);
+    }
+    return () => { mo.disconnect(); if (ro) ro.disconnect(); };
+  }, []);
+  const recarregarModelos = useCallback(async () => {
+    try { setModelosCB(await armazem.listarModelos()); } catch (e) { setMsg(`IndexedDB: ${e.message}`); }
+  }, []);
+  useEffect(() => { recarregarModelos(); }, [recarregarModelos]);
   useEffect(() => onModelState((s) => setModelos(s)), []);
   useEffect(() => ouvirFonte(() => setFonteV((v) => v + 1)), []);
   useEffect(() => { let vivo = true; capacidades().then((c) => { if (vivo) setCaps(c); }); return () => { vivo = false; }; }, []);
@@ -204,8 +290,24 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
       cena.current.usarFerramenta(ferramenta, (t) => setTransf(t));
       cena.current.transformar(transf);
       if (play && play.tomada.cameras) cena.current.mostrarCameras(play.tomada.cameras);
+      // molas do VRM (cabelo, roupa): física a cada quadro, mesmo sem pose nova
+      cena.current.aoQuadro = (dt) => {
+        const av = avatarRef.current;
+        if (av && !verRepousoRef.current && av.rig.temMolas()) { av.rig.atualizar(dt); for (const e of extrasRig.current.values()) if (e.rig && e.rig.temMolas()) e.rig.atualizar(dt); return true; }
+        return false;
+      };
+      cena.current.definirSeguir(seguir);
+      setCenaV((v) => v + 1);
     } catch (e) { setMsg(`WebGL indisponível: ${e.message}`); }
   }, [mostra3d]);
+  // o modelo do usuário no lugar das cápsulas (Target Mesh = modelo)
+  useEffect(() => {
+    if (!cena.current) return;
+    const rig = opc.avatar === 'modelo' && avatar ? avatar.rig : null;
+    cena.current.definirModelo(rig);
+    if (rig && verRepouso) rig.voltarAoRepouso();
+  }, [avatar, opc.avatar, cenaV, verRepouso]);
+  useEffect(() => { if (cena.current) cena.current.definirSeguir(seguir); }, [seguir, cenaV]);
   useEffect(() => { if (cena.current) cena.current.definir(opc); }, [opc]);
   useEffect(() => { if (cena.current) cena.current.usarFerramenta(ferramenta, (t) => setTransf(t)); }, [ferramenta]);
   useEffect(() => { if (cena.current) cena.current.transformar(transf); }, [transf]);
@@ -213,6 +315,8 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
   // ------------------------------------------------------------------ laço de desenho
   useEffect(() => {
     let id = 0, ultimaChave = '', ultimaChaveVid = '', ultimaCena = null, tPlay = performance.now(), tHist = 0, tChao = 0, chaoVivo = 0;
+    let compVivo = null, pernaViva = 0.85;
+    const ultimaLocal = new Map();      // rotações locais do retarget direto (juntas sem dado)
     const pintar = () => {
       id = requestAnimationFrame(pintar);
       const p = playRef.current;
@@ -230,17 +334,44 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
       }
       const r = canalMotion.instantaneo();
       const tR = r ? r.tWall : -1;
-      const cvv = cvVid.current, caixa = cvv && cvv.parentElement ? cvv.parentElement.getBoundingClientRect() : null;
-      const tam = caixa ? `${Math.round(caixa.width)}x${Math.round(caixa.height)}` : '';
+      const tam = `${Math.round(tamVid.current.w)}x${Math.round(tamVid.current.h)}`;
+      const soVid = vistaRef.current === 'video' || layoutRef.current === 'ambos';
       // Vídeo e 3D com chaves separadas: o vídeo acompanha cada quadro PINTADO pelo app
       // (display.quadros, como no Studio Bike Fit), o 3D só muda quando chega pose nova.
       const dcq = !p && displayCanvas && displayCanvas.current ? displayCanvas.current.quadros | 0 : 0;
       const chave = (p ? `p${p.tomada.id}:${p.quadro}` : `l${tR}`) + `|${opc.borrar}|${opc.retarget}|${opc.chao}`;
       const chaveVid = chave + `|${tam}|d${dcq}`;
       const cenaNova = cena.current && cena.current !== ultimaCena;
-      if (chaveVid !== ultimaChaveVid) { ultimaChaveVid = chaveVid; desenharVideo(r, p); }
+      // o vídeo só é redesenhado quando aparece (vista Vídeo ou lado a lado)
+      if (soVid && chaveVid !== ultimaChaveVid) { ultimaChaveVid = chaveVid; desenharVideo(r, p); }
       if (cenaNova || chave !== ultimaChave) {
         ultimaChave = chave; ultimaCena = cena.current;
+        let Wv = null, ex = null, perna = pernaViva;
+        if (p) {
+          const i = p.quadro, dy = opc.chao ? p.chao || 0 : 0;
+          Wv = deslocarQ(p.proc.trilha[i], dy);
+          ex = p.tomada.extras ? p.tomada.extras[i + ((p.tomada.corte && p.tomada.corte.ini) || 0)] || null : null;
+          perna = p.perna || 0.85;
+        } else if (r) {
+          const agora = performance.now();
+          if (agora - tChao > 1000) {
+            tChao = agora;
+            const buf = canalMotion.buffer().map((a) => a.Wl || a.Wf || a.W);
+            chaoVivo = alturaChao(buf);
+            const ult = buf.filter(Boolean).slice(-90);
+            if (ult.length) { compVivo = comprimentosRobo(ult); pernaViva = pernaDe(compVivo); }
+          }
+          // o 3D reconstruído (levantamento 2D→3D: piso em 0, contatos) quando houver; senão o W com "pés no chão"
+          const sel = atorSelecionado(r);
+          Wv = sel && sel.Wl ? sel.Wl : r.Wl ? r.Wl : deslocarQ(r.Wf || r.W, opc.chao ? chaoVivo : 0);
+          ex = !sel || sel === (r.atores && r.atores[0]) ? r.ex || null : null;
+          perna = pernaViva;
+        }
+        if (Wv) ultimaPose.current = { W: Wv, ex, perna, chave };
+        posarAvatar(Wv, ex, perna);
+        if (!p && r) posarExtras(r, opc.chao ? chaoVivo : 0);
+        else if (p) posarExtrasTomada(p);
+        if (Wv && vmc.current.estado === 'ligado') vmc.current.enviar(Wv, ex, perna);
         if (cena.current) {
           // "pés no chão" (só exibição; os dados ficam como foram medidos): o monocular tem o quadril
           // numa altura fixa e flutua; desloca a cena inteira pela altura do chão da tomada/buffer
@@ -252,12 +383,10 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
             if (ret && dy) { const m = new Map(); for (const [k, v] of ret) m.set(k, v.clone().setY(v.y - dy)); ret = m; }
             cena.current.mostrarQuadro(q, com, p.proc.com.slice(Math.max(0, i - p.tomada.fps * 3), i + 1).map((c) => (c ? [c[0], c[1] - dy, c[2]] : null)), b.poligono, b.margem, ret);
           } else if (r) {
-            const agora = performance.now();
-            if (agora - tChao > 1000) { tChao = agora; chaoVivo = alturaChao(canalMotion.buffer().map((a) => a.Wf || a.W)); }
-            const dy = opc.chao ? chaoVivo : 0;
-            const W = deslocarQ(r.Wf || r.W, dy);
+            const W = Wv;
+            // esqueleto padrão do robo calculado DIRETO (antes: gerava e relia texto BVH a cada pose)
             let ret = null;
-            if (opc.retarget && W) { try { ret = lerBVH(paraBVH({ trilha: [W], com: [null] }, 30)).quadros[0]; } catch (_) { ret = null; } }
+            if (opc.retarget && W) { try { ret = retargetRobo(W, compVivo || comprimentosRobo([W]), ultimaLocal); } catch (_) { ret = null; } }
             cena.current.mostrarQuadro(W || null, null, [], [], null, ret);
           }
         }
@@ -272,14 +401,14 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
   function desenharVideo(r, p) {
     const cv = cvVid.current;
     if (!cv) return;
-    const box = cv.parentElement.getBoundingClientRect();
+    const box = tamVid.current;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const W = Math.max(1, Math.round(box.width * dpr)), H = Math.max(1, Math.round(box.height * dpr));
+    const W = Math.max(1, Math.round(box.w * dpr)), H = Math.max(1, Math.round(box.h * dpr));
     if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
     const g = cv.getContext('2d');
-    const est = getComputedStyle(raiz.current || document.body);
-    const acento = est.getPropertyValue('--m3d-esqueleto').trim() || '#2EF2D0';
-    g.fillStyle = est.getPropertyValue('--m3d-palco').trim() || '#05090a';
+    const cores = coresRef.current || { esqueleto: '#2EF2D0', palco: '#05090a', tinta3: '#7a9', acento: '#2EF2D0' };
+    const acento = cores.esqueleto;
+    g.fillStyle = cores.palco;
     g.fillRect(0, 0, W, H);
     let iw = 640, ih = 480, P = null, maos = null, temImg = false;
     if (p) {
@@ -332,7 +461,7 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
         }
       }
     } else {
-      g.fillStyle = est.getPropertyValue('--m3d-tinta3').trim() || '#7a9';
+      g.fillStyle = cores.tinta3;
       g.font = `${12 * dpr}px Archivo, Arial, sans-serif`;
       g.textAlign = 'center';
       const txt = p ? (P ? 'Reprodução: só os landmarks gravados (o vídeo nunca é guardado)' : 'Tomada 3D sem 2D — veja no viewport 3D')
@@ -356,6 +485,20 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
         g.fillStyle = i === selJuntaRef.current ? '#FFD84D' : '#E8FFFB';
         g.beginPath(); g.arc(ox + A.x * k, oy + A.y * k, (i === selJuntaRef.current ? 6 : 3.2) * dpr, 0, 2 * Math.PI); g.fill();
       }
+      // várias pessoas: cada ator com a sua cor e o rótulo "Ator N" (mesma cor do 3D)
+      if (!p && r && Array.isArray(r.atores) && r.atores.length > 1) {
+        g.font = `600 ${12 * dpr}px Archivo, Arial, sans-serif`; g.textAlign = 'center';
+        r.atores.forEach((a, n) => {
+          const cor = COR_ATOR[n] || acento;
+          if (n > 0 && a.P) {
+            g.strokeStyle = cor; g.lineWidth = 3 * dpr;
+            for (const [x, y] of LIGACOES_2D) { const A = a.P[x], B = a.P[y]; if (!A || !B || A.v < minV || B.v < minV) continue; g.beginPath(); g.moveTo(ox + A.x * k, oy + A.y * k); g.lineTo(ox + B.x * k, oy + B.y * k); g.stroke(); }
+          }
+          const nz = a.P && (a.P[0] || a.P[11]);
+          if (nz) { g.fillStyle = cor || acento; g.fillText(`Ator ${n + 1}${a.id === atorAvatarRef.current || (atorAvatarRef.current == null && n === 0) ? ' · avatar' : ''}`, ox + nz.x * k, oy + nz.y * k - 22 * dpr); }
+        });
+        g.textAlign = 'start';
+      }
       if (opc.maos && Array.isArray(maos)) {
         g.strokeStyle = acento; g.lineWidth = 1.6 * dpr;
         for (const m of maos) {
@@ -367,6 +510,192 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
   }
   const selJuntaRef = useRef(null); selJuntaRef.current = selJunta;
 
+  // ------------------------------------------------------------------ avatar (Studio v2)
+  /** Uma pose no modelo do usuário (só refs: chamado do laço de desenho). */
+  function posarAvatar(W, ex, perna) {
+    const c = cena.current;
+    if (c && W && W[23] && W[24]) c.alvo([(W[23][0] + W[24][0]) / 2, (W[23][1] + W[24][1]) / 2, (W[23][2] + W[24][2]) / 2]);
+    const av = avatarRef.current;
+    if (!av || !c || c.modelo !== av.rig) return;
+    if (verRepousoRef.current) { av.rig.voltarAoRepouso(); c.sujo = true; return; }
+    if (!W) return;
+    av.rig.posar(W, ex, perna);
+    if (!av.rig.temMolas()) av.rig.atualizar(0);   // expressões e olhar do VRM (com molas, o laço da cena já atualiza)
+    c.sujo = true;
+  }
+  /**
+   * Várias pessoas: os atores além do principal (r.atores do canal) ao lado, pela posição na
+   * imagem (largura × altura da pessoa ≈ 1,70 m); com modelo, cada um ganha o seu avatar.
+   */
+  /** O ator que dirige o avatar e o esqueleto principal (o escolhido, ou o Ator 1). */
+  function atorSelecionado(r) {
+    const at = r && Array.isArray(r.atores) && r.atores.length > 1 ? r.atores : null;
+    if (!at) return null;
+    return at.find((a) => a.id === atorAvatarRef.current) || at[0];
+  }
+  /**
+   * Várias pessoas: os outros atores, cada um com a sua cor e rótulo, na POSIÇÃO RELATIVA real do
+   * piso (o levantamento estima x e profundidade pela imagem e pela escala de cada pessoa); com
+   * modelo, cada um ganha o seu avatar.
+   */
+  function posarExtras(r, dy) {
+    const c = cena.current;
+    if (!c) return;
+    const at = Array.isArray(r.atores) ? r.atores : [];
+    if (at.length < 2) { if (c._extras && c._extras.size) c.mostrarExtras([]); return; }
+    const sel = atorSelecionado(r);
+    const pri = at[0], asp = r.w && r.h ? r.w / r.h : 4 / 3;
+    const mpu = (1.7 / Math.max(0.1, pri.alt || 0.6)) * asp;
+    const lista = at.map((a, k) => ({ a, k })).filter(({ a }) => a !== sel).map(({ a, k }, n) => {
+      const q = a.Wl || deslocarQ(a.W, dy);
+      return { id: a.id, q, cor: k, rotulo: `Ator ${k + 1}`, desl: a.Wl ? [0, 0, 0] : [(a.cx - pri.cx) * mpu, 0, 0], rig: rigExtra(n, q) };
+    });
+    c.mostrarExtras(lista);
+    c.rotuloPrincipal(`Ator ${at.indexOf(sel) + 1}`);
+  }
+  /** Tomada multiator: os outros atores no quadro atual. */
+  function posarExtrasTomada(p) {
+    const c = cena.current;
+    if (!c) return;
+    const at = p.tomada.atores;
+    if (!Array.isArray(at) || at.length < 2) { if (c._extras && c._extras.size) c.mostrarExtras([]); return; }
+    const i = p.quadro + ((p.tomada.corte && p.tomada.corte.ini) || 0);
+    c.mostrarExtras(at.slice(1).map((a, n) => ({ id: a.id, q: a.trilha[i] || null, cor: n + 1, rotulo: a.nome || `Ator ${n + 2}`, desl: [0, 0, 0], rig: rigExtra(n, a.trilha[i]) })));
+    c.rotuloPrincipal(at[0].nome || 'Ator 1');
+  }
+  function rigExtra(n, q) {
+    const av = avatarRef.current;
+    if (!av || opc.avatar !== 'modelo') return null;
+    const e = extrasRig.current.get(n);
+    if (e && e.rig) { if (q) { e.rig.posar(q, null, pernaDe(comprimentosRobo([q]))); if (!e.rig.temMolas()) e.rig.atualizar(0); } return e.rig; }
+    if (!e) criarRigExtra(n);
+    return null;
+  }
+  async function criarRigExtra(k) {
+    const av = avatarRef.current;
+    if (!av) return;
+    extrasRig.current.set(k, { carregando: true });
+    try {
+      const { buf, nome } = await bytesDoModelo(av.id);
+      const mod = await carregarModelo(nome, buf);
+      extrasRig.current.set(k, { rig: new AvatarRig(mod, av.mapa) });
+    } catch (e) { extrasRig.current.delete(k); }
+  }
+  function limparExtras() {
+    for (const e of extrasRig.current.values()) if (e.rig) e.rig.destruir();
+    extrasRig.current.clear();
+    if (cena.current) cena.current.mostrarExtras([]);
+  }
+  async function bytesDoModelo(id) {
+    if (id.startsWith('ex:')) { const tipo = id.slice(3); return { buf: await gerarAvatar({ tipo }), nome: `exemplo.${tipo}`, mapa: null }; }
+    const m = await armazem.lerModelo(id);
+    if (!m || !m.bytes) throw new Error('Modelo não encontrado neste navegador.');
+    return { buf: m.bytes, nome: m.arquivo || `${m.nome}.${m.formato}`, mapa: m.mapa || null };
+  }
+  /** Carrega e põe em cena um modelo (exemplo ou salvo); marionete abre a vista 2D. */
+  const usarModelo = useCallback(async (meta) => {
+    if (meta.tipo === 'marionete') { setPupAbrir({ id: meta.id, t: Date.now() }); setVista('marionete'); return null; }
+    setMsg(`Carregando ${meta.nome}…`);
+    try {
+      const t0 = performance.now();
+      const { buf, nome, mapa: mapaSalvo } = await bytesDoModelo(meta.id);
+      const mod = await carregarModelo(nome, buf);
+      const auto = mapaAutomatico(mod);
+      const mapa = mapaSalvo || auto.mapa;
+      const origem = Object.fromEntries(Object.keys(mapa).map((h) => [h, auto.mapa[h] === mapa[h] ? auto.origem[h] : 'manual']));
+      const rig = new AvatarRig(mod, mapa);
+      if (avatarRef.current) avatarRef.current.rig.destruir();
+      limparExtras();
+      const novo = { id: meta.id, nome: meta.nome, tipo: mod.tipo, rig, mapa, origem, ossos: mod.ossos.map((b) => b.name), vrm: mod.vrm ? mod.vrm.meta.metaVersion : null };
+      avatarRef.current = novo;
+      setAvatar(novo); setConferencia(null); setVerRepouso(false);
+      setOpc((o) => ({ ...o, avatar: 'modelo' }));
+      if (vistaRef.current === 'video' && layoutRef.current !== 'ambos') setVista('3d');
+      setSelOutliner('SK_Character');
+      setMsg(`${meta.nome}: ${Object.keys(mapa).length} ossos mapeados · repouso ${rig.poseRepouso} · ${Math.round(performance.now() - t0)} ms.${rig.temMolas() ? ' Física de cabelo/roupa ligada.' : ''}`);
+      return novo;
+    } catch (e) { setMsg(`Modelo: ${e.message}`); return null; }
+  }, [setMsg]);
+  /** Importa um arquivo de modelo para o IndexedDB (com miniatura) e o usa. */
+  const importarModelo = useCallback(async (f) => {
+    if (f.size > 150 * 1024 * 1024) throw new Error('Modelo maior que 150 MB.');
+    const buf = await f.arrayBuffer();
+    const mod = await carregarModelo(f.name, buf);
+    const thumb = miniaturaModelo(mod.raiz);
+    const base = f.name.replace(/\.[^.]+$/, '').replace(/[^\w-]+/g, '_').slice(0, 40);
+    const meta = { id: novoId('mdl'), tipo: 'modelo', nome: /^SK_/i.test(base) ? base : `SK_${base}`, arquivo: f.name, formato: mod.tipo, bytes: buf, thumb, ossos: mod.ossos.length, vrm: mod.vrm ? mod.vrm.meta.metaVersion : null, criado: new Date().toISOString() };
+    await armazem.salvarModelo(meta);
+    await recarregarModelos();
+    setPasta('Characters');
+    return usarModelo(meta);
+  }, [usarModelo, recarregarModelos]);
+  const mudarMapa = useCallback((novo, origemNova = null) => {
+    const av = avatarRef.current; if (!av) return;
+    av.rig.definirMapa(novo);
+    const origem = origemNova || { ...av.origem };
+    if (!origemNova) for (const h of Object.keys(novo)) if (novo[h] !== av.mapa[h]) origem[h] = 'manual';
+    const n = { ...av, mapa: { ...novo }, origem };
+    avatarRef.current = n; setAvatar(n); setConferencia(null);
+  }, []);
+  const salvarMapa = useCallback(async () => {
+    const av = avatarRef.current; if (!av) return;
+    if (av.id.startsWith('ex:')) { setMsg('Os exemplos são gerados a cada vez; o mapa deles é sempre o automático.'); return; }
+    try { const m = await armazem.lerModelo(av.id); await armazem.salvarModelo({ ...m, mapa: av.mapa }); setMsg('Mapa salvo com o modelo.'); } catch (e) { setMsg(`Não salvou: ${e.message}`); }
+  }, [setMsg]);
+  const conferirAvatar = useCallback(() => {
+    const av = avatarRef.current, u = ultimaPose.current;
+    if (!av || !u) { setMsg('Precisa de um modelo e de uma pose (ao vivo ou tomada).'); return null; }
+    av.rig.posar(u.W, u.ex, u.perna);
+    const c = av.rig.conferir(u.W, u.ex);
+    setConferencia(c);
+    return c;
+  }, [setMsg]);
+  /** Liga/desliga uma peça da cadeia ANTES da captura (dedos: maos.gestos; rosto: rosto.malha). */
+  const ligarCadeia = useCallback((qual, ligar) => {
+    const op = qual === 'maos' ? 'maos.gestos' : 'rosto.malha';
+    let ns = store.get().nodes.slice();
+    const i = ns.findIndex((n) => n.op === op);
+    if (i >= 0) ns[i] = { ...ns[i], enabled: ligar };
+    else if (ligar) {
+      const j = ns.findIndex((n) => n.op === OP);
+      const no = { id: newNodeId(), op, params: { ...defaultParams(op), ...(op === 'maos.gestos' ? { desenho: 'só caixa' } : {}) }, enabled: true };
+      if (j >= 0) ns.splice(j, 0, no); else ns.push(no);
+    }
+    // a captura precisa vir DEPOIS (ela lê ctx.hands / ctx.faceMesh)
+    const iOp = ns.findIndex((n) => n.op === op), iCap = ns.findIndex((n) => n.op === OP);
+    if (iOp > iCap && iCap >= 0) { const [no] = ns.splice(iOp, 1); ns.splice(iCap, 0, no); }
+    store.set({ nodes: ns }); persist(); setTique((n) => n + 1);
+    setMsg(ligar ? `${qual === 'maos' ? 'Mãos e gestos' : 'Malha do rosto'} ligada antes da captura.` : 'Desligado.');
+  }, [setMsg]);
+  const cadeia = { maos: store.get().nodes.some((n) => n.op === 'maos.gestos' && n.enabled), rosto: store.get().nodes.some((n) => n.op === 'rosto.malha' && n.enabled) };
+
+  /** A tomada no PRÓPRIO avatar: GLB com a malha, o esqueleto do modelo e a animação. */
+  async function glbDoAvatar(t) {
+    const av = avatarRef.current;
+    if (!av) throw new Error('Escolha um modelo em Characters primeiro.');
+    const proc = processarTomada(t);
+    if (!proc) throw new Error('Tomada curta demais.');
+    const { buf, nome } = await bytesDoModelo(av.id);
+    const mod = await carregarModelo(nome, buf);
+    const rig = new AvatarRig(mod, av.mapa);
+    const L = comprimentosRobo(proc.trilha.filter((_, i) => i % 3 === 0)), perna = pernaDe(L), dy = alturaChao(proc.trilha);
+    const n = proc.trilha.length, tempos = new Float32Array(n);
+    const nos = rig.ordem, quats = nos.map(() => new Float32Array(n * 4)), hips = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) {
+      tempos[i] = i / t.fps;
+      rig.posar(deslocarQ(proc.trilha[i], dy), t.extras ? t.extras[i + ((t.corte && t.corte.ini) || 0)] : null, perna);
+      nos.forEach((o, k) => quats[k].set([o.quaternion.x, o.quaternion.y, o.quaternion.z, o.quaternion.w], i * 4));
+      const hp = rig.no.hips.position; hips.set([hp.x, hp.y, hp.z], i * 3);
+    }
+    const trilhas = nos.map((o, k) => new THREE.QuaternionKeyframeTrack(`${o.name}.quaternion`, tempos, quats[k]));
+    trilhas.push(new THREE.VectorKeyframeTrack(`${rig.no.hips.name}.position`, tempos, hips));
+    const clipe = new THREE.AnimationClip(t.nome, tempos[n - 1], trilhas);
+    rig.voltarAoRepouso();
+    const glb = await new GLTFExporter().parseAsync(rig.base, { binary: true, animations: [clipe], onlyVisible: true });
+    rig.destruir();
+    return glb;
+  }
+
   function desenharHistograma() {
     const cv = cvHist.current;
     if (!cv) return;
@@ -377,8 +706,7 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
     const xs = st.historico.slice(-40);
     if (!xs.length) return;
     const max = Math.max(50, ...xs);
-    const est = getComputedStyle(raiz.current || document.body);
-    const cor = est.getPropertyValue('--m3d-acento').trim() || '#2EF2D0';
+    const cor = (coresRef.current && coresRef.current.acento) || '#2EF2D0';
     const bw = W / 40;
     xs.forEach((v, i) => { const h = Math.max(1, (v / max) * (H - 2)); g.fillStyle = v > 200 ? '#F2A900' : cor; g.fillRect(i * bw, H - h, Math.max(1, bw - 1), h); });
   }
@@ -405,7 +733,7 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
     if (!proc) { setMsg('Tomada curta demais.'); return null; }
     let ret = null;
     try { ret = lerBVH(paraBVH(proc, t.fps)).quadros; } catch (_) { ret = null; }
-    setPlay({ tomada: t, proc, ret, quadro: 0, tocando: tocar, loop: true, chao: alturaChao(proc.trilha) });
+    setPlay({ tomada: t, proc, ret, quadro: 0, tocando: tocar, loop: true, chao: alturaChao(proc.trilha), perna: pernaDe(comprimentosRobo(proc.trilha.filter((_, i) => i % 3 === 0))) });
     if (cena.current) cena.current.mostrarCameras(t.cameras || []);
     setSelOutliner('SK_Character');
     setMsg(`${t.nome}: ${proc.trilha.length} quadros a ${t.fps} fps · ${ORIGENS[t.origem] ? ORIGENS[t.origem].rotulo : t.origem}.`);
@@ -480,12 +808,33 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
       if (tipo === 'json') { const j = paraJSONStudio(t, processarTomada(t)); baixar(j, `${nome}.motionai.json`, 'application/json'); setMsg('JSON no contrato motionai.pose.v1, com a proveniência.'); return j; }
       if (tipo === 'json-robo') { const j = exportarRobo(t, 'json-robo'); baixar(j, `${nome}.gplansis-mocap.json`, 'application/json'); setMsg('JSON gplansis-mocap/1 (com as câmeras).'); return j; }
       if (tipo === 'csv') { const c = exportarRobo(t, 'csv'); baixar(c, `${nome}.csv`, 'text/csv'); setMsg('CSV exportado (metros, y para cima).'); return c; }
+      if (tipo === 'bvh-atores' || tipo === 'glb-atores') {
+        const lista = (t.atores || []).map((a) => ({ nome: a.nome.replace(/\s+/g, '_'), bvh: exportarRobo({ ...t, trilha: a.trilha.map((q) => q || null), p2d: null, extras: null, atores: null }, 'bvh') }));
+        if (!lista.length) throw new Error('Esta tomada não tem vários atores.');
+        if (tipo === 'bvh-atores') {
+          const z = montarZip(lista.map((a) => ({ nome: `${nome}_${a.nome}.bvh`, dados: new TextEncoder().encode(a.bvh) })));
+          baixar(z, `${nome}_atores_bvh.zip`); setMsg(`${lista.length} BVH (um por ator) num .zip.`); return z;
+        }
+        const glb = await bvhsParaGLB(lista, { nomeClipe: t.nome });
+        baixar(new Blob([glb], { type: 'model/gltf-binary' }), `${nome}_atores.glb`); setMsg(`GLB com ${lista.length} atores animados.`); return glb;
+      }
+      if (tipo === 'glb-avatar') {
+        setMsg('Animando o avatar quadro a quadro…');
+        const glb = await glbDoAvatar(t);
+        const av = avatarRef.current;
+        baixar(new Blob([glb], { type: 'model/gltf-binary' }), `${nome}_${av.nome}.glb`);
+        setMsg(`GLB de ${av.nome} animado (${(glb.byteLength / 1e6).toFixed(1)} MB). Blender: File › Import › glTF 2.0.${av.vrm ? ' Sai como glTF comum (sem as extensões VRM).' : ''}`);
+        return glb;
+      }
     } catch (e) { setMsg(`Exportação falhou: ${e.message}`); }
     return null;
   }, [play, setMsg]);
 
   const importar = useCallback(async (arquivos) => {
     for (const f of arquivos) {
+      // Studio v2: modelo 3D → Characters; imagem → Marionete 2D
+      if (RE_MODELO.test(f.name)) { try { await importarModelo(f); } catch (e) { setMsg(`${f.name}: ${e.message}`); } continue; }
+      if (RE_IMAGEM.test(f.name)) { setPupArquivo({ f, t: Date.now() }); setVista('marionete'); continue; }
       try {
         const buf = new Uint8Array(await f.arrayBuffer());
         const r = importarArquivo(f.name, /\.npy$/i.test(f.name) ? buf : new TextDecoder().decode(buf));
@@ -497,7 +846,7 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
         carregar(t);
       } catch (e) { setMsg(`${f.name}: ${e.message}`); }
     }
-  }, [novaTomada, salvarTomada, recarregarLista, carregar, setMsg]);
+  }, [novaTomada, salvarTomada, recarregarLista, carregar, setMsg, importarModelo]);
 
   const apagar = useCallback(async (meta) => {
     setMenu(null);
@@ -606,14 +955,14 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
       if (e.key === 'Escape' && fonteStudioAberta()) return;
       const t = e.target;
       if (t && /INPUT|SELECT|TEXTAREA/.test(t.tagName)) return;
-      if (e.key === 'Escape') { e.stopPropagation(); if (menu || aba3d) { setMenu(null); setAba3d(null); } else if (painel) setPainel(null); else if (gaveta) setGaveta(null); else onClose(); }
+      if (e.key === 'Escape') { e.stopPropagation(); if (limpo) setLimpo(false); else if (menu || aba3d) { setMenu(null); setAba3d(null); } else if (painel) setPainel(null); else if (gaveta) setGaveta(null); else onClose(); }
       else if (e.key === ' ' && play) { e.preventDefault(); setPlay({ ...play, tocando: !play.tocando }); }
       else if (e.key === 'ArrowRight' && play) avancar(1);
       else if (e.key === 'ArrowLeft' && play) avancar(-1);
     };
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
-  }, [menu, aba3d, painel, gaveta, play, onClose]);
+  }, [menu, aba3d, painel, gaveta, play, onClose, limpo]);
 
   // ------------------------------------------------------------------ gancho de teste
   useEffect(() => {
@@ -633,15 +982,91 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
       definirVista: (v) => setVista(v),
       pedirServidor: (m) => pedirServidor(m),
       consentir: (v) => setConsent(Boolean(v)),
+      // Studio v2
+      usarModeloExemplo: (tipo) => usarModelo(EXEMPLOS.find((x) => x.id === 'ex:' + tipo)).then((a) => (a ? { nome: a.nome, mapa: Object.keys(a.mapa).length, repouso: a.rig.poseRepouso } : null)),
+      usarModelo: (id) => usarModelo(modelosCB.find((m) => m.id === id) || { id, nome: id }),
+      importarArquivo: (f) => importar([f]),
+      avatar: () => (avatarRef.current ? { nome: avatarRef.current.nome, tipo: avatarRef.current.tipo, mapeados: Object.keys(avatarRef.current.mapa).length, repouso: avatarRef.current.rig.poseRepouso, molas: avatarRef.current.rig.temMolas(), expressoes: avatarRef.current.rig.temExpressoes(), dedos: avatarRef.current.rig.temDedos(), emCena: Boolean(cena.current && cena.current.modelo === avatarRef.current.rig) } : null),
+      rig: () => (avatarRef.current ? avatarRef.current.rig : null),
+      conferirAvatar: () => conferirAvatar(),
+      mudarMapa: (m) => mudarMapa(m),
+      ligarCadeia: (q, v) => ligarCadeia(q, v),
+      definirSeguir: (m) => setSeguir(m),
+      definirLimpo: (v) => setLimpo(Boolean(v)),
+      definirPessoas: (n) => definirParam({ pessoas: n }),
+      definirOpc: (o) => setOpc((x) => ({ ...x, ...o })),
+      abrirPainel: (p) => setPainel(p),
+      vmc: () => vmc.current,
+      ultimaPose: () => ultimaPose.current,
+      modelos: () => modelosCB,
+      extras: () => (cena.current && cena.current._extras ? cena.current._extras.size : 0),
+      refinar: (id) => refinarTomada({ id }),
+      aoVivo: () => aoVivo(),
+      definirAtorAvatar: (id) => setAtorAvatar(id),
+      levantar: (c) => canalMotion.configurarLevantar(c),
     };
     return () => { delete window.aivMotion3D; };
   });
+  // API estável (api.js) para a Via e outros módulos
+  useEffect(() => registrarStudio({
+    criarTomada: async (base, o = {}) => {
+      const t = novaTomada({ ...base }, o.nome ? String(o.nome).slice(0, 60) : null);
+      if (o.salvar !== false) await salvarTomada(t.id);
+      await recarregarLista();
+      if (o.abrir !== false) carregar(t);
+      return { id: t.id, nome: t.nome, quadros: t.trilha.length, fps: t.fps };
+    },
+    listarTomadas: async () => tomadas.map(({ id, nome, quadros, fps, origem, criado }) => ({ id, nome, quadros, fps, origem, criado })),
+    lerTomada: async (id) => naoSalvas.current.get(id) || armazem.ler(id),
+    aplicarTomada: async (id, o = {}) => {
+      const r = await carregar({ id }, { tocar: o.tocar !== false });
+      if (!r) throw new Error('Tomada não encontrada.');
+      if (vistaRef.current === 'video' && avatarRef.current) setVista('3d');
+      return { ok: true, nome: r.t.nome, quadros: r.proc.trilha.length };
+    },
+    estado: () => ({ aberto: true, vista: vistaRef.current, ao_vivo: !playRef.current && canalMotion.recente(1500), tomada: playRef.current ? { id: playRef.current.tomada.id, nome: playRef.current.tomada.nome, quadro: playRef.current.quadro } : null,
+      avatar: avatarRef.current ? { nome: avatarRef.current.nome, tipo: avatarRef.current.tipo } : null, gravando: canalMotion.estatisticas().gravando, tomadas: tomadas.length }),
+  }));
+
+  /** Passe de QUALIDADE (Worker): a tomada vira uma nova, refinada nos dois sentidos + pós do robo. */
+  const refinarTomada = useCallback(async (meta) => {
+    let t = naoSalvas.current.get(meta.id) || (meta.trilha ? meta : null);
+    if (!t) { try { t = await armazem.ler(meta.id); } catch (_) { t = null; } }
+    if (!t) { setMsg('Tomada não encontrada.'); return null; }
+    if (!t.p2d || !t.p2d.some(Boolean)) { setMsg('Esta tomada não tem os pontos 2D (importada ou multicâmera): não há o que refinar.'); return null; }
+    setQualidade(0);
+    setMsg(`Refinando ${t.nome} (levantamento nos dois sentidos + pós-processamento do robo)…`);
+    const r = await new Promise((ok) => {
+      let w;
+      try { w = new Worker(new URL('../../cv/runtime/livres-v/levantar-worker.js', import.meta.url), { type: 'module' }); } catch (e) { ok({ ok: false, erro: e.message }); return; }
+      w.onmessage = (ev) => { if (ev.data.progresso != null) setQualidade(ev.data.progresso); else { w.terminate(); ok(ev.data); } };
+      w.onerror = (ev) => { w.terminate(); ok({ ok: false, erro: ev.message || 'erro no Worker' }); };
+      w.postMessage({ p2d: t.p2d, trilhaBruta: t.trilhaBruta || t.trilha, aspecto: t.aspecto || 16 / 9, fps: t.fps, focal: canalMotion.levantar().focal, incl: canalMotion.levantar().inclinacao });
+    });
+    setQualidade(null);
+    if (!r.ok) { setMsg(`Refino falhou: ${r.erro}`); return null; }
+    const nova = novaTomada({ trilha: r.trilha, trilhaBruta: t.trilhaBruta || null, p2d: t.p2d, extras: t.extras || null, fps: t.fps, origem: t.origem, fonteId: `${t.fonteId || t.nome} · qualidade`, aspecto: t.aspecto, atores: t.atores || null, refinada: true }, `${t.nome}_HQ`.slice(0, 60));
+    await recarregarLista();
+    carregar(nova);
+    setMsg(`${nova.nome}: refinada (inclinação ${numero(r.inclinacaoGraus, 0)}°). Salve para guardar.`);
+    return nova;
+  }, [novaTomada, recarregarLista, carregar, setMsg]);
+  const obterPoseMarionete = useCallback(() => ultimaPose.current, []);
+  const quadrosTomadaMarionete = useCallback(() => {
+    const pl = playRef.current;
+    if (!pl) return null;
+    return { n: pl.proc.trilha.length, fps: pl.tomada.fps, nome: pl.tomada.nome, W: (i) => pl.proc.trilha[i] };
+  }, []);
 
   // [VIA] gancho mínimo: a Via (via-motion.js) cria/abre tomadas e ajusta a visualização por estas funções
   useEffect(() => ligarViaMotion({ naoSalvas, novaTomada, salvarTomada, recarregarLista, carregar, exportar, setOpc, play: playRef, setMsg }), [novaTomada, salvarTomada, recarregarLista, carregar, exportar, setMsg]);
 
   // ------------------------------------------------------------------ dados derivados
-  const quadroAtual = play ? play.proc.trilha[play.quadro] : (canalMotion.instantaneo() && (canalMotion.instantaneo().Wf || canalMotion.instantaneo().W)) || null;
+  const instAtual = canalMotion.instantaneo();
+  const atoresVivos = !play && instAtual && Array.isArray(instAtual.atores) ? instAtual.atores : [];
+  const lev = canalMotion.levantar();
+  const infoLev = canalMotion.infoLevantar();
+  const quadroAtual = play ? play.proc.trilha[play.quadro] : (instAtual && (instAtual.Wl || instAtual.Wf || instAtual.W)) || null;
   const visAtual = play ? null : (canalMotion.instantaneo() && canalMotion.instantaneo().P ? canalMotion.instantaneo().P.map((q) => (q ? q.v : 0)) : null);
   const angs = quadroAtual ? angulosQuadro(quadroAtual, visAtual) : [];
   const fpsTake = play ? play.tomada.fps : 30;
@@ -651,15 +1076,19 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
   const tomadasFiltradas = tomadas.filter((t) => (pasta === 'Content' || pasta === 'Animation' || pasta === 'Mocap' ? true : false) && (!buscaCB || t.nome.toLowerCase().includes(buscaCB.toLowerCase())));
   const ITENS_FIXOS = {
     Characters: [{ id: 'SK_Character', nome: 'SK_Character', tipo: 'Skeletal Mesh', desc: 'Avatar do Studio (cápsulas ou manequim low-poly gerado em código).' }],
+    // (Studio v2) os modelos e marionetes vêm em CHARS, abaixo
     Mannequin: [{ id: 'SK_Mannequin', nome: 'SK_Mannequin_ROBO', tipo: 'Skeleton', desc: 'Esqueleto padrão do BVH do GPlanSiS|ROBO: 15 juntas (Hips, Spine, Neck, braços, pernas).' }],
     Props: [{ id: 'Charuco', nome: 'BP_ChArUco_Board', tipo: 'Prop', desc: 'Tabuleiro de calibração (FreeMoCap): baixe o SVG no painel FreeMoCap.' }],
     Environment: [{ id: 'Piso', nome: 'SM_Floor', tipo: 'Static Mesh', desc: 'Piso e grade de 10 m.' }, { id: 'Luzes', nome: 'Lights', tipo: 'Light', desc: 'Luz hemisférica + direcional.' }],
     Cinematics: [{ id: 'Cams', nome: 'CameraRig', tipo: 'Camera', desc: play && play.tomada.cameras && play.tomada.cameras.length ? `${play.tomada.cameras.length} câmeras calibradas na tomada aberta.` : 'Câmeras calibradas aparecem aqui ao abrir uma tomada multicâmera.' }],
   };
+  // Characters (Studio v2): exemplos gerados em código + modelos e marionetes salvos
+  const CHARS = [...EXEMPLOS.map((e) => ({ ...e, tipoRot: e.tipo, formato: e.id === 'ex:vrm' ? 'vrm' : 'glb', vrm: e.id === 'ex:vrm' ? '1' : null })), ...modelosCB];
   const OUTLINER = [
     ['Cena', 'World'], ['Luz direcional', 'DirectionalLight'], ['Luz ambiente', 'SkyLight'], ['Câmera do viewport', 'CameraActor'],
     ['SK_Character', 'SkeletalMeshActor'], ['Actor_Mocap', 'LiveLinkSubject'], ['SM_Floor', 'StaticMeshActor'], ['Grade', 'Helper'],
     ['CameraRig', `Cameras (${play && play.tomada.cameras ? play.tomada.cameras.length : 0})`], ['CoM', 'Marker'], ['BP_ChArUco_Board', 'Prop'],
+    ...(atoresVivos.length > 1 ? atoresVivos.map((a, n) => [`Ator ${n + 1}`, `LiveLinkSubject · id ${a.id}`]) : play && play.tomada.atores ? play.tomada.atores.map((a) => [a.nome, 'Animation Sequence']) : []),
   ].filter(([n, t]) => !buscaOut || (n + t).toLowerCase().includes(buscaOut.toLowerCase()));
 
   const estadoActor = live ? (estatisticas.gravando ? 'Gravando…' : 'Streaming…') : play ? 'Reproduzindo tomada' : (canalMotion.instantaneo() && canalMotion.instantaneo().sem ? 'Sem pessoa' : 'Parado');
@@ -676,6 +1105,14 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
         <span class="m3d-dot" aria-hidden="true"></span>
         <div class="m3d-fonte-t"><b>Actor_Mocap</b><em>${estadoActor}</em><small>${fonte.rotulo || 'sem fonte'}${fonte.detalhe ? ` · ${fonte.detalhe}` : ''} · BlazePose 3D no aparelho</small></div>
         <${FonteStudio} classeBotao="m3d-btn mini" semTexto=${true} />
+      </div>
+      <div class="m3d-atores" aria-label="Atores">
+        <label class="m3d-campo">Atores (pessoas) <select value=${String(p.pessoas || 1)} onChange=${(e) => { const n = +e.target.value; definirParam({ pessoas: n }); if (n < 2) { limparExtras(); setAtorAvatar(null); } }}>
+          ${[1, 2, 3, 4].map((n) => html`<option key=${n} value=${n}>${n === 1 ? '1 (rápido)' : `${n} · YOLOX + BlazePose por pessoa`}</option>`)}</select></label>
+        ${atoresVivos.length > 1 && atoresVivos.map((a, n) => html`<div key=${a.id} class=${`m3d-ator ${(atorAvatar == null ? n === 0 : a.id === atorAvatar) ? 'sel' : ''}`} style=${{ '--cor-ator': COR_ATOR[n] || 'var(--m3d-acento)' }}>
+          <span class="m3d-dot" aria-hidden="true"></span><b>Ator ${n + 1}</b><small>id ${a.id}${a.Wl ? ' · 3D reconstruído' : ''}</small>
+          <button class="m3d-btn mini" aria-pressed=${(atorAvatar == null ? n === 0 : a.id === atorAvatar)} onClick=${() => setAtorAvatar(n === 0 ? null : a.id)}>${(atorAvatar == null ? n === 0 : a.id === atorAvatar) ? 'dirige o avatar' : 'dirigir avatar'}</button>
+        </div>`)}
       </div>
       <div class=${`m3d-fonte ${mc && mc.vistas && mc.vistas.length ? 'viva' : ''}`}>
         <span class="m3d-dot" aria-hidden="true"></span>
@@ -722,7 +1159,7 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
       <div class="m3d-sub">Preview Settings</div>
       <label class="m3d-campo">Target Mesh
         <select value=${opc.avatar} onChange=${(e) => setOpc({ ...opc, avatar: e.target.value })}>
-          <option value="capsulas">Cápsulas</option><option value="manequim">Manequim low-poly</option><option value="nenhum">Nenhum</option>
+          <option value="capsulas">Cápsulas</option><option value="manequim">Manequim low-poly</option>${avatar && html`<option value="modelo">Modelo: ${avatar.nome}</option>`}<option value="nenhum">Nenhum</option>
         </select>
       </label>
       ${[['esqueleto', 'Show Skeleton'], ['nomes', 'Show Bone Names'], ['retarget', 'Show Retarget']].map(([k, r]) => html`
@@ -788,6 +1225,16 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
         <label class="m3d-check"><input type="checkbox" checked=${play.loop} onChange=${(e) => setPlay({ ...play, loop: e.target.checked })} /> Repetir</label>`}
       ${Corte}`,
     Physics: html`
+      <div class="m3d-sub">Reconstrução 3D (vídeo → 3D)</div>
+      <label class="m3d-check"><input type="checkbox" checked=${lev.ligado} onChange=${(e) => { canalMotion.configurarLevantar({ ligado: e.target.checked }); setTique((n) => n + 1); }} /> Levantamento 2D→3D com restrições (realista: ossos fixos, joelho/tornozelo, chão, equilíbrio)</label>
+      <label class="m3d-campo">Campo de visão da câmera <select value=${String(lev.focal)} onChange=${(e) => { canalMotion.configurarLevantar({ focal: +e.target.value }); setTique((n) => n + 1); }}>
+        <option value="0.6">grande-angular (~80°)</option><option value="0.8">celular (~65°)</option><option value="1">normal (~53°)</option><option value="1.4">tele leve (~40°, vídeo de palco)</option><option value="2">tele (~28°)</option></select></label>
+      <label class="m3d-campo">Inclinação da câmera <select value=${lev.inclinacao == null ? 'auto' : String(lev.inclinacao)} onChange=${(e) => { canalMotion.configurarLevantar({ inclinacao: e.target.value === 'auto' ? null : +e.target.value }); setTique((n) => n + 1); }}>
+        <option value="auto">automática (pernas retas, plano dos contatos)</option>${[-20, -10, -5, 0, 5, 10, 15, 20, 30].map((g) => html`<option key=${g} value=${g}>${g}° ${g > 0 ? '(para baixo)' : g < 0 ? '(para cima)' : '(nivelada)'}</option>`)}</select></label>
+      ${infoLev && html`<div class="m3d-kv"><span>Diagnóstico</span><b>${[`incl. ${numero(infoLev.inclinacaoGraus, 0)}°`, infoLev.ar ? `no ar ${Math.round(infoLev.ar * 100)} cm` : 'no chão', infoLev.equilibrio && infoLev.equilibrio.apoio ? `apoio ${infoLev.equilibrio.apoio === 'L' ? 'pé esq.' : 'pé dir.'} (CoM a ${infoLev.equilibrio.distCm} cm)` : null, infoLev.fundidas ? 'pernas fundidas no 2D' : null, infoLev.trocou ? 'pernas trocadas corrigidas' : null, infoLev.rtmo ? 'RTMO desempatou' : null].filter(Boolean).join(' · ')}</b></div>`}
+      <p class="m3d-dica">O 3D sai do 2D (que acerta mais) com comprimentos de osso fixos, limites articulares (até a ponta de dança), contato com o chão (pés, joelhos, quadril sentado), pé travado e centro de massa sobre o apoio; o W do BlazePose entra como opinião. Para vídeo/YouTube, grave e use ⋯ › Refinar (qualidade). Com pernas fundidas (tutu, 5ª posição), ligue também o RTMO (pose.rtmo) na cadeia: ele desempata.</p>
+      ${play && html`<button class="m3d-btn" disabled=${qualidade != null} onClick=${() => refinarTomada(play.tomada)}>${qualidade != null ? `Refinando ${Math.round(qualidade * 100)} %` : 'Refinar a tomada aberta (qualidade)'}</button>`}
+      <div class="m3d-sub">Suavização</div>
       <label class="m3d-check"><input type="checkbox" checked=${p.suavizar} onChange=${(e) => definirParam({ suavizar: e.target.checked })} /> Suavização One Euro (ao vivo)</label>
       <label class="m3d-campo">Corte mínimo (Hz) <input type="number" step="0.1" min="0.1" max="10" value=${p.minCorte} onChange=${(e) => definirParam({ minCorte: Math.max(0.1, +e.target.value || 1.2) })} /></label>
       <label class="m3d-campo">Beta <input type="number" step="0.05" min="0" max="5" value=${p.beta} onChange=${(e) => definirParam({ beta: Math.max(0, +e.target.value || 0) })} /></label>
@@ -834,16 +1281,16 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
               setMenu(null);
               const b = canalMotion.buffer();
               if (b.length < 5) { setMsg('O buffer ao vivo está vazio.'); return; }
-              const rs = reamostrar(b.map((a) => ({ t: a.t, W: a.Wf || a.W, P2: a.P2 })), 30);
-              const t = novaTomada({ fps: 30, origem: 'monocular', fonteId: 'buffer 10 s', trilha: rs.trilha, p2d: rs.p2d });
+              const rs = reamostrar(b.map((a) => ({ t: a.t, W: a.Wf || a.W, P2: a.P2, ex: a.ex })), 30);
+              const t = novaTomada({ fps: 30, origem: 'monocular', fonteId: 'buffer 10 s', trilha: rs.trilha, p2d: rs.p2d, extras: rs.extras.some(Boolean) ? rs.extras : null });
               recarregarLista(); carregar(t, { tocar: false });
               setMsg(`${t.nome}: os últimos ${(rs.trilha.length / 30).toFixed(1)} s do buffer.`);
             }}>Tomada dos últimos 10 s (buffer)</button>
             <button role="menuitem" onClick=${() => { setMenu(null); demonstracao(); }}>Demonstração (3 câmeras virtuais, GPlanSiS|ROBO)</button>
           </div>`}
         </span>
-        <button class="m3d-btn mini" onClick=${() => inputImport.current && inputImport.current.click()} title="BVH, FreeMoCap (.npy/.csv) ou JSON">⤓ Import</button>
-        <input ref=${inputImport} type="file" hidden multiple accept=".bvh,.npy,.csv,.json" onChange=${(e) => { importar([...e.target.files]); e.target.value = ''; }} />
+        <button class="m3d-btn mini" onClick=${() => inputImport.current && inputImport.current.click()} title="Tomadas: BVH, FreeMoCap (.npy/.csv), JSON · Modelos: GLB, GLTF, VRM, FBX · Imagem para a marionete: PNG, JPG, WebP">⤓ Import</button>
+        <input ref=${inputImport} type="file" hidden multiple accept=".bvh,.npy,.csv,.json,.glb,.gltf,.vrm,.fbx,image/png,image/jpeg,image/webp" onChange=${(e) => { importar([...e.target.files]); e.target.value = ''; }} />
         <button class="m3d-btn mini" onClick=${salvarTudo}>Save All</button>
         <input class="m3d-busca" type="search" placeholder="Buscar tomadas…" value=${buscaCB} onInput=${(e) => setBuscaCB(e.target.value)} aria-label="Buscar no Content Browser" />
         <small class="m3d-cb-nota">IndexedDB deste navegador · só landmarks</small>
@@ -853,7 +1300,23 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
           ${PASTAS.map(([k, d]) => html`<button key=${k} class=${pasta === k ? 'on' : ''} title=${d} onClick=${() => setPasta(k)}>📁 ${k}</button>`)}
         </nav>
         <div class="m3d-cartoes">
-          ${(ITENS_FIXOS[pasta] || []).map((it) => html`<div key=${it.id} class="m3d-cartao fixo" title=${it.desc}><div class="m3d-mini fixo">${it.tipo}</div><b>${it.nome}</b><small>${it.tipo}</small></div>`)}
+          ${(ITENS_FIXOS[pasta] || []).map((it) => html`<div key=${it.id} class=${`m3d-cartao fixo ${it.id === 'SK_Character' && opc.avatar !== 'modelo' ? 'sel' : ''}`} title=${it.desc} role=${it.id === 'SK_Character' ? 'button' : undefined} tabindex=${it.id === 'SK_Character' ? 0 : undefined}
+            onClick=${() => { if (it.id === 'SK_Character') setOpc((o) => ({ ...o, avatar: o.avatar === 'modelo' ? 'capsulas' : o.avatar })); }}><div class="m3d-mini fixo">${it.tipo}</div><b>${it.nome}</b><small>${it.tipo}</small></div>`)}
+          ${pasta === 'Characters' && CHARS.filter((m) => !buscaCB || m.nome.toLowerCase().includes(buscaCB.toLowerCase())).map((m) => html`
+            <div key=${m.id} class=${`m3d-cartao ${(avatar && avatar.id === m.id && opc.avatar === 'modelo') ? 'sel' : ''}`} role="button" tabindex="0" title=${m.desc || ''} aria-label=${`${m.tipo === 'marionete' ? 'Marionete' : 'Modelo'} ${m.nome}`}
+              onClick=${() => usarModelo(m)} onKeyDown=${(e) => { if (e.key === 'Enter') usarModelo(m); }}>
+              ${m.thumb ? html`<img class="m3d-mini" src=${m.thumb} alt="" />` : html`<div class="m3d-mini fixo">${m.formato || m.tipoRot}</div>`}
+              <b>${m.nome}</b>
+              <small>${m.tipo === 'marionete' ? 'Marionete 2D · imagem' : `Skeletal Mesh · ${(m.formato || m.tipoRot || '').toUpperCase()}${m.vrm ? ` ${m.vrm === '0' ? '0.x' : '1.0'}` : ''}`}</small>
+              ${m.id.startsWith('ex:') ? html`<small class="m3d-orig">exemplo · gerado em código (CC0)</small>` : html`<span class="m3d-menu-w m3d-cartao-acoes" onClick=${(e) => e.stopPropagation()}>
+                <button class="m3d-btn mini" aria-haspopup="menu" aria-label=${`Ações de ${m.nome}`} onClick=${() => setMenu(menu === 'mod:' + m.id ? null : 'mod:' + m.id)}>⋯</button>
+                ${menu === 'mod:' + m.id && html`<div class="m3d-menu" role="menu">
+                  <button role="menuitem" onClick=${() => { setMenu(null); usarModelo(m); }}>${m.tipo === 'marionete' ? 'Abrir na Marionete 2D' : 'Usar como avatar'}</button>
+                  ${m.tipo !== 'marionete' && html`<button role="menuitem" onClick=${async () => { setMenu(null); const r = await armazem.lerModelo(m.id); if (r) baixar(new Blob([r.bytes]), r.arquivo || `${m.nome}.${m.formato}`); }}>Baixar o arquivo</button>`}
+                  <button role="menuitem" class="perigo" onClick=${async () => { setMenu(null); if (!confirm(`Apagar ${m.nome} deste navegador?`)) return; await armazem.apagarModelo(m.id); if (avatar && avatar.id === m.id) { avatar.rig.destruir(); setAvatar(null); setOpc((o) => ({ ...o, avatar: 'capsulas' })); } recarregarModelos(); }}>Apagar</button>
+                </div>`}
+              </span>`}
+            </div>`)}
           ${(ITENS_FIXOS[pasta] ? [] : tomadasFiltradas).map((t) => html`
             <div key=${t.id} class=${`m3d-cartao ${play && play.tomada.id === t.id ? 'sel' : ''}`} role="button" tabindex="0" aria-label=${`Tomada ${t.nome}`}
               onClick=${() => carregar(t)} onKeyDown=${(e) => { if (e.key === 'Enter') carregar(t); }}>
@@ -864,11 +1327,15 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
               <span class="m3d-menu-w m3d-cartao-acoes" onClick=${(e) => e.stopPropagation()}>
                 <button class="m3d-btn mini" aria-haspopup="menu" aria-label=${`Exportar ${t.nome}`} onClick=${() => setMenu(menu === 'export:' + t.id ? null : 'export:' + t.id)}>⋯</button>
                 ${menu === 'export:' + t.id && html`<div class="m3d-menu" role="menu">
+                  <button role="menuitem" onClick=${() => { setMenu(null); refinarTomada(t); }}>Refinar (qualidade) → nova tomada</button>
                   <button role="menuitem" onClick=${() => exportar(t, 'bvh')}>Exportar BVH (Blender)</button>
+                  ${t.atores && html`<button role="menuitem" onClick=${() => exportar(t, 'bvh-atores')}>Exportar BVH por ator (.zip)</button>
+                  <button role="menuitem" onClick=${() => exportar(t, 'glb-atores')}>Exportar GLB com todos os atores</button>`}
                   <button role="menuitem" onClick=${() => exportar(t, 'glb')}>Exportar GLB animado</button>
                   <button role="menuitem" onClick=${() => exportar(t, 'json')}>Exportar JSON (motionai.pose.v1)</button>
                   <button role="menuitem" onClick=${() => exportar(t, 'json-robo')}>Exportar JSON gplansis-mocap/1</button>
                   <button role="menuitem" onClick=${() => exportar(t, 'csv')}>Exportar CSV</button>
+                  ${avatar && html`<button role="menuitem" onClick=${() => exportar(t, 'glb-avatar')}>Exportar GLB no avatar (${avatar.nome})</button>`}
                   <button role="menuitem" onClick=${() => { setMenu(null); const n = prompt('Novo nome da tomada:', t.nome); if (n) renomear(t, n); }}>Renomear</button>
                   <button role="menuitem" class="perigo" onClick=${() => apagar(t)}>Apagar</button>
                 </div>`}
@@ -880,11 +1347,15 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
     </section>`;
 
   const PainelFlutuante = painel && html`
-    <div class="m3d-pop" role="dialog" aria-modal="false" aria-label=${painel === 'multicam' ? 'Multicâmera' : painel === 'freemocap' ? 'FreeMoCap' : 'Motores de servidor'}>
-      <div class="m3d-pop-cab"><b>${painel === 'multicam' ? 'Multicâmera (FreeMoCap no navegador · GPlanSiS|ROBO)' : painel === 'freemocap' ? 'FreeMoCap · calibração ChArUco · importação' : 'Motores de servidor · fila de jobs'}</b>
+    <div class=${`m3d-pop pop-${painel}`} role="dialog" aria-modal="false" aria-label=${{ multicam: 'Multicâmera', freemocap: 'FreeMoCap', avatar: 'Avatar', estudio: 'Estúdio' }[painel] || 'Motores de servidor'}>
+      <div class="m3d-pop-cab"><b>${{ multicam: 'Multicâmera (FreeMoCap no navegador · GPlanSiS|ROBO)', freemocap: 'FreeMoCap · calibração ChArUco · importação', avatar: 'Avatar · modelo 3D, mapeamento e retarget', estudio: 'Estúdio · câmera virtual, fundo, gravação, OBS, VMC' }[painel] || 'Motores de servidor · fila de jobs'}</b>
         <button class="m3d-btn mini" onClick=${() => setPainel(null)} aria-label="Fechar">✕</button></div>
       <div class="m3d-pop-c">
         ${painel === 'multicam' && html`<${PainelMulticam} motor=${motorMc.current} mc=${mc} onGravar=${gravar} onDemo=${demonstracao} setMsg=${setMsg} />`}
+        ${painel === 'avatar' && html`<${PainelAvatar} info=${avatar ? { nome: avatar.nome, tipo: avatar.tipo, vrm: avatar.vrm ? (avatar.vrm === '0' ? '0.x' : '1.0') : null, ossos: avatar.ossos, repouso: avatar.rig.poseRepouso, escala: avatar.rig.escala, flags: { dedos: avatar.rig.temDedos(), expressoes: avatar.rig.temExpressoes(), molas: avatar.rig.temMolas() } } : null}
+          mapa=${avatar ? avatar.mapa : {}} origem=${avatar ? avatar.origem : {}} onMapa=${(m) => mudarMapa(m)} onAuto=${() => { if (!avatar) return; const a = mapaAutomatico(avatar.rig.modelo); mudarMapa(a.mapa, a.origem); setMsg('Mapa automático refeito.'); }}
+          onSalvar=${salvarMapa} repouso=${verRepouso} onRepouso=${setVerRepouso} conferencia=${conferencia} onConferir=${conferirAvatar} cadeia=${cadeia} onCadeia=${ligarCadeia} />`}
+        ${painel === 'estudio' && html`<${PainelEstudio} ctl=${{ cena: () => cena.current, setMsg, seguir, setSeguir, setLimpo: (v) => { setLimpo(v); setPainel(null); if (v && vista === 'video') setVista('3d'); }, pessoas: p.pessoas || 1, setPessoas: (n) => { definirParam({ pessoas: n }); if (n < 2) limparExtras(); }, vmc: vmc.current, setOpc: (o) => setOpc((x) => ({ ...x, ...o })) }} />`}
         ${painel === 'freemocap' && html`
           <ol class="m3d-guia">${GUIA_CALIBRACAO.map((g, i) => html`<li key=${i}>${g}</li>`)}</ol>
           <div class="m3d-linha">
@@ -913,7 +1384,7 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
 
   // ------------------------------------------------------------------ tela
   return html`
-    <div class=${`m3d layout-${layout} vista-${vista}`} ref=${raiz} role="dialog" aria-modal="true" aria-label="GPlanSiS|Motion 3D Studio">
+    <div class=${`m3d layout-${layout} vista-${vista} ${limpo ? 'm3d-limpo' : ''}`} ref=${raiz} role="dialog" aria-modal="true" aria-label="GPlanSiS|Motion 3D Studio">
       <div class="m3d-barra">
         <b class="m3d-titulo"><span class="m3d-marca">iaVision</span> <span class="m3d-gp">GPlanSiS<i>|</i></span>Motion 3D Studio</b>
         <button class="m3d-btn m3d-so-cel" onClick=${() => setGaveta(gaveta === 'esq' ? null : 'esq')} aria-expanded=${gaveta === 'esq'}>☰ Motion</button>
@@ -935,6 +1406,8 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
             ${[['padrao', 'Padrão (painéis + Content Browser)'], ['foco', 'Foco no viewport'], ['ambos', 'Vídeo e 3D lado a lado']].map(([k, r]) => html`<button key=${k} role="menuitem" class=${layout === k ? 'on' : ''} onClick=${() => { setLayout(k); setMenu(null); }}>${r}</button>`)}
           </div>`}
         </span>
+        <button class=${`m3d-btn ${painel === 'avatar' ? 'on' : ''}`} onClick=${() => setPainel(painel === 'avatar' ? null : 'avatar')} title="Modelo 3D, mapeamento de ossos, dedos e rosto">🧍 Avatar</button>
+        <button class=${`m3d-btn ${painel === 'estudio' ? 'on' : ''}`} onClick=${() => setPainel(painel === 'estudio' ? null : 'estudio')} title="Câmera virtual, fundo, gravação, OBS, VMC, várias pessoas">🎬 Estúdio</button>
         <${BotaoVia} modulo="motion3d" classe="m3d-btn" rotulo="✦ Via" texto="Para o Motion 3D: " />
         <span class="m3d-msg" role="status" aria-live="polite">${msg}</span>
         <span class=${`m3d-selo ${remoto ? 'remoto' : ''}`} title=${remoto ? 'Enviando vídeo a um motor de servidor (com consentimento)' : 'Tudo processado neste aparelho'}>${remoto ? 'GPU REMOTA' : 'ON-DEVICE'}</span>
@@ -953,6 +1426,7 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
             <span class="m3d-grupo" role="group" aria-label="Viewport">
               <button class=${`m3d-btn mini ${vista === 'video' ? 'on' : ''}`} aria-pressed=${vista === 'video'} onClick=${() => setVista('video')}>Vídeo + esqueleto</button>
               <button class=${`m3d-btn mini ${vista === '3d' ? 'on' : ''}`} aria-pressed=${vista === '3d'} onClick=${() => setVista('3d')}>3D</button>
+              <button class=${`m3d-btn mini ${vista === 'marionete' ? 'on' : ''}`} aria-pressed=${vista === 'marionete'} onClick=${() => setVista('marionete')} title="Imagem → movimento 2D">Marionete 2D</button>
             </span>
             ${['Perspective', 'Lit', 'Show'].map((a) => html`<span key=${a} class="m3d-menu-w"><button class=${`m3d-btn mini ${aba3d === a ? 'on' : ''}`} aria-haspopup="menu" onClick=${() => setAba3d(aba3d === a ? null : a)}>${a === 'Perspective' ? ({ perspectiva: 'Perspective', frente: 'Front', lado: 'Side', topo: 'Top', atras: 'Back (espelho)' })[camPreset] : a === 'Lit' ? ({ lit: 'Lit', unlit: 'Unlit', wireframe: 'Wireframe' })[opc.luz] : 'Show'} ▾</button>
               ${aba3d === a && html`<div class="m3d-menu" role="menu">
@@ -965,6 +1439,8 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
           <div class="m3d-vps">
             <div class="m3d-vp m3d-vp-video"><canvas ref=${cvVid} aria-label="Vídeo com o esqueleto sobreposto"></canvas></div>
             <div class="m3d-vp m3d-vp-3d" ref=${host3d}>${!mostra3d && ''}</div>
+            ${vista === 'marionete' && html`<div class="m3d-vp m3d-vp-pup"><${Marionete2D} setMsg=${setMsg} abrir=${pupAbrir} arquivo=${pupArquivo} aoSalvar=${recarregarModelos}
+              obterPose=${obterPoseMarionete} quadrosTomada=${quadrosTomadaMarionete} /></div>`}
           </div>
           <div class="m3d-rodape">
             <span class=${`m3d-live ${live ? 'on' : ''}`}>LIVE</span>
@@ -987,6 +1463,7 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
       ${layout !== 'foco' && ConteudoCB}
       ${PainelFlutuante}
       ${gaveta && html`<div class="m3d-veu" onClick=${() => setGaveta(null)}></div>`}
+      ${limpo && html`<button class="m3d-limpo-sair" onClick=${() => setLimpo(false)} aria-label="Sair da janela limpa">Esc · sair da janela limpa</button>`}
     </div>`;
 }
 
