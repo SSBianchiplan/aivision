@@ -42,6 +42,8 @@ import { paraBVH, lerBVH, baseDeSuporte } from '../../../vendor/gplansis-robo-mo
 import { CenaMotion3D } from './cena3d.js';
 import { bvhParaGLB } from './glb.js';
 import { MotorMulticam } from './multicam.js';
+import { ligarViaMotion } from './via-motion.js';   // [VIA] gancho da Via (js/components/motion3d/via-motion.js)
+import { BotaoVia } from '../../via/BotaoVia.js';   // [VIA] botão «✦ Via» da barra
 
 const OP = 'motion3d.captura';
 const PASTAS = [
@@ -635,6 +637,9 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
     return () => { delete window.aivMotion3D; };
   });
 
+  // [VIA] gancho mínimo: a Via (via-motion.js) cria/abre tomadas e ajusta a visualização por estas funções
+  useEffect(() => ligarViaMotion({ naoSalvas, novaTomada, salvarTomada, recarregarLista, carregar, exportar, setOpc, play: playRef, setMsg }), [novaTomada, salvarTomada, recarregarLista, carregar, exportar, setMsg]);
+
   // ------------------------------------------------------------------ dados derivados
   const quadroAtual = play ? play.proc.trilha[play.quadro] : (canalMotion.instantaneo() && (canalMotion.instantaneo().Wf || canalMotion.instantaneo().W)) || null;
   const visAtual = play ? null : (canalMotion.instantaneo() && canalMotion.instantaneo().P ? canalMotion.instantaneo().P.map((q) => (q ? q.v : 0)) : null);
@@ -930,6 +935,7 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
             ${[['padrao', 'Padrão (painéis + Content Browser)'], ['foco', 'Foco no viewport'], ['ambos', 'Vídeo e 3D lado a lado']].map(([k, r]) => html`<button key=${k} role="menuitem" class=${layout === k ? 'on' : ''} onClick=${() => { setLayout(k); setMenu(null); }}>${r}</button>`)}
           </div>`}
         </span>
+        <${BotaoVia} modulo="motion3d" classe="m3d-btn" rotulo="✦ Via" texto="Para o Motion 3D: " />
         <span class="m3d-msg" role="status" aria-live="polite">${msg}</span>
         <span class=${`m3d-selo ${remoto ? 'remoto' : ''}`} title=${remoto ? 'Enviando vídeo a um motor de servidor (com consentimento)' : 'Tudo processado neste aparelho'}>${remoto ? 'GPU REMOTA' : 'ON-DEVICE'}</span>
         <${FonteStudio} classeBotao="m3d-btn" />

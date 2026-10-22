@@ -32,6 +32,10 @@ import { ViaChave } from './ViaChave.js';
 import * as srv from './servidor.js';
 import { prepararImagem, imagensDe, MAX_POR_MENSAGEM, TIPOS } from './anexos.js';
 import { lerToken, lerQuem, gravarToken, entrarPorSessao, entrarComSenha, listarProjetos, enviarImagens } from '../auth/treino.js';
+// módulos e Motion 3D: cartões e aplicadores registrados pelas próprias ferramentas (via/cartoes.js)
+import { cartaoDe, aplicadorDe } from './cartoes.js';
+import { nomeModulo } from './registro.js';
+import { contextoDoModulo } from './ferramentas-modulos.js';
 
 // ============================================================ conversa (memória da sessão)
 
@@ -41,7 +45,10 @@ const conversa = { itens: [], historico: [], ocupado: false, contexto: null, ima
   rascunho: [],           // anexos ainda não enviados (miniaturas no compor)
   avisoAnexo: '',
   servidorId: null,       // id da conversa no aivision-via
-  avisoServidor: '' };
+  avisoServidor: '',
+  modulo: null,           // módulo que abriu a Via (botão «✦ Via» de um painel/Studio)
+  moduloAnunciado: null,  // o contexto do módulo já foi junto numa mensagem desta conversa
+  dadosLivres: new Set() };   // módulos com dados de pessoas liberados «nesta conversa»
 const ouvintes = new Set();
 const mudou = () => { for (const fn of ouvintes) { try { fn(); } catch (_) { /* ignora */ } } };
 let seq = 0;
@@ -62,6 +69,7 @@ export function novaConversa() {
   conversa.itens = []; conversa.historico = []; conversa.contexto = null; conversa.imagemLivre = false; conversa.uso = null;
   conversa.anexos = new Map(); conversa.nAnexo = 0; conversa.rascunho = []; conversa.avisoAnexo = '';
   conversa.servidorId = null; conversa.avisoServidor = '';
+  conversa.modulo = null; conversa.moduloAnunciado = null; conversa.dadosLivres = new Set();
   mudou();
 }
 
@@ -112,6 +120,7 @@ function perfil() {
 }
 
 function comandoDoCartao(c) {
+  if (c.comando && c.comando.op) return c.comando;    // cartões de módulos / Motion 3D trazem o próprio registro
   if (c.tipo === 'comando' || c.tipo === 'salvar') return { op: c.op, parametro: c.parametro, valor: c.valor };
   if (c.tipo === 'operador') return { op: c.op, parametro: null, valor: JSON.stringify(Object.fromEntries(c.mudados.map((k) => [k, c.params[k]]))) };
   if (c.tipo === 'treinar') return { op: 'treinar', parametro: c.projeto || null, valor: c.imagens.join(', ') };
@@ -132,7 +141,8 @@ async function registrarTurno(itemUsuario, itensTurno, r) {
       modelo: r.modelo || lerPreferencias().modelo,
       tokens_in: (uso.entrada || 0) + (uso.cacheLido || 0) + (uso.cacheEscrito || 0),
       tokens_out: uso.saida || 0,
-      comandos: cartoes.map((it) => comandoDoCartao(it.cartao)).slice(0, 50),
+      // o aivision-via aceita valor de até 5000 caracteres (keyframes do Motion 3D podem passar disso)
+      comandos: cartoes.map((it) => { const c = comandoDoCartao(it.cartao); return { ...c, valor: String(c.valor || '').slice(0, 5000) }; }).slice(0, 50),
       anexos: (itemUsuario.anexos || []).map((id) => conversa.anexos.get(id)).filter(Boolean)
         .map((a) => ({ sha256: a.sha256, largura: a.largura, altura: a.altura })),
     });
@@ -260,6 +270,12 @@ async function enviar(textoUsuario, { comImagem, source, displayCanvas, comAnexo
   conversa.passo = 'pensando';
   mudou();
 
+  // aberta pelo botão de um módulo: a 1ª mensagem leva o contexto (números só se não forem de pessoas)
+  if (conversa.modulo && conversa.moduloAnunciado !== conversa.modulo) {
+    conversa.moduloAnunciado = conversa.modulo;
+    conteudo.unshift({ type: 'text', text: await contextoDoModulo(conversa.modulo) });
+  }
+
   controlador = new AbortController();
   const sinal = controlador.signal;
   const nodeId = conversa.contexto && conversa.contexto.nodeId;
@@ -296,6 +312,22 @@ async function enviar(textoUsuario, { comImagem, source, displayCanvas, comAnexo
       });
     },
     capturarQuadro: () => capturarQuadro(source, displayCanvas),
+    // dados de PESSOAS de um módulo (saúde, movimento, posto, fala): mesmo padrão do quadro do vídeo
+    pedirPermissaoDados: (mod, motivo) => {
+      if (conversa.dadosLivres.has(mod.id)) return Promise.resolve(true);
+      viva = null;
+      return new Promise((resolve) => {
+        const it = novoItem({ tipo: 'permissao', dados: true, modulo: mod.id, nomeModulo: mod.nome, motivo, resolver: null, status: '' });
+        it.resolver = (v, sempre) => {
+          if (it.status) return;
+          it.status = v ? (sempre ? 'permitido nesta conversa' : 'permitido') : 'recusado';
+          if (v && sempre) conversa.dadosLivres.add(mod.id);
+          mudou(); resolve(v);
+        };
+        sinal.addEventListener('abort', () => it.resolver(false), { once: true });
+        conversa.itens.push(it); mudou();
+      });
+    },
   };
 
   try {
@@ -635,6 +667,21 @@ function CartaoTreinar({ item, onFechar = null }) {
 }
 
 function CartaoPermissao({ item }) {
+  if (item.dados) {
+    return html`
+    <div class="via-cartao via-cartao-perm" data-cartao="permissao-dados">
+      <div class="via-cartao-t"><span class="via-tag">dados</span> A Via quer ler os números do <b>${item.nomeModulo}</b></div>
+      <p class="via-cartao-x">${item.motivo}</p>
+      <p class="hint tight">São dados de uma pessoa (saúde, movimento, posto de trabalho ou fala). Vão só números e rótulos — sem imagem e sem nome — para a Anthropic, com a sua chave.</p>
+      ${!item.status && html`
+        <div class="via-cartao-acts">
+          <button class="btn tiny accent" onClick=${() => item.resolver(true, false)}>Permitir uma vez</button>
+          <button class="btn tiny" onClick=${() => item.resolver(true, true)}>Nesta conversa</button>
+          <button class="btn tiny" onClick=${() => item.resolver(false)}>Agora não</button>
+        </div>`}
+      ${item.status && html`<p class="via-cartao-st" role="status">${item.status}</p>`}
+    </div>`;
+  }
   return html`
     <div class="via-cartao via-cartao-perm">
       <div class="via-cartao-t"><span class="via-tag">imagem</span> A Via quer ver o quadro atual do vídeo</div>
@@ -686,6 +733,8 @@ function Item({ item, onReenviar, onChave }) {
     if (t === 'salvar') return html`<${CartaoSalvar} item=${item} />`;
     if (t === 'operador') return html`<${CartaoOperador} item=${item} />`;
     if (t === 'treinar') return html`<${CartaoTreinar} item=${item} />`;
+    const Extra = cartaoDe(t);
+    if (Extra) return html`<${Extra} item=${item} atualizar=${mudou} />`;
   }
   if (item.tipo === 'permissao') return html`<${CartaoPermissao} item=${item} />`;
   if (item.tipo === 'aviso') return html`<p class="via-nota" role="status">${item.texto}</p>`;
@@ -747,6 +796,7 @@ function Biblioteca({ contexto }) {
       <div class="via-bib-lista">
         ${lista.map((c) => {
           const def = getOperator(c.op);
+          const apl = !def && aplicadorDe(c.op);
           const sch = def && def.params && def.params[c.parametro];
           return html`
             <div key=${c.id} class="via-bib-item">
@@ -757,7 +807,9 @@ function Biblioteca({ contexto }) {
               <div class="via-bib-o">${def ? def.label : c.op} › ${sch ? sch.label || c.parametro : c.parametro}${c.origem === 'via' ? ' · pela Via' : ''} · ${new Date(c.criadoEm).toLocaleDateString('pt-BR')}</div>
               <pre class="via-valor ro">${c.valor}</pre>
               <div class="via-cartao-acts">
-                <button class="btn tiny accent" disabled=${!def} onClick=${() => avisar('✓ ' + aplicarNoPipeline(c.op, c.parametro, c.valor, contexto && contexto.op === c.op ? contexto.nodeId : null))}>Aplicar</button>
+                ${apl
+                  ? html`<button class="btn tiny accent" onClick=${async () => { try { avisar('✓ ' + await apl.aplicar(c)); } catch (e) { avisar('⚠ ' + e.message); } }}>${typeof apl.rotulo === 'function' ? apl.rotulo(c) : apl.rotulo}</button>`
+                  : html`<button class="btn tiny accent" disabled=${!def} onClick=${() => avisar('✓ ' + aplicarNoPipeline(c.op, c.parametro, c.valor, contexto && contexto.op === c.op ? contexto.nodeId : null))}>Aplicar</button>`}
                 <button class="btn tiny" onClick=${async () => avisar((await copiar(c.valor)) ? '✓ copiado' : '⚠ não consegui copiar')}>Copiar</button>
                 <button class="btn tiny via-perigo" onClick=${() => { if (confirm(`Apagar «${c.nome}»?`)) apagarComando(c.id); }}>Apagar</button>
               </div>
@@ -883,6 +935,7 @@ const SUGESTOES = [
   'Sugira classes de EPI para o YOLOE por texto',
   'Monte um pipeline para contar caminhões que passam',
   'Quais operadores aceitam comando e como escrever cada um?',
+  'Gere para o Motion 3D uma animação: acenar com a mão direita e depois pular',
 ];
 
 const VIA_REC_KEY = 'aiv.via.recolhida';
@@ -916,6 +969,15 @@ export function ViaPainel({ onClose, source, displayCanvas }) {
         setAba('conversa');
         anexar(ctx.anexos);
         setTexto(ctx.texto || '');
+        setTimeout(() => { const t = caixa.current; if (t) { t.focus(); t.setSelectionRange(t.value.length, t.value.length); } }, 30);
+        return;
+      }
+      // botão «✦ Via» de um painel/Studio: o contexto do módulo vai na 1ª mensagem
+      if (ctx.modulo) {
+        if (conversa.modulo !== ctx.modulo) { conversa.modulo = ctx.modulo; conversa.moduloAnunciado = null; }
+        setAba('conversa');
+        setTexto(ctx.texto || '');
+        mudou();
         setTimeout(() => { const t = caixa.current; if (t) { t.focus(); t.setSelectionRange(t.value.length, t.value.length); } }, 30);
         return;
       }
@@ -1017,6 +1079,11 @@ export function ViaPainel({ onClose, source, displayCanvas }) {
 
       ${aba === 'conversa' && pronta && html`
         <div class="via-compor">
+          ${c.modulo && html`
+            <div class="via-ctx" data-via-ctx-modulo=${c.modulo}>
+              <span>Módulo: <b>${nomeModulo(c.modulo)}</b>${c.moduloAnunciado === c.modulo ? ' · contexto enviado' : ' · o contexto vai com a mensagem'}</span>
+              <button onClick=${() => { conversa.modulo = null; conversa.moduloAnunciado = null; mudou(); }} aria-label="Tirar o contexto do módulo">✕</button>
+            </div>`}
           ${c.contexto && html`
             <div class="via-ctx">
               <span>Campo: <b>${c.contexto.rotulo}</b> · <code>${c.contexto.op}.${c.contexto.parametro}</code></span>

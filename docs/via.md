@@ -70,6 +70,137 @@ Executadas no navegador (`js/via/ferramentas.js`). Todas vão com `eager_input_s
 
 As três novas ficam **no fim** da lista de ferramentas: o prefixo das anteriores não muda (cache).
 
+Depois delas, também no fim e em ordem fixa, entram as ferramentas de **módulos** e do **Motion 3D** (seções abaixo): `listar_modulos`, `ler_estado_modulo`, `configurar_modulo`, `explicar_resultado`, `listar_tomadas_motion3d`, `gerar_animacao_motion3d`, `encadear_tomadas_motion3d`, `ajustar_tomada_motion3d`, `propor_config_motion3d` e `analisar_tomada_motion3d`, num total de 20 ferramentas.
+
+## Via nos módulos (painéis e Studios)
+
+Cada painel e Studio tem um botão **✦** (ou **✦ Via**, na barra dos Studios). O botão abre a Via com aquele módulo como contexto: aparece o chip «Módulo: …» acima da caixa de texto e a **primeira mensagem** leva um bloco «Contexto: o usuário abriu a Via pelo módulo X». Esse bloco traz os números do painel, a não ser que sejam dados de pessoas (ver abaixo). Os painéis ganham o botão pelo cabeçalho do `Panel` (mapa `PAINEL_MODULO` em `js/via/registro.js`). Nos Studios, o botão é uma linha marcada `[VIA]` na barra.
+
+### Registro de módulos
+
+`js/via/registro.js` é o arquivo leve que qualquer painel pode importar. Um módulo se declara com `registrarModuloVia(...)`, informando:
+
+- `id`, `nome`, `registro` (ids CV-NN) e `ops`;
+- `pessoal`: `true` quando os dados são de pessoas;
+- `sobre`: o que o módulo mede e como ler os números;
+- `estado()`, `config()` (o esquema: tipo, faixa e opções) e `aplicar(mudancas)`.
+
+As declarações dos módulos que já existem ficam em `js/via/modulos-via.js`. Esse arquivo só carrega quando a Via usa uma ferramenta de módulo ou quando a gaveta abre por um botão de módulo. Cada declaração importa o canal do próprio módulo **sob demanda**: não assina canal nenhum e não faz polling. Os **84 módulos do registry** entram por uma declaração genérica (`cv-NN`), que traz os nós no Pipeline, os parâmetros com faixa e as métricas da telemetria. Para um módulo futuro entrar, basta ele chamar `registrarModuloVia` no próprio código; a Via não muda.
+
+Os nomes das ferramentas são **fixos**, por exemplo `ler_estado_modulo {modulo: 'beltscan'}`, em vez de uma ferramenta `ler_estado_<modulo>` para cada módulo. Assim a lista de ferramentas é a mesma byte a byte entre os pedidos, o que preserva o cache do prompt.
+
+| Ferramenta | O que faz |
+|---|---|
+| `listar_modulos` | Lista os módulos especializados (id, nome, se está ligado, se tem configuração, se tem dados de pessoas) e os 84 do registry numa linha compacta. |
+| `ler_estado_modulo` | Devolve os números do painel. Só números e rótulos: `enxugar()` descarta pontos do corpo, imagens, caixas, séries, nomes e textos longos. Módulos `pessoal` pedem permissão antes. |
+| `configurar_modulo` | Mostra um **cartão** «atual → proposto», já validado contra o esquema (tipo, faixa, opção). Valor fora da faixa volta com `is_error` e nenhum cartão. **Aplicar** chama `aplicar()`; **Agora não** descarta. |
+| `explicar_resultado` | Traz o texto «sobre», as chaves configuráveis com faixas e o estado (com permissão quando for o caso), para a Via explicar. |
+
+**Dados de pessoas (LGPD).** Os módulos marcados como pessoais são Takt, Fisio, Vitais e saúde+, Bike Fit, Ergonomia, Academia, Salto, Corrida, Swing, VBT, Quadra e Legendas, além dos módulos do registry de rosto, re-ID e clínico. Antes de ler os dados deles, a Via mostra o cartão «A Via quer ler os números do X», com três opções: **Permitir uma vez**, **Nesta conversa** ou **Agora não**. É o mesmo padrão do `ver_quadro_atual`. Quando a Via abre pelo botão de um desses módulos, o contexto da primeira mensagem **não** leva números. Nome de paciente, atleta ou funcionário nunca sai. EPI e Medições mandam só agregados. Aplicações não manda fala nem Libras.
+
+**O que cada módulo expõe**
+
+- **BeltScan**
+  - Estado: retrato (q, cov, A, Q, fill, nível, bancada) e os alarmes.
+  - Configuração: os campos do `ABAS` do `BeltScanConfig`, gravados em `motor.C`. Ao aplicar, chama `mudou`, `reiniciar` (só quando muda extração ou geometria), `salvarSeMudou` e `avisarAgora`.
+- **CounterVision**
+  - Estado: `resumo`, com total, taxa, meta, projeção e alarmes.
+  - Configuração: parâmetros dos nós `contagem.*`.
+- **Takt**
+  - Estado: KPIs por posto e o geral.
+  - Configuração: histerese, tempos de confirmação, presença, raios e alarmes, aplicados com `motor.definir`. Mudar `params` passa os tempos para «personalizado». Também aceita os parâmetros do nó `takt.posto`.
+- **OEE**
+  - Estado: `kpis()`.
+  - Configuração: `params`, `cicloIdeal_s`, o alarme de parada e o setup pelo Takt.
+- **Inspect**
+  - Estado: estatísticas (OK/NOK, rendimento, Cpk), o programa ativo e o gatilho.
+  - Configuração: o gatilho grava uma **nova versão** do programa (`canal.salvar`). Também aceita os parâmetros do nó.
+- **EPI**: conformidade por zona.
+- **Fisio**: resultado e as últimas medidas.
+- **Vitais e saúde+**: `principal` e as linhas de cada operador.
+- **Bike Fit**: ângulos, KOPS, cadência e recomendações.
+- **Esportes**: o canal `instantaneo()` de cada um.
+- **Medições e Aplicações**: as chaves do canal livres-oa e livres-u.
+- **Telemetria**: estado com fps, tempos por nó e métricas. Configuração de `procWidth`, `targetFps` e `autoQuality`.
+- **Códigos**: o que foi lido.
+- **+Projeto**: os projetos.
+- **Vídeo**: só o estado, e só com o editor aberto.
+- **Hubs**: o Industrial junta os resumos dos módulos ligados. O Esportes informa só o que está ligado.
+
+Com a gaveta aberta sobre um Studio de tela cheia, ela sobe para z-index 5350 (`body.studio-aberto`, `.vde` ou `.bf3d`).
+
+## Motion 3D Studio: o que a Via gera
+
+O código fica em `js/via/ferramentas-motion3d.js` (ferramentas e cartões) e `js/components/motion3d/via-motion.js` (matemática pura, testada no node). No Studio há só um gancho mínimo: `ligarViaMotion(...)` e o botão **✦ Via** na barra.
+
+### Animação por texto (`gerar_animacao_motion3d`)
+
+A Via devolve **keyframes**: o tempo (s), os ângulos por junta em graus e a raiz (`x`, `z`, `giro`, `elevacao`, `altura_quadril`). O esquema da ferramenta lista as 25 juntas e os limites de cada uma.
+
+O Studio monta a tomada assim:
+
+- **Interpolação**: Catmull-Rom não uniforme, com tangente zero nos picos, ou linear, amostrada a 30 fps.
+- **Esqueleto padrão**: cinemática direta num corpo de ~1,75 m, o que dá a trilha 33 × 3 na convenção do robo. A tomada é **normal**: origem `via` (`synthetic_demo` no contrato) e pasta Animation. Passa pelo mesmo `processarTomada`, BVH, GLB, JSON e CSV das capturas.
+- **Pés no chão**: o quadril fica na altura em que o pé mais baixo toca o piso, mais a elevação do salto. Se outra parte do corpo atravessaria o chão, o corpo sobe.
+- **Ancoragem «pes»**: o pé de apoio fica preso no chão, e o corpo anda pelo movimento das pernas.
+
+A **validação física** separa o que é corrigido do que é rejeitado:
+
+- **Corrigido, com aviso**:
+  - ângulo até 20° além do limite (o valor vira o próprio limite);
+  - elevação negativa (vira 0);
+  - loop que não fecha.
+- **Rejeitado**, com `is_error` listando cada motivo para a Via corrigir:
+  - junta desconhecida;
+  - ângulo impossível;
+  - velocidade angular acima de 2500°/s («teletransporte»);
+  - raiz acima de 10 m/s, ou mais de 5 m/s na vertical;
+  - elevação acima de 1,2 m;
+  - mais de 60 s ou de 240 keyframes.
+- **Aviso**:
+  - articulação acima de 900°/s;
+  - salto «flutuando», quando a altura não bate com a gravidade (h ≈ g·T²/8).
+
+**Ossos rígidos**: o comprimento é conferido depois da cinemática e o desvio aparece no cartão (menos de 1 mm, que é o arredondamento).
+
+Os limites vêm das juntas CORPO do GPlanSiS|ROBO e da ADM da AAOS:
+
+| Junta | Faixa |
+|---|---|
+| tronco flexão | −30…90° |
+| ombro flexão | −50…180° |
+| ombro abdução | −10…180° |
+| cotovelo | 0…150° |
+| quadril flexão | −30…125° |
+| joelho | 0…150° |
+| tornozelo | −50…30° |
+
+### Outras ferramentas
+
+- **Coreografia** (`encadear_tomadas_motion3d`): trechos de tomadas, com `ini_s`, `fim_s` e repetições.
+  - Cada trecho é reamostrado a 30 fps e alinhado no piso ao fim do anterior.
+  - A transição usa blend smoothstep, com os ossos restaurados nos quadros misturados.
+- **Ajustes** (`ajustar_tomada_motion3d`): sempre numa **cópia**; a original não muda.
+  - Operações: cortar, velocidade (0,25–4×), espelhar, `girar_membro` (por exemplo «braço esquerdo mais alto» vira `braco_esq` 20° para cima, sem passar da vertical e com o osso rígido), deslocar, suavizar, repetir, inverter, apoiar no chão.
+- **Perfis de retarget e configurações** (`propor_config_motion3d`):
+  - Perfil: os nomes das 15 juntas do BVH do robo para Mixamo (`mixamorig:`), UE5 (`pelvis`, `thigh_l`…), Rigify ou nomes próprios, em cm ou m.
+  - O perfil fica salvo por usuário em `localStorage aiv.motion3d.perfis:<id>`, e há a opção «Exportar BVH da tomada aberta» com ele.
+  - O cartão também aplica a visualização do Studio (avatar, grade, nomes, chão…) e os parâmetros da captura.
+- **Análise** (`analisar_tomada_motion3d`):
+  - Calcula a amplitude dos ângulos, a simetria esquerda × direita, o ritmo (autocorrelação de 0,3 a 4 s), o caminho do quadril e o tempo no ar, sempre com o aviso educacional.
+  - Uma tomada **capturada de uma pessoa** pede permissão; uma gerada ou de demonstração, não.
+- **Listar** (`listar_tomadas_motion3d`): mostra só metadados, inclusive das tomadas não salvas no Studio.
+
+### O cartão e a biblioteca
+
+O cartão da tomada traz:
+
+- a prévia em vista 3/4 (o ▶ anima só enquanto tocando);
+- quadros, ossos, pés no chão, correções e avisos;
+- os botões **Salvar no Content Browser** (IndexedDB) e **Abrir no Studio** (abre o Studio se estiver fechado e carrega a tomada);
+- o botão **Salvar na biblioteca**: grava os keyframes como comando `motion3d.via`/`animacao` na categoria **Motion 3D**, que aceita valores de até 24 mil caracteres. Na aba Comandos, o botão vira **Gerar no Studio**;
+- o botão **Exportar BVH**.
+
 ## Imagens anexadas
 
 📎, arrastar e soltar sobre a gaveta ou **Ctrl+V** na caixa de texto. JPG, PNG ou WebP, até **8 por mensagem**. Antes de sair do aparelho cada imagem é reduzida a no máximo **1568 px** no maior lado e regravada em **JPEG 0,85** (`js/via/anexos.js`); as miniaturas aparecem acima da caixa e saem com ✕. Na mensagem, cada imagem vira um bloco `image` (base64) e um bloco de texto lista os ids (`A1 (nome, L×A)`), que a Via usa nas ferramentas. Na bolha enviada, «Mandar estas imagens para o Treinar» abre o mesmo cartão do `enviar_ao_treinar` (escolher projeto, marcar quais imagens). O envio usa `POST /api/treino/projetos/{id}/imagens` (multipart `arquivos`, lotes de 8, `?grupo=` em anomalia). Os anexos vivem só na memória da página.
@@ -153,9 +284,37 @@ Nos campos:
 | `js/via/servidor.js` | ao abrir | cliente do `/api/via/*` (registro, base, histórico) |
 | `js/via/anexos.js` | ao abrir | redução das imagens (1568 px, JPEG 0,85, sha256) |
 | `js/auth/treino.js` | ao abrir / fonte YouTube | token do Treinar, SSO de admin, projetos e envio de imagens |
+| `js/via/registro.js` | sempre (leve) | registro de módulos (`registrarModuloVia`), `PAINEL_MODULO` |
+| `js/via/BotaoVia.js` | sempre (leve) | botão ✦ dos painéis e dos Studios (`pedirVia({modulo})`) |
+| `js/via/cartoes.js` | ao abrir | registro de cartões extras e de aplicadores da biblioteca |
+| `js/via/ferramentas-modulos.js` | ao abrir | ferramentas genéricas de módulo + cartão «atual → proposto» |
+| `js/via/modulos-via.js` | ao usar uma ferramenta de módulo | declarações dos módulos (canais importados sob demanda) |
+| `js/via/ferramentas-motion3d.js` | ao abrir | ferramentas e cartões do Motion 3D |
+| `js/components/motion3d/via-motion.js` | ao usar uma ferramenta do Motion 3D / com o Studio | esqueleto padrão, validação física, síntese, coreografia, ajustes, análise, perfis |
 
 ## Testes
 
 Sem chave real. `definirClienteTeste(fabrica)` (em `js/via/cliente.js`) injeta um cliente falso que emite texto em streaming e blocos `tool_use` — cobre os cartões, a validação (op inexistente → `is_error`), os `tool_result` juntos numa mensagem, o pedido de imagem, recusa, `max_tokens` com ferramenta, 401/429/rede e a estabilidade do prefixo (ferramentas e sistema idênticos entre chamadas). O caminho de chave inválida também é testado contra a **API real** com uma chave falsa: 401 → `AuthenticationError` → «chave inválida», sem custo.
 
 Anexos, Treinar e memória: servidor de teste com `/api/me` simulado e mocks de `/api/via/*` e `/api/treino/*` (admin e não-admin) — cobre 📎/colar/arrastar, redução a 1568 px, os blocos `image`, `buscar_conhecimento` no ciclo, anexo inexistente → `is_error`, o registro (sem imagem e sem chave), o cartão do Treinar (SSO ou senha, upload em lote), «Salvar na base», a aba Base e a opção de privacidade. O serviço `aivision-via` tem `servicos/via/testes/teste_api.py` (roda dentro do contêiner contra o banco real, com usuários de teste que apaga no fim).
+
+Módulos e Motion 3D (`/Volumes/Armazena2/zz-staging/via-modulos-tools/`, cliente falso roteirizado em `fake.js` devolvendo tool calls):
+
+- `testes/t-via-motion.mjs` (node, 14 testes): pose neutra, limites (rejeita/corrige), continuidade, chão, agachamento, caminhada em círculo, salto, loop, BVH com 15 juntas + JSON `motionai.pose.v1` válido, ajustes, coreografia sem salto, análise e perfis.
+- `testes/e2e-motion3d.mjs` (Chrome headless):
+  - o botão ✦ Via do Studio e a gaveta por cima;
+  - um keyframe impossível é rejeitado (`is_error` citando a junta) e a Via corrige na volta seguinte;
+  - o cartão aparece e nada é salvo antes do clique;
+  - «Abrir no Studio» toca a tomada, ela aparece no Content Browser e exporta BVH (lido de volta pelo `lerBVH`, 15 juntas) e GLB;
+  - ajuste, coreografia, perfil Mixamo em m, análise (pedindo permissão para tomada capturada) e biblioteca.
+- `testes/e2e-modulos.mjs`:
+  - BeltScan: contexto anexado, estado, cartão de configuração, valor inalterado antes do clique e alterado depois, valor inválido devolve `is_error`.
+  - Takt: permissão pedida, e o contexto sem números.
+  - Inspect: `explicar_resultado`, e «Agora não» não muda nada.
+  - Fisio: recusa, «Nesta conversa» e nenhum nome enviado.
+  - Medições: o nó só é criado no clique.
+  - CounterVision, `cv-52` e id inexistente.
+  - Botão ✦ visível e gaveta por cima em todos os 11 Studios.
+- `testes/e2e-temas.mjs`: os 3 temas no desktop e no celular.
+- `testes/custo.mjs`: com a Via fechada carregam só `registro.js` e `BotaoVia.js` a mais (nada de declarações, canais ou SDK).
+

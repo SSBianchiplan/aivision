@@ -28,6 +28,8 @@ import { useStore, store } from '../state/store.js';
 import { layoutStore, alternarRecolhido } from '../layout/organizador.js';
 import { encaixarMover, encaixarTamanho, limparGuias, PASSO } from '../layout/grade.js';
 import { CampoComando } from '../via/CampoComando.js';
+import { BotaoVia } from '../via/BotaoVia.js';
+import { PAINEL_MODULO } from '../via/registro.js';
 
 let zTop = 100;
 const SEM_LAYOUT = {};
@@ -235,6 +237,7 @@ export function Panel({
           <b>${title}</b>
           ${subtitle && html`<em>${subtitle}</em>`}
         </div>
+        ${PAINEL_MODULO[id] && html`<${BotaoVia} modulo=${PAINEL_MODULO[id]} classe="panel-via" rotulo="✦" />`}
         <button class="panel-rec" onClick=${() => alternarRecolhido(id)} aria-expanded=${!recolhido}
           title=${recolhido ? 'Abrir' : 'Recolher'}
           aria-label=${recolhido ? 'Abrir o painel' : 'Recolher o painel'}>${recolhido ? '▸' : '▾'}</button>

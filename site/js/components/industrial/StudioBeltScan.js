@@ -38,6 +38,7 @@ import {
 } from './beltscan-comum.js';
 import { BeltScanConfig } from './BeltScanConfig.js';
 import { FonteStudio, fonteStudioAberta } from '../studio/FonteStudio.js';
+import { BotaoVia } from '../../via/BotaoVia.js';   // [VIA] botão «✦ Via» da barra (js/via/)
 
 const ROT_ESTADO = { ATIVO_NR: 'ativo, não reconhecido', ATIVO_R: 'ativo, reconhecido', RTN_NR: 'voltou ao normal' };
 
@@ -197,6 +198,7 @@ export function StudioBeltScan({ onClose, onPickFile, onResetState }) {
         <span class="bsc-q" style=${{ '--q': COR_Q[q] || '#888' }}>${q}</span>
         <span class="bsc-msg" role="status" aria-live="polite">${msg || (r && r.status) || ''}</span>
         <button class="bsc-btn ${cfg ? 'on' : ''}" onClick=${() => setCfg(cfg ? false : 'Extração')}>Configurar</button>
+        <${BotaoVia} modulo="beltscan" classe="bsc-btn" />
         <button class="bsc-btn bsc-fechar" onClick=${onClose} aria-label="Fechar a tela BeltScan">✕</button>
       </div>
 

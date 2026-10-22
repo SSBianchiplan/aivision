@@ -36,6 +36,7 @@ import {
   PONTOS_REF, PARTES, calibrarLateral, calibrarFrontal, amostraLateral, amostraFrontal, fundir,
   esqueletoAgora, trajetorias, csvCiclo, projetor, bikeParaLateral, bikeParaFrontal,
 } from '../../cv/runtime/livres-e/fit3d.js';
+import { BotaoVia } from '../../via/BotaoVia.js';   // [VIA] botão «✦ Via» da barra (js/via/)
 
 const VISTAS = [
   { k: 'lateral', nome: 'Lateral', dica: 'câmera de lado, perpendicular à bike, lente a ~95 cm do chão, 180–220 cm da bike' },
@@ -720,6 +721,7 @@ export function BikeFit3D({ onClose }) {
       <button class="bf3d-btn" onClick=${exportarJSON}>JSON</button>
       <button class="bf3d-btn" disabled=${!r} onClick=${exportarCSV}>CSV</button>
       <button class="bf3d-btn" onClick=${exportarPNG} title="Imagem da vista 3D">PNG<span class="bf3d-larga"> 3D</span></button>
+      <${BotaoVia} modulo="bikefit" classe="bf3d-btn" />
       <button class="bf3d-btn fechar" onClick=${() => onClose && onClose()} aria-label="Fechar">✕</button>
     </div>
     <div class="bf3d-aviso">

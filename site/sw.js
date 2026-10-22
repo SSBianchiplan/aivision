@@ -24,7 +24,7 @@
  * ========================================================================
  */
 
-const VERSION = 'iav-v98-vps';   // 22/10/2026: Studios: link do YouTube no botão Fonte (o objeto do extrairId ia inteiro como id)
+const VERSION = 'iav-v99-vps';   // 22/10/2026: Via em todos os módulos e Studios (registro genérico, botão ✦) e geração de animações por texto no Motion 3D
 const SHELL = `${VERSION}-shell`;
 /*
  * Pesos dos modelos num cache de nome FIXO: sobrevivem às publicações. Antes o

@@ -25,6 +25,8 @@ import { OPERATORS, getOperator, coerceParams, MODULES } from '../cv/registry.js
 import { infoCampo, listarComandos, listarCategorias } from './comandos.js';
 import { buscar } from './servidor.js';
 import { garantirToken, listarProjetos } from '../auth/treino.js';
+import { FERRAMENTAS_MODULOS } from './ferramentas-modulos.js';
+import { FERRAMENTAS_MOTION3D } from './ferramentas-motion3d.js';
 
 const ANEXO_RE = /^A\d{1,4}$/;
 const PROJETO_RE = /^[a-z0-9][a-z0-9-]{1,40}$/;
@@ -324,6 +326,9 @@ export const FERRAMENTAS = [
       return 'Cartão mostrado. As imagens só vão para o Treinar se o usuário escolher o projeto e clicar em Enviar.';
     },
   },
+  // ---- módulos (registro genérico) e Motion 3D: também no FIM, em ordem fixa (cache)
+  ...FERRAMENTAS_MODULOS,
+  ...FERRAMENTAS_MOTION3D,
 ];
 
 const POR_NOME = new Map(FERRAMENTAS.map((f) => [f.def.name, f]));

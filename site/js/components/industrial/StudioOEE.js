@@ -36,6 +36,7 @@ import {
   OP, carregarCss, fmt, pct, hm, relogio, hora, horaSeg, carimbo, baixar, ativarOEE, novaArea, maquinasMarcadas,
   desenharVideo, desenharGantt, desenharPareto, relatorioHTML, imgDe, COR, ROTULO, ESTADOS, SEM_MOTIVO,
 } from './oee-comum.js';
+import { BotaoVia } from '../../via/BotaoVia.js';   // [VIA] botão «✦ Via» da barra (js/via/)
 
 const DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
@@ -202,6 +203,7 @@ export function StudioOEE({ onClose }) {
           </div>`}
         </span>
         <button class="oee-btn" onClick=${() => { if (confirm('Começar uma sessão nova? Estados, paradas, motivos e produção desta sessão serão apagados (exporte antes, se precisar).')) { novaSessao(); setSel(null); setMsg('Sessão nova.'); } }}>Nova sessão</button>
+        <${BotaoVia} modulo="oee" classe="oee-btn" />
         <button class="oee-btn oee-fechar" onClick=${onClose} aria-label="Fechar a tela OEE">✕</button>
       </div>
 

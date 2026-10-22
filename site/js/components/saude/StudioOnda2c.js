@@ -14,6 +14,7 @@ import {
   PRESETS_ONDA2C, AVISO_SAUDE, carregarCss, aplicarPresetOnda2c, opAtivo, relatorioHTML, abrirRelatorio, carimbo, textoPrincipal,
   desenharSerie, desenharEspectro, desenharBoneco, prepararCanvas, cores,
 } from './onda2c-comum.js';
+import { BotaoVia } from '../../via/BotaoVia.js';   // [VIA] botão «✦ Via» da barra (js/via/)
 
 const MODOS = [['Respiração sem contato', 'vitais.respiracao', '🫁 Respiração'], ['Frequência cardíaca rPPG', 'vitais.cardiaca', '❤ FC rPPG'],
   ['Tremor de mão', 'clinica.tremor', '✋ Tremor'], ['Comparar com a referência', 'referencia.comparar', '🎯 Referência']];
@@ -93,6 +94,7 @@ export function StudioOnda2c({ onClose }) {
         ${MODOS.map(([nome, o, rot]) => html`<button key=${o} class="o2s-btn ${op === o ? 'on' : ''}" onClick=${() => ir(nome)}>${rot}</button>`)}
         <${FonteStudio} classeBotao="o2s-btn" />
         <span class="o2s-mola"></span>
+        <${BotaoVia} modulo="vitais" classe="o2s-btn" />
         ${comparacao && html`<button class="o2s-btn" onClick=${() => pedir(op, 'iniciar')}>● Iniciar</button><button class="o2s-btn" onClick=${() => pedir(op, 'parar')}>■ Parar</button>`}
         <button class="o2s-btn" onClick=${relatorio} disabled=${!r}>Relatório</button>
         <button class="o2s-btn" onClick=${onClose} aria-label="Fechar">✕</button>

@@ -313,3 +313,43 @@ textarea.via-valor:focus { outline: none; border-color: var(--accent); }
 :root[data-theme="light"] .via-anexo { background: rgba(4, 65, 60, .05); }
 :root[data-theme="light"] .via-clipe, :root[data-theme="light"] .via-base-form { background: rgba(4, 65, 60, .04); }
 :root[data-theme="light"] .via-cartao-treinar { border-left-color: var(--cyan); }
+
+/* ==========================================================================
+   VIA nos módulos e Studios (js/via/BotaoVia.js, ferramentas-modulos.js,
+   ferramentas-motion3d.js) — botão «✦ Via», cartão de configuração, cartões
+   do Motion 3D. Claro, escuro e código: só variáveis do tema.
+   ========================================================================== */
+
+/* aberta sobre um Studio de tela cheia (z 5000–5400): a gaveta fica por cima */
+body.studio-aberto .panel.via-gaveta,
+body:has(.vde, .bf3d) .panel.via-gaveta { z-index: 5350; }
+
+/* botão ✦ no cabeçalho dos painéis (antes do ▾) */
+.panel-via {
+  flex: none; width: 22px; height: 22px; margin-left: auto;
+  border: 0; border-radius: 6px; background: transparent; color: var(--accent);
+  cursor: pointer; font-size: 12px; line-height: 1;
+}
+.panel-via:hover { background: rgba(255,255,255,.09); }
+.panel-via + .panel-rec { margin-left: 0; }
+:root[data-theme="light"] .panel-via:hover { background: rgba(0,0,0,.06); }
+/* nos Studios o botão herda a classe do botão da barra; só ganha a cor de destaque */
+.via-botao-modulo:not(.panel-via) { color: var(--accent, #2EF2D0); white-space: nowrap; }
+
+/* tabela «atual → proposto» */
+.via-diff { width: 100%; border-collapse: collapse; font-size: 11.5px; margin: 6px 0; }
+.via-diff th, .via-diff td { text-align: left; padding: 3px 6px; border-bottom: 1px solid var(--line); vertical-align: top; overflow-wrap: anywhere; }
+.via-diff th { color: var(--ink-3); font-weight: 600; font-size: 10.5px; }
+.via-diff td b { color: var(--accent); }
+
+/* Motion 3D: prévia e listas */
+.via-m3d { --via-previa-fundo: #0b1416; }
+:root[data-theme="light"] .via-m3d { --via-previa-fundo: #eef5f4; }
+.via-m3d-previa { display: grid; gap: 4px; margin: 6px 0; }
+.via-m3d-previa canvas { width: 100%; max-width: 320px; aspect-ratio: 240 / 150; height: auto; border-radius: 8px; border: 1px solid var(--line); background: var(--via-previa-fundo); }
+.via-m3d-ctl { display: flex; align-items: center; gap: 6px; max-width: 320px; }
+.via-m3d-ctl input[type="range"] { flex: 1; min-width: 0; }
+.via-m3d-ctl small { font-family: var(--mono); color: var(--ink-3); font-size: 10.5px; min-width: 44px; text-align: right; }
+.via-m3d-lista { margin: 4px 0; padding-left: 18px; font-size: 11.5px; color: var(--ink-2); }
+.via-m3d-lista.corr li { color: var(--ink-2); }
+.via-m3d-lista.corr li::marker { color: var(--accent); }

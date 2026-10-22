@@ -25,6 +25,7 @@ import {
   OP, AVISO_MEDICO, ROTULO_PARAM, LADO_PARAM, carregarCss, ativarFisio, carimbo, baixar, desenharVideo, desenharCurva,
   medidasCSV, tentativasCSV, relatorioHTML, num, TESTES, ARTICULACOES, REF, FONTES,
 } from './fisio-comum.js';
+import { BotaoVia } from '../../via/BotaoVia.js';   // [VIA] botão «✦ Via» da barra (js/via/)
 
 export function StudioFisio({ onClose }) {
   const nodes = useStore(store, (st) => st.nodes);
@@ -189,6 +190,7 @@ export function StudioFisio({ onClose }) {
           </div>`}
         </span>
         <button class="fis-btn" onClick=${() => { if (confirm('Nova sessão? Medidas e tentativas desta sessão serão apagadas (o cadastro do paciente fica). Exporte antes, se precisar.')) { canalFisio.zerar(); setSelT(null); setMsg('Sessão nova.'); } }}>Nova sessão</button>
+        <${BotaoVia} modulo="fisio" classe="fis-btn" />
         <button class="fis-btn fis-fechar" onClick=${onClose} aria-label="Fechar o Studio Fisio">✕</button>
       </div>
       <div class="fis-faixa"><b>${TESTES[cfg.teste].nome}</b><span>${pac ? `${pac.nome}${pac.idade ? ` · ${pac.idade} anos` : ''}${pac.sexo ? ` · ${pac.sexo}` : ''}${pac.ladoAcometido ? ` · lado acometido: ${pac.ladoAcometido}` : ''}` : 'sem paciente cadastrado — toque em «Paciente»'}</span></div>

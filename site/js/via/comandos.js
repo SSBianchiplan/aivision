@@ -27,6 +27,9 @@ const MAX_COMANDOS = 500;
 const MAX_CATEGORIAS = 60;
 const MAX_NOME = 80;
 const MAX_VALOR = 2000;
+/** Modelos gerados pela Via para o Motion 3D (keyframes, coreografias) são maiores que um comando. */
+const MAX_VALOR_MOTION = 24000;
+const maxValor = (op) => (/^motion3d\./.test(String(op || '')) ? MAX_VALOR_MOTION : MAX_VALOR);
 const MAX_DESCRICAO = 400;
 
 /** Categorias padrão: os módulos do iaVision. */
@@ -39,6 +42,7 @@ export const CATEGORIAS_PADRAO = [
   { id: 'quadra', nome: 'Quadra' },
   { id: 'esportes', nome: 'Esportes' },
   { id: 'outros', nome: 'Outros' },
+  { id: 'motion3d', nome: 'Motion 3D' },
 ];
 export const CATEGORIA_PADRAO = 'outros';
 
@@ -172,7 +176,7 @@ function normalizarComando(c, idsCat) {
   const nome = linha(c.nome, MAX_NOME);
   const op = linha(c.op, 60);
   const parametro = linha(c.parametro, 40);
-  const valor = texto(c.valor, MAX_VALOR);
+  const valor = texto(c.valor, maxValor(c.op));
   if (!nome || !/^[\w.-]+$/.test(op) || !/^\w+$/.test(parametro)) return null;
   return {
     id: linha(c.id, 40) || novoId('c-'),

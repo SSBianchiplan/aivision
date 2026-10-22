@@ -52,6 +52,7 @@ import { analisarClipe, keyframesDaAnalise, detectarPessoasNoQuadro, sam2Disponi
 import { montarZip } from './zip.js';
 import { tomarPedido, ultimaGravacao, emitirPrints } from './ponte.js';
 import { FonteStudio, fonteStudioAberta } from '../studio/FonteStudio.js';
+import { BotaoVia } from '../../via/BotaoVia.js';   // [VIA] botão «✦ Via» da barra (js/via/)
 
 /* O CSS desta tela só baixa com ela (o app não paga por quem não edita vídeo). */
 await new Promise((r) => {
@@ -1002,6 +1003,7 @@ export function StudioVideo({ onClose, source, onPickFile }) {
                 title="Seguir sujeito / Reenquadrar: o recorte acompanha uma pessoa ou objeto (9:16, 1:1, 4:5, 16:9)">◎<span class="vde-rot"> Seguir sujeito</span></button>
         <button class="vde-btn acento" disabled=${!v} onClick=${() => { setPredefExp(null); setDialogo('exportar'); }} title="Exportar o vídeo editado (Ctrl/⌘+E)">⇪<span class="vde-rot"> Exportar</span></button>
         <button class="vde-btn" disabled=${!v} onClick=${() => setDialogo('quadros')} title="Exportar quadros do trecho como imagens (para o +Projeto/Treinar ou ZIP)">🖼<span class="vde-rot"> Quadros</span></button>
+        <${BotaoVia} modulo="video" classe="vde-btn" />
         <span class="vde-msg" role="status" aria-live="polite">${carregando || msg}</span>
         <button class="vde-btn ${inspetor ? 'on' : ''}" onClick=${() => setInspetor(!inspetor)} title="Mostrar/ocultar o inspetor (mídia, clipe, recorte)">☰</button>
         <button class="vde-btn" onClick=${() => setDialogo('atalhos')} title="Atalhos de teclado (?)" aria-label="Atalhos de teclado">?</button>

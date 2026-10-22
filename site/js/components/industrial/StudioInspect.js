@@ -39,6 +39,7 @@ import {
 } from './inspect-comum.js';
 import { InspectEditor } from './InspectEditor.js';
 import { FonteStudio, fonteStudioAberta } from '../studio/FonteStudio.js';
+import { BotaoVia } from '../../via/BotaoVia.js';   // [VIA] botão «✦ Via» da barra (js/via/)
 
 const clonar = (o) => JSON.parse(JSON.stringify(o));
 const CLS = { OK: 'ok', NOK: 'nok', INCERTO: 'inc' };
@@ -360,6 +361,7 @@ export function StudioInspect({ onClose }) {
         ${prog && prog.tools.some((t) => t.type === 'anomaly') && html`<button class="ins-btn" onClick=${() => setTreinar('anomalia')}
           title="Manda as peças OK (recortadas na ROI da anomalia) a um projeto de anomalia do Treinar">Treinar anomalia com as BOAS</button>`}
         <button class="ins-btn" onClick=${() => { if (confirm('Zerar o histórico, a fila de revisão e os contadores?')) canal.zerar(); }}>Zerar</button>
+        <${BotaoVia} modulo="inspecao" classe="ins-btn" />
         <button class="ins-btn ins-fechar" onClick=${onClose} aria-label="Fechar a tela Inspect">✕</button>
       </div>
 

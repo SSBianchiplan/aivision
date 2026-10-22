@@ -36,6 +36,7 @@ import {
   OP, carregarCss, fmt, pct, hm, relogio, horaSeg, hora, carimbo, baixar, ativarTakt, novoPosto, postosMarcados,
   desenharVideo, desenharGantt, desenharPlanta, relatorioHTML, COR_ESTADO, ROTULO, ESTADOS,
 } from './takt-comum.js';
+import { BotaoVia } from '../../via/BotaoVia.js';   // [VIA] botão «✦ Via» da barra (js/via/)
 
 const DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
@@ -211,6 +212,7 @@ export function StudioTakt({ onClose }) {
           </div>`}
         </span>
         <button class="tkt-btn" onClick=${() => { if (confirm('Começar uma sessão nova? Os intervalos, eventos e alarmes desta sessão serão apagados (exporte antes, se precisar).')) { novaSessao(); setMsg('Sessão nova.'); } }}>Nova sessão</button>
+        <${BotaoVia} modulo="takt" classe="tkt-btn" />
         <button class="tkt-btn tkt-fechar" onClick=${onClose} aria-label="Fechar a tela Takt">✕</button>
       </div>
 

@@ -57,6 +57,7 @@ import { PipelineConteudo } from '../Panels.js';
 import { dadosSessao, htmlRelatorio } from '../../cv/runtime/livres-e/relatorio.js';
 import { Recorder, salvar, formatarTempo, suportado as gravacaoSuportada } from '../../cv/recorder.js';
 import { FonteStudio, fonteStudioAberta } from '../studio/FonteStudio.js';
+import { BotaoVia } from '../../via/BotaoVia.js';   // [VIA] botão «✦ Via» da barra (js/via/)
 
 const OP = 'bikefit.analise';
 const PREFS = 'aiv.studio.bikefit';
@@ -2056,6 +2057,7 @@ export function StudioBikeFit({ displayCanvas, onClose, onResetState }) {
           onClick=${() => setPipeline(!pipeline)}>Pipeline${bikeFitOk ? '' : ' !'}</button>
         <button class=${'sbf-btn' + (ajustes ? ' on' : '')} onClick=${() => setAjustes(!ajustes)}>Ajustes</button>
         <span class="sbf-msg" role="status">${msg}</span>
+        <${BotaoVia} modulo="bikefit" classe="sbf-btn" />
         <button class="sbf-btn sbf-fechar" onClick=${fechar} aria-label="Fechar o Studio (Esc)" title="Fechar (Esc)">✕</button>
       </div>
       <div class="sbf-palco" ref=${palcoRef}>

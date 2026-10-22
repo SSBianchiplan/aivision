@@ -37,6 +37,7 @@ import {
 } from './counter-comum.js';
 import { EnviarTreinoContador, EscolherOnnx } from './CounterPanel.js';
 import { FonteStudio, fonteStudioAberta } from '../studio/FonteStudio.js';
+import { BotaoVia } from '../../via/BotaoVia.js';   // [VIA] botão «✦ Via» da barra (js/via/)
 
 const ROT_ESTADO = { ATIVO_NR: 'ativo, não reconhecido', ATIVO_R: 'ativo, reconhecido', RTN_NR: 'voltou ao normal' };
 const corPrio = (p) => (p === 1 ? 'var(--cvs-p1)' : 'var(--cvs-p2)');
@@ -187,6 +188,7 @@ export function StudioCounter({ onClose, onResetState, onPickFile }) {
         <button class="cvs-btn" title="Vídeo sintético de esteira com peças coloridas, motor COR e linha no meio" onClick=${async () => {
           try { await abrirExemplo(onPickFile); onResetState && onResetState(); setMsg('Exemplo aberto: motor COR com vermelho, verde e azul; linha vertical no meio.'); } catch (e) { setMsg(e.message); } }}>Abrir exemplo</button>
         <span class="cvs-msg" role="status" aria-live="polite">${msg}</span>
+        <${BotaoVia} modulo="contador" classe="cvs-btn" />
         <button class="cvs-btn cvs-fechar" onClick=${onClose} aria-label="Fechar a tela CounterVision">✕</button>
       </div>
 
