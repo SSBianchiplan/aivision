@@ -29,6 +29,11 @@ const MODULOS = [
   { id: 'fisio', op: 'fisio.avaliar', icone: '🩺', nome: 'Fisio (ADM, TUG, sentar-levantar)', desc: 'Amplitude articular por articulação e lado, Timed Up and Go com fases e sentar-levantar 5× e 30 s, com referências e fontes. Não é dispositivo médico.' },
   { id: 'studioFisio', icone: '🎬', nome: 'Studio Fisio', desc: 'Tela de avaliação: perfil do paciente, vídeo com a pose, curvas, tabela das medidas e relatório para PDF.', studio: true,
     abrir: () => { const st = store.get(); if (!st.nodes.some((n) => n.op === 'fisio.avaliar')) noPipeline(MODULOS.find((x) => x.id === 'fisio')); store.set({ studioFisio: true }); } },
+  // CV-88 Motion 3D Studio: captura de movimento 3D (Live Link + tela cheia com 3D, tomadas, BVH/GLB, multicâmera do GPlanSiS|ROBO)
+  { id: 'motion3d', op: 'motion3d.captura', icone: '🕺', nome: 'Motion 3D (captura no Pipeline)', desc: 'Pose 3D ao vivo de uma câmera ou vídeo (BlazePose com os pontos do mundo), suavização One Euro, taxa e latência; esqueleto verde-água sobre o vídeo. O Studio grava e exporta.', studio: true,
+    abrir: () => { noPipeline(MODULOS.find((x) => x.id === 'motion3d'), false); store.set({ panels: { ...store.get().panels, pipeline: true } }); persist(); } },
+  { id: 'studioMotion3D', icone: '🎬', nome: 'Motion 3D Studio', desc: 'Estúdio de mocap: vídeo com esqueleto e viewport 3D, tomadas com timecode, retarget, BVH/GLB para o Blender, multicâmera e FreeMoCap.', studio: true,
+    abrir: () => { const st = store.get(); if (!st.nodes.some((n) => n.op === 'motion3d.captura')) noPipeline(MODULOS.find((x) => x.id === 'motion3d'), false); store.set({ studioMotion3D: true }); } },
   // onda 2-c (CV-70..77): um cartão por módulo; "Abrir" põe o preset e abre o painel Saúde e esportes+
   ...[
     ['vitais', '🫁', 'Sinais vitais sem contato', 'Respiração pelo tórax e frequência cardíaca rPPG pelo rosto, com faixa de confiança. Não é dispositivo médico.', 'Respiração sem contato'],
@@ -44,13 +49,13 @@ const MODULOS = [
 ];
 
 /** Põe o operador do módulo no Pipeline (ou liga o que já existe) e abre os dois painéis. */
-function noPipeline(m) {
+function noPipeline(m, abrirPaineis = true) {
   const st = store.get();
   const i = st.nodes.findIndex((n) => n.op === m.op);
   const nodes = i >= 0
     ? st.nodes.map((n, j) => (j === i ? { ...n, enabled: true, error: null } : n))
     : [...st.nodes, { id: newNodeId(), op: m.op, params: defaultParams(m.op), enabled: true }];
-  store.set({ nodes, panels: { ...st.panels, pipeline: true, [m.id]: true } });
+  store.set(abrirPaineis ? { nodes, panels: { ...st.panels, pipeline: true, [m.id]: true } } : { nodes });
   persist();
 }
 

@@ -24,7 +24,7 @@
  * ========================================================================
  */
 
-const VERSION = 'iav-v95-vps';   // 22/10/2026: trânsito em tempo real (YOLOX WebGPU, ladrilhos, ByteTrack com previsão, sincronia de imagem) + presets de saúde de volta
+const VERSION = 'iav-v96-vps';   // 22/10/2026: Motion 3D Studio (CV-88): captura de movimento 3D, MoCap do GPlanSiS|ROBO, BVH/GLB/FreeMoCap; 84 módulos/151 operadores
 const SHELL = `${VERSION}-shell`;
 /*
  * Pesos dos modelos num cache de nome FIXO: sobrevivem às publicações. Antes o

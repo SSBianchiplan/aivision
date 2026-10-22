@@ -23,6 +23,7 @@ import { PRESETS_ONDA2B, criarMarcacoesModeloOnda2b } from './presets-onda2b.js'
 import { PRESETS_ONDA2A, criarMarcacoesModeloOnda2a } from './presets-onda2a.js';   // onda 2-a (CV-49..59)
 import { PRESETS_ONDA2C, criarMarcacoesOnda2c } from './presets-onda2c.js';
 import { PRESETS_ONDA2D, criarMarcacoesModeloOnda2d } from './presets-onda2-d.js';
+import { PRESETS_MOTION3D } from './presets-motion3d.js';   // CV-88 Motion 3D Studio
 import {
   PADRAO as STREAM_PADRAO, urlRtmp, conteudoMisto, diagnosticar, ehRedeLocal, baseHttps,
 } from '../camera/stream.js';
@@ -357,7 +358,7 @@ Object.assign(PAINEL_DO_PRESET, { 'Inspeção — presença e contagem': 'inspec
  * marcações-modelo. Grupo existente ganha os itens; grupo novo entra no fim.
  */
 const DESC_PRESET = {};
-for (const pr of [...PRESETS_ONDA1A, ...PRESETS_ONDA2B, ...PRESETS_ONDA2A, ...PRESETS_ONDA2C, ...PRESETS_ONDA2D]) {
+for (const pr of [...PRESETS_ONDA1A, ...PRESETS_ONDA2B, ...PRESETS_ONDA2A, ...PRESETS_ONDA2C, ...PRESETS_ONDA2D, ...PRESETS_MOTION3D]) {
   let g = PRESET_GROUPS.find(([nome]) => nome === pr.grupo);
   if (!g) PRESET_GROUPS.push((g = [pr.grupo, {}]));
   g[1][pr.nome] = pr.specs;

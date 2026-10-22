@@ -109,6 +109,8 @@ const InspectPanel = painelSobDemanda(() => import('./components/industrial/Insp
 const StudioInspect = telaSobDemanda(() => import('./components/industrial/StudioInspect.js'), 'StudioInspect', 'bsc', 'GPlanSiS|Inspect');
 // Editor de vídeo GPlanSiS|Vídeo (✂ na barra de vídeo): sob demanda; a reserva usa o fundo da .bsc (o CSS do editor vem com ele)
 const StudioVideo = telaSobDemanda(() => import('./components/video/StudioVideo.js'), 'StudioVideo', 'bsc', 'GPlanSiS|Vídeo');
+// CV-88 Motion 3D Studio (captura de movimento 3D): tela cheia sob demanda; three.js e o MoCap do GPlanSiS|ROBO só descem com ela
+const StudioMotion3D = telaSobDemanda(() => import('./components/motion3d/StudioMotion3D.js'), 'StudioMotion3D', 'bsc', 'GPlanSiS|Motion 3D Studio');
 // widget flutuante "Seção da correia": só é baixado quando há nó BeltScan ligado (reserva vazia)
 const WidgetSecaoCorreia = sobDemanda(() => import('./components/industrial/WidgetSecaoCorreia.js'), 'WidgetSecaoCorreia', () => null);
 /*
@@ -224,6 +226,7 @@ export function App({ sessao = null }) {
     studioFisio: st.studioFisio,
     studioOnda2c: st.studioOnda2c,
     studioVideo: st.studioVideo,
+    studioMotion3D: st.studioMotion3D,
     beltScanAtivo: st.nodes.some((n) => n.op === 'beltscan.volumetria' && n.enabled),
     player: st.player !== false,
   }));
@@ -958,6 +961,7 @@ export function App({ sessao = null }) {
     ${s.studioOEE && html`<${StudioOEE} onClose=${() => store.set({ studioOEE: false })} />`}
     ${s.studioFisio && html`<${StudioFisio} onClose=${() => store.set({ studioFisio: false })} />`}
     ${s.studioOnda2c && html`<${StudioOnda2c} onClose=${() => store.set({ studioOnda2c: false })} />`}
+    ${s.studioMotion3D && html`<${StudioMotion3D} onClose=${() => store.set({ studioMotion3D: false })} />`}
     ${s.studioVideo && html`<${StudioVideo} source=${source} onPickFile=${pickFile} onClose=${() => store.set({ studioVideo: false })} />`}
     ${s.panels.via && html`<${ViaPainel} onClose=${closePanel('via')} source=${source} displayCanvas=${displayCanvas} />`}
   `;

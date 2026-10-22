@@ -1,0 +1,40 @@
+# Conectores de servidor do Motion 3D Studio (CV-88) do iaVision — vps2, /opt/aivision/motion.
+# O Caddy (/etc/caddy/aivision.caddy) repassa /api/v1/motion/* para 127.0.0.1:8997, ANTES do /api/*
+# (login PHP), com request_body { max_size 320MB } nessa rota. Confira na vps2 que a 8997 está livre.
+# NÃO SUBIDO: este diretório é só código e testes até o dono pedir a publicação.
+services:
+  motion:
+    build: .
+    image: gplansis/aivision-motion:1.0.0
+    container_name: aivision-motion
+    restart: unless-stopped
+    environment:
+      AIV_ME_URL: https://gplansis.com/aivision-api/api/me
+      AIV_MOTION_DADOS: /dados
+      AIV_MOTION_MAX_MB: "300"
+      AIV_MOTION_MAX_JOBS: "2"
+      AIV_MOTION_RETER_H: "24"
+      # motores: só depois de instalar repositório + pesos + adaptador FORA desta imagem (ver LEIA-ME.md)
+      # AIV_MOTION_GVHMR_DIR: /motores/gvhmr
+      # AIV_MOTION_GVHMR_LICENCA: aceita
+      # AIV_MOTION_FLOWHMR_DIR: /motores/flowhmr
+      # AIV_MOTION_FLOWHMR_LICENCA: aceita
+      # AIV_MOTION_EXMR_VERIFICADO: "1"
+    extra_hosts:
+      - "gplansis.com:45.132.157.26"
+    ports:
+      - "127.0.0.1:8997:8000"
+    volumes:
+      - ./dados:/dados
+      # - /opt/motores:/motores:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=400m
+    mem_limit: 512m
+    cpus: 1
+    pids_limit: 64
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }

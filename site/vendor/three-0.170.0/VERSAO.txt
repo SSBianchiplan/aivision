@@ -1,0 +1,7 @@
+three.js 0.170.0 (MIT) — a mesma versão exata do GPlanSiS|ROBO (projeto/frontend/node_modules/three).
+Origem: npm pack three@0.170.0 (sha512 do registro npm), arquivos sem alteração exceto:
+  addons/OrbitControls.js  = examples/jsm/controls/OrbitControls.js
+  addons/GLTFExporter.js   = examples/jsm/exporters/GLTFExporter.js
+  nos dois, só o especificador `from 'three'` foi trocado por `from '../three.module.min.js'`
+  (o iaVision é ES modules sem build e sem importmap).
+Usado por: Motion 3D Studio (CV-88), carregado sob demanda — não entra na abertura do app.
