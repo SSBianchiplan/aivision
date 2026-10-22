@@ -39,6 +39,9 @@ import livresL, { MODULES_L } from './operators/livres-l.js';   // CV-38 Contage
 import cena, { MODULES_CENA } from './operators/cena.js';   // CV-37 Ferramentas de cena (zonas e linhas)
 import livresN, { MODULES_N } from './operators/livres-n.js';   // CV-40 Inspeção visual (Inspect)
 import livresM, { MODULES_M } from './operators/livres-m.js';   // CV-39 Tempo de posto (Takt)
+import livresO, { MODULES_O } from './operators/livres-o.js';   // CV-46 OEE pela câmera (onda 1-b)
+import livresP, { MODULES_P } from './operators/livres-p.js';   // CV-47 Fisio (goniometria, TUG, sentar-levantar)
+import livresQ, { MODULES_Q } from './operators/livres-q.js';   // CV-48 Monitor de EPI
 import livresOA, { MODULES_OA } from './operators/livres-oa.js';   // CV-41..45 onda 1-a (CVC, instrumentos, segurança por pose, fotocélula, logística) + cena.mapa_calor
 
 /**
@@ -208,13 +211,15 @@ MODULES.push(...MODULES_N);
 MODULES.push(...MODULES_CENA, ...MODULES_L);
 MODULES.push(...MODULES_M);
 MODULES.push(...MODULES_OA);
+MODULES.push(...MODULES_O, ...MODULES_P, ...MODULES_Q);
 
 // -------------------------------------------------------------- operadores
 
 const ALL = [...classical, ...features, ...motion, ...tracking, ...models, ...face, ...yolo26, ...relations,
              ...openvocab, ...sam, ...depth, ...zeroshot, ...code, ...custom,
              ...livresA, ...livresB, ...livresC, ...livresD, ...livresE,
-             ...livresF, ...livresG, ...livresH, ...livresI, ...livresJ, ...livresK, ...livresL, ...cena, ...livresM, ...livresN, ...livresOA];
+             ...livresF, ...livresG, ...livresH, ...livresI, ...livresJ, ...livresK, ...livresL, ...cena, ...livresM, ...livresN, ...livresOA,
+             ...livresO, ...livresP, ...livresQ];
 
 /** op name -> definição */
 export const OPERATORS = new Map(ALL.map((o) => [o.op, o]));

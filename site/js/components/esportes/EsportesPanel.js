@@ -25,6 +25,10 @@ const MODULOS = [
   { id: 'swing', op: 'swing.analise', icone: '⛳', nome: 'Swing (golfe e raquete)', desc: 'Fases, tempo, rotação de quadril e ombros, X-factor e quadros-chave de cada swing.' },
   { id: 'vbt', op: 'vbt.barra', icone: '🏋', nome: 'VBT (velocidade da barra)', desc: 'Velocidade, potência e perda de velocidade por repetição com um marcador impresso na anilha.' },
   { id: 'quadra', op: 'quadra.analise', icone: '⚽', nome: 'Quadra (esportes coletivos)', desc: 'Jogadores, times, radar, mapa de calor, distância e velocidade; futsal, basquete, vôlei, tênis, padel, futebol.' },
+  // CV-47 (onda 1-b): fisioterapia — goniometria e testes funcionais, com o Studio Fisio
+  { id: 'fisio', op: 'fisio.avaliar', icone: '🩺', nome: 'Fisio (ADM, TUG, sentar-levantar)', desc: 'Amplitude articular por articulação e lado, Timed Up and Go com fases e sentar-levantar 5× e 30 s, com referências e fontes. Não é dispositivo médico.' },
+  { id: 'studioFisio', icone: '🎬', nome: 'Studio Fisio', desc: 'Tela de avaliação: perfil do paciente, vídeo com a pose, curvas, tabela das medidas e relatório para PDF.', studio: true,
+    abrir: () => { const st = store.get(); if (!st.nodes.some((n) => n.op === 'fisio.avaliar')) noPipeline(MODULOS.find((x) => x.id === 'fisio')); store.set({ studioFisio: true }); } },
 ];
 
 /** Põe o operador do módulo no Pipeline (ou liga o que já existe) e abre os dois painéis. */

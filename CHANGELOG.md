@@ -2,6 +2,12 @@
 
 As versões seguem o `VERSION` do service worker (`site/sw.js`).
 
+## v87–v91 — 2026-10-22
+- **Página principal no celular:** cartões animam sem mouse, assinatura reage ao toque e passa em onda, mini-animações seguem com "reduzir movimento".
+- **Fonte dentro dos Studios (v88):** botão Fonte nos 6 Studios (câmeras, resolução/fps, Wi-Fi/IP, arquivo, tela, YouTube); troca de câmera a quente, reconexão após desconexão, fim dos vazamentos de MediaStream. Ver [docs/fonte-nos-studios.md](docs/fonte-nos-studios.md).
+- **Editor de vídeo (v89):** Seguir sujeito / reenquadrar em 9:16, 1:1, 4:5 e 16:9 com keyframes editáveis; exportação gira vídeos de celular em pé. Ver [docs/video-seguir.md](docs/video-seguir.md).
+- **Onda 1 das 100 ideias (v90–v91):** 48 módulos e 94 operadores. Tráfego com matriz de giro, leitor de manômetro e display de 7 segmentos, cerca virtual por parte do corpo e pessoa caída, sprint, chave NF-e e pallet por QR, mapa de calor genérico, painel Medições, presets novos; Studios **OEE** e **Fisio**, **Monitor de EPI**. Ver [docs/medicoes.md](docs/medicoes.md) e [docs/oee-fisio-epi.md](docs/oee-fisio-epi.md).
+
 ## Repositório — 2026-10-21
 - README completo com capa, telas, arquitetura e chamado para colaboradores; `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, modelos de issue e de PR; [roadmap](docs/roadmap.md) com as ideias abertas para contribuição.
 - `ferramentas/servir.py` (servidor local com COOP/COEP) e `ferramentas/baixar-wasm.sh` (`.wasm` do ONNX Runtime Web 1.20.1 e 1.29.0).

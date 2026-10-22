@@ -24,7 +24,7 @@
  * ========================================================================
  */
 
-const VERSION = 'iav-v90-vps';   // 22/10/2026: onda 1 — 26 presets, CV-41..45 (tráfego CVC, mostrador, cerca/queda, sprint, logística), painel Medições
+const VERSION = 'iav-v91-vps';   // 22/10/2026: onda 1 — Studios OEE (CV-46) e Fisio (CV-47), Monitor de EPI (CV-48); página principal 48/94
 const SHELL = `${VERSION}-shell`;
 /*
  * Pesos dos modelos num cache de nome FIXO: sobrevivem às publicações. Antes o

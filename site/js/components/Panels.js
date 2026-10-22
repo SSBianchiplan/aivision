@@ -301,6 +301,11 @@ const PRESET_GROUPS = [
     'VBT hip thrust (sem marcador)': [['vbt.barra', { modo: 'punho (aproximado)', exercicio: 'Hip thrust', escala: 'segmento', segmento: 'coxa' }]],
     'Quadra — futsal': [['quadra.analise', { esporte: 'futsal' }]],
     'Quadra — RF-DETR + rastreio': [['rfdetr.detect', {}], ['track.bytetrack', {}], ['quadra.analise', {}]],
+    // CV-47 Fisio (onda 1-b)
+    'Fisio — goniometria': [['fisio.avaliar', { teste: 'goniometria (ADM)' }]],
+    'Fisio — TUG': [['fisio.avaliar', { teste: 'TUG' }]],
+    'Fisio — sentar-levantar 5×': [['fisio.avaliar', { teste: 'sentar-levantar 5×' }]],
+    'Fisio — sentar-levantar 30 s': [['fisio.avaliar', { teste: 'sentar-levantar 30 s' }]],
   }],
   ['Industrial', {
     'Volumetria de correia (BeltScan)': [['beltscan.volumetria', {}]],
@@ -314,6 +319,10 @@ const PRESET_GROUPS = [
     'Inspeção — presença e contagem': [['inspect.programa', { modelo: 'presenca' }]],
     'Inspeção — dimensional (paquímetro)': [['inspect.programa', { modelo: 'dimensional' }]],
     'Inspeção — cor e defeito': [['inspect.programa', { modelo: 'cor_defeito' }]],
+    // CV-46 OEE e CV-48 EPI (onda 1-b)
+    'OEE — máquina sem CLP': [['maquina.estado', {}]],
+    'OEE + contagem (CounterVision)': [['contagem.cor', {}], ['cena.zonas', { fonte: 'detecções', ponto: 'centro', umaVez: true }], ['contagem.esteira', {}], ['maquina.estado', {}]],
+    'Monitor de EPI (capacete e colete)': [['pose.rtmo', { caixa: false }], ['epi.monitor', {}]],
   }],
   ['Modelos livres', {
     'RF-DETR': [['rfdetr.detect', {}]],
@@ -333,6 +342,9 @@ const PRESET_GROUPS = [
 const PAINEL_DO_GRUPO = { Industrial: 'beltscan' };
 /** Preset que abre um painel diferente do do grupo (o Tempo de posto abre o painel do Takt). */
 const PAINEL_DO_PRESET = { 'Contagem por cor': 'contador', 'Contagem com detector + rastreio': 'contador', 'Tempo de posto (pose + postos)': 'takt', 'Tempo de posto + rastreio (IDs)': 'takt' };
+// CV-46/47/48 (onda 1-b): os presets abrem o painel do módulo
+Object.assign(PAINEL_DO_PRESET, { 'OEE — máquina sem CLP': 'oee', 'OEE + contagem (CounterVision)': 'oee', 'Monitor de EPI (capacete e colete)': 'epi',
+  'Fisio — goniometria': 'fisio', 'Fisio — TUG': 'fisio', 'Fisio — sentar-levantar 5×': 'fisio', 'Fisio — sentar-levantar 30 s': 'fisio' });
 // CV-40: os presets da Inspeção visual abrem o painel dela
 Object.assign(PAINEL_DO_PRESET, { 'Inspeção — presença e contagem': 'inspecao', 'Inspeção — dimensional (paquímetro)': 'inspecao', 'Inspeção — cor e defeito': 'inspecao' });
 

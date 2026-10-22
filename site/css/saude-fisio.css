@@ -1,0 +1,156 @@
+/* ==========================================================================
+   SAÚDE — GPlanSiS|Fisio (CV-47): Studio e painel. Carregado sob demanda
+   (fisio-comum.js › carregarCss). No padrão do Studio Bike Fit (barra teal,
+   faixa vermelha de título, vídeo no palco escuro, curvas e tabela), nos três
+   temas (escuro, claro, Code Dark) e no celular.
+   ========================================================================== */
+
+.fis {
+  --fis-bg: #02302C; --fis-sup: #04413C; --fis-painel: rgba(4, 65, 60, .72);
+  --fis-linha: rgba(255, 255, 255, .13); --fis-linha2: rgba(255, 255, 255, .07);
+  --fis-tinta: #FFFFFF; --fis-tinta2: #CFEBE4; --fis-tinta3: rgba(207, 235, 228, .70);
+  --fis-acento: #FFD84D; --fis-acento-tinta: #04413C; --fis-campo: #022621;
+  --fis-ok: #8CE0C8; --fis-amb: #F2A900; --fis-erro: #FF8A80; --fis-faixa: #C8102E;
+  position: fixed; inset: 0; z-index: 5000;
+  display: flex; flex-direction: column;
+  background: var(--fis-bg); color: var(--fis-tinta);
+  font-family: Archivo, "Helvetica Neue", Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+:root[data-theme="light"] .fis {
+  --fis-bg: #EAF3F1; --fis-sup: #FFFFFF; --fis-painel: #FFFFFF;
+  --fis-linha: rgba(4, 65, 60, .18); --fis-linha2: rgba(4, 65, 60, .09);
+  --fis-tinta: #04413C; --fis-tinta2: #285C56; --fis-tinta3: #4A6F6A;
+  --fis-acento: #04413C; --fis-acento-tinta: #FFFFFF; --fis-campo: #F6FAF9;
+  --fis-ok: #176B53; --fis-amb: #7A5600; --fis-erro: #B3261E; --fis-faixa: #B00E28;
+}
+:root[data-theme="code"] .fis {
+  --fis-bg: #1F1F1F; --fis-sup: #252526; --fis-painel: #252526;
+  --fis-linha: #3C3C3C; --fis-linha2: #2B2B2B;
+  --fis-tinta: #E0E0E0; --fis-tinta2: #CCCCCC; --fis-tinta3: #ABABAB;
+  --fis-acento: #FFD84D; --fis-acento-tinta: #1E1E1E; --fis-campo: #1E1E1E;
+  --fis-ok: #89D185; --fis-amb: #CCA700; --fis-erro: #F48771; --fis-faixa: #A1260D;
+}
+
+.fis-barra {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 6px; padding: 6px 10px; min-height: 46px;
+  background: var(--fis-sup); border-bottom: 1px solid var(--fis-linha); overflow-x: auto; scrollbar-width: none;
+}
+.fis-barra::-webkit-scrollbar { display: none; }
+.fis-titulo { font-size: 14px; font-weight: 800; white-space: nowrap; padding-left: 8px; border-left: 4px solid #FFD84D; margin-right: 4px; }
+.fis-titulo .fis-marca { font-weight: 500; font-size: .78em; color: var(--fis-tinta2); margin-right: 4px; }
+.fis-titulo i { font-style: normal; color: #FFD84D; font-weight: 300; margin: 0 1px; }
+:root[data-theme="light"] .fis-titulo i { color: #C69A00; }
+.fis-msg { flex: 1 1 auto; min-width: 80px; font-size: 12px; color: var(--fis-acento); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; }
+:root[data-theme="light"] .fis-msg { color: var(--fis-tinta2); }
+.fis-btn, .fis-seg button {
+  flex: 0 0 auto; font: inherit; font-size: 12px; font-weight: 600; line-height: 1.2; color: var(--fis-tinta); background: var(--fis-campo);
+  border: 1px solid var(--fis-linha); border-radius: 7px; padding: 6px 10px; cursor: pointer; white-space: nowrap;
+}
+select.fis-btn { padding: 5px 8px; max-width: 220px; color-scheme: dark; }
+:root[data-theme="light"] select.fis-btn { color-scheme: light; }
+.fis-btn:hover, .fis-seg button:hover { border-color: var(--fis-acento); }
+.fis-btn.on, .fis-seg button.on, .fis-btn.acento { background: var(--fis-acento); border-color: var(--fis-acento); color: var(--fis-acento-tinta); }
+.fis-btn:disabled { opacity: .45; cursor: default; }
+.fis-btn:focus-visible, .fis-seg button:focus-visible, .fis input:focus-visible, .fis select:focus-visible, .fis textarea:focus-visible { outline: 2px solid var(--fis-acento); outline-offset: 2px; }
+.fis-btn.mini { font-size: 11px; padding: 3px 8px; }
+.fis-fechar { font-size: 14px; padding: 5px 11px; }
+.fis-seg { display: inline-flex; flex: 0 0 auto; }
+.fis-seg button { border-radius: 0; }
+.fis-seg button:first-child { border-radius: 7px 0 0 7px; }
+.fis-seg button:last-child { border-radius: 0 7px 7px 0; }
+.fis-seg button + button { border-left: 0; }
+.fis-menu-w { position: relative; flex: 0 0 auto; }
+.fis-menu { position: fixed; top: 46px; right: 60px; z-index: 5200; display: grid; min-width: 240px; background: var(--fis-sup); border: 1px solid var(--fis-linha); border-radius: 9px; padding: 4px; box-shadow: 0 14px 40px rgba(0, 0, 0, .35); }
+.fis-menu button { text-align: left; font: inherit; font-size: 12.5px; color: var(--fis-tinta); background: none; border: 0; border-radius: 6px; padding: 8px 10px; cursor: pointer; }
+.fis-menu button:hover, .fis-menu button:focus-visible { background: var(--fis-campo); outline: none; }
+
+/* faixa vermelha (como o "VISÃO GERAL" do Studio Bike Fit) com o paciente e o teste */
+.fis-faixa { flex: 0 0 auto; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 6px 14px; background: var(--fis-faixa); color: #fff; }
+.fis-faixa b { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+.fis-faixa span { font-size: 12px; opacity: .95; }
+.fis-aviso { flex: 0 0 auto; padding: 5px 14px; font-size: 11.5px; background: rgba(255, 216, 77, .10); border-bottom: 1px solid rgba(255, 216, 77, .28); }
+.fis-aviso.amb { background: rgba(242, 169, 0, .16); }
+:root[data-theme="light"] .fis-aviso { background: #FFF6D6; color: #5C4300; }
+
+.fis-grade {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  display: grid; gap: 10px; padding: 10px 12px 120px;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  grid-template-areas: "vid res" "vid pac" "curva curva" "tab ref";
+  align-content: start;
+}
+.fis-vid { grid-area: vid; } .fis-res { grid-area: res; } .fis-pac { grid-area: pac; }
+.fis-curva { grid-area: curva; } .fis-tab { grid-area: tab; } .fis-ref { grid-area: ref; }
+.fis-p { background: var(--fis-painel); border: 1px solid var(--fis-linha); border-radius: 10px; padding: 9px 11px; min-width: 0; }
+.fis-p h2 { margin: 0 0 7px; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fis-p h2 small { font-weight: 400; font-size: 11px; color: var(--fis-tinta3); }
+.fis-p canvas { display: block; width: 100%; border-radius: 6px; }
+.fis-cv-vid { aspect-ratio: 4 / 3; background: #02302C; }
+:root[data-theme="code"] .fis-cv-vid { background: #1E1E1E; }
+.fis-cv-curva { height: 230px; }
+.fis-acoes { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.fis-dica { margin: 6px 0; font-size: 11.5px; line-height: 1.5; color: var(--fis-tinta3); }
+
+.fis-num { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.fis-num b { font: 600 48px/1 "IBM Plex Mono", ui-monospace, monospace; color: var(--fis-ok); }
+.fis-num b.alto { color: var(--fis-erro); }
+.fis-num span { font-size: 12.5px; color: var(--fis-tinta2); }
+.fis-estado { font-size: 12.5px; font-weight: 600; margin: 4px 0 8px; color: var(--fis-acento); }
+:root[data-theme="light"] .fis-estado { color: var(--fis-tinta2); }
+.fis-mini { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; }
+.fis-mini div { background: rgba(0, 0, 0, .18); border: 1px solid var(--fis-linha2); border-radius: 8px; padding: 6px 8px; }
+:root[data-theme="light"] .fis-mini div { background: #F1F8F6; }
+:root[data-theme="code"] .fis-mini div { background: #1E1E1E; }
+.fis-mini b { display: block; font: 600 16px "IBM Plex Mono", monospace; }
+.fis-mini em { font-style: normal; font-size: 10.5px; color: var(--fis-tinta3); }
+.fis-risco { display: inline-block; margin-top: 8px; font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 12px; }
+.fis-risco.alto { background: rgba(255, 138, 128, .2); color: var(--fis-erro); border: 1px solid var(--fis-erro); }
+.fis-risco.baixo { background: rgba(140, 224, 200, .14); color: var(--fis-ok); border: 1px solid var(--fis-ok); }
+.fis-fonte { font-size: 10.5px; color: var(--fis-tinta3); margin: 4px 0 0; }
+
+.fis-jt { max-height: 340px; overflow: auto; }
+.fis-jt table { border-collapse: collapse; width: 100%; font-size: 11.5px; }
+.fis-jt th { text-align: left; font-weight: 600; color: var(--fis-tinta3); padding: 3px 5px; border-bottom: 1px solid var(--fis-linha); position: sticky; top: 0; background: var(--fis-sup); }
+.fis-jt td { padding: 3px 5px; border-bottom: 1px solid var(--fis-linha2); white-space: nowrap; }
+.fis-jt td.num { font-family: "IBM Plex Mono", monospace; text-align: right; }
+.fis-refs { margin: 0; padding-left: 16px; font-size: 11.5px; line-height: 1.5; color: var(--fis-tinta2); }
+
+.fis-pac dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 0; font-size: 12px; }
+.fis-pac dt { color: var(--fis-tinta3); }
+.fis-pac dd { margin: 0; }
+.fis-form { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.fis-form label { display: grid; gap: 3px; font-size: 11px; color: var(--fis-tinta3); }
+.fis-form label.largo { grid-column: 1 / -1; }
+.fis input, .fis select:not(.fis-btn), .fis textarea {
+  font: inherit; font-size: 12px; width: 100%; min-width: 0; box-sizing: border-box; color: var(--fis-tinta); background: var(--fis-campo);
+  border: 1px solid var(--fis-linha); border-radius: 6px; padding: 5px 7px; color-scheme: dark;
+}
+:root[data-theme="light"] .fis input, :root[data-theme="light"] .fis select, :root[data-theme="light"] .fis textarea { color-scheme: light; }
+
+body.fis-aberto .vctl:not(.moved) { bottom: 14px; left: 32%; }
+
+/* painel lateral */
+.fsp-studio { display: block; width: 100%; margin: 0 0 7px; font-weight: 700; }
+.fsp-num { display: flex; align-items: baseline; gap: 8px; margin: 4px 0; }
+.fsp-num b { font: 600 26px var(--mono, monospace); }
+.fsp-num span { font-size: 11px; color: var(--ink-3); }
+.fsp-tab { width: 100%; border-collapse: collapse; font-size: 11.5px; margin: 0 0 8px; }
+.fsp-tab th { text-align: left; color: var(--ink-3); font-weight: 600; border-bottom: 1px solid var(--line); padding: 2px 4px; }
+.fsp-tab td { border-bottom: 1px solid var(--line-2); padding: 3px 4px; }
+
+@media (max-width: 900px) {
+  .fis-grade { grid-template-columns: minmax(0, 1fr); grid-template-areas: "vid" "res" "curva" "tab" "pac" "ref"; padding: 8px 8px 150px; }
+  body.fis-aberto .vctl:not(.moved) { left: 50%; bottom: 10px; }
+}
+@media (max-width: 600px) {
+  .fis-titulo .fis-marca, .fis-titulo .fis-gp { display: none; }
+  .fis-barra { flex-wrap: wrap; overflow: visible; row-gap: 5px; }
+  .fis-fechar { margin-left: auto; }
+  .fis-msg { order: 99; flex: 1 1 100%; text-align: left; white-space: normal; font-size: 11.5px; }
+  .fis-msg:empty { display: none; }
+  .fis-menu { right: 8px; top: 96px; }
+  .fis-num b { font-size: 40px; }
+  .fis-cv-curva { height: 200px; }
+  .fis-form { grid-template-columns: 1fr; }
+}

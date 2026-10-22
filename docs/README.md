@@ -21,3 +21,9 @@
 | [roadmap.md](roadmap.md) | ideias abertas para contribuição, com esforço e as boas para começar |
 
 Histórico de versões: [../CHANGELOG.md](../CHANGELOG.md). Como contribuir: [../CONTRIBUTING.md](../CONTRIBUTING.md).
+
+## Onda 1 (v87–v91)
+- [Medições: tráfego, instrumentos, segurança, sprint, logística](medicoes.md)
+- [OEE, Fisio e Monitor de EPI](oee-fisio-epi.md)
+- [Editor de vídeo: Seguir sujeito / reenquadrar](video-seguir.md)
+- [Fonte dentro dos Studios](fonte-nos-studios.md)

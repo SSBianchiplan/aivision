@@ -458,7 +458,8 @@ export function Viewport({ source, executor, snapshotRef, hideIdle, ring, canvas
         // LGPD: com borrão de rostos ativo, a metade "ORIGINAL" mostraria rostos sem borrão —
         // o Comparar fica desligado nesse caso e a tela inteira mostra o processado
         const privado = st.nodes.some((n) => n.enabled && (n.op === 'privacidade.borrar_rostos'
-          || (n.op === 'takt.posto' && (!n.params || n.params.borrarRostos !== false))));
+          || (n.op === 'takt.posto' && (!n.params || n.params.borrarRostos !== false))
+          || (n.op === 'epi.monitor' && (!n.params || n.params.borrar !== false))));
         if (st.compare && !privado) {
           const cut = Math.round(dw * splitRef.current);
           drawSource(dctx, el, mirror, dx, dy, dw, dh, c);

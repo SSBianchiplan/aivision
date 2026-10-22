@@ -89,6 +89,12 @@ const StudioCounter = telaSobDemanda(() => import('./components/industrial/Studi
 // Industrial (CV-39): painel Tempo de posto e a tela cheia GPlanSiS|Takt — sob demanda
 const TaktPanel = painelSobDemanda(() => import('./components/industrial/TaktPanel.js'), 'TaktPanel', 'takt', 'Tempo de posto');
 const StudioTakt = telaSobDemanda(() => import('./components/industrial/StudioTakt.js'), 'StudioTakt', 'tkt', 'GPlanSiS|Takt');
+// onda 1-b: CV-46 OEE (painel + GPlanSiS|OEE), CV-48 Monitor de EPI (painel), CV-47 Fisio (painel + GPlanSiS|Fisio) — sob demanda
+const OEEPanel = painelSobDemanda(() => import('./components/industrial/OEEPanel.js'), 'OEEPanel', 'oee', 'OEE');
+const StudioOEE = telaSobDemanda(() => import('./components/industrial/StudioOEE.js'), 'StudioOEE', 'bsc', 'GPlanSiS|OEE');
+const EPIPanel = painelSobDemanda(() => import('./components/industrial/EPIPanel.js'), 'EPIPanel', 'epi', 'EPI');
+const FisioPanel = painelSobDemanda(() => import('./components/saude/FisioPanel.js'), 'FisioPanel', 'fisio', 'Fisio');
+const StudioFisio = telaSobDemanda(() => import('./components/saude/StudioFisio.js'), 'StudioFisio', 'bsc', 'GPlanSiS|Fisio');
 // CV-40 Inspeção visual (Inspect): painel e a tela cheia GPlanSiS|Inspect, sob demanda (a reserva usa o fundo da .bsc)
 // +Projeto: modelo novo a partir das marcações (prints, caixas, Treinar, Pipeline) — sob demanda
 const ProjetoPanel = painelSobDemanda(() => import('./components/ProjetoPanel.js'), 'ProjetoPanel', 'projeto', '+Projeto');
@@ -122,13 +128,13 @@ const ViaPainel = sobDemanda(() => import('./via/ViaPainel.js'), 'ViaPainel', (p
 
 /** Ordem de empilhamento dentro de cada coluna. */
 const RAIL_ORDER = ['modules', 'models', 'coisas', 'esportes', 'bikefit', 'ergonomia', 'academia', 'salto', 'corrida', 'swing', 'vbt', 'quadra',
-                    'industrial', 'beltscan', 'contador', 'takt', 'inspecao', 'medicoes', 'projeto', 'config', 'camera', 'auth',
+                    'industrial', 'beltscan', 'contador', 'takt', 'oee', 'epi', 'fisio', 'inspecao', 'medicoes', 'projeto', 'config', 'camera', 'auth',
                     'context', 'codes', 'captions', 'pipeline', 'stats', 'export'];
 /*
  * Coluna padrão dos painéis que ainda não estão no `dock` do store (os do
  * Industrial): sem isto um painel novo só apareceria no celular.
  */
-const DOCK_EXTRA = { industrial: 'right', beltscan: 'right', contador: 'right', takt: 'right', inspecao: 'right', medicoes: 'right', projeto: 'right' };
+const DOCK_EXTRA = { industrial: 'right', beltscan: 'right', contador: 'right', takt: 'right', oee: 'right', epi: 'right', fisio: 'right', inspecao: 'right', medicoes: 'right', projeto: 'right' };
 
 /*
  * Disposição padrão dos widgets (versão 2): Ferramentas de mouse colada na
@@ -209,6 +215,8 @@ export function App({ sessao = null }) {
     studioInspect: st.studioInspect,
     studioCounter: st.studioCounter,
     studioTakt: st.studioTakt,
+    studioOEE: st.studioOEE,
+    studioFisio: st.studioFisio,
     studioVideo: st.studioVideo,
     beltScanAtivo: st.nodes.some((n) => n.op === 'beltscan.volumetria' && n.enabled),
     player: st.player !== false,
@@ -828,6 +836,9 @@ export function App({ sessao = null }) {
       case 'inspecao': return html`<${InspectPanel} ...${common} />`;
       case 'contador': return html`<${CounterPanel} ...${common} onPickFile=${pickFile} />`;
       case 'takt':     return html`<${TaktPanel} ...${common} />`;
+      case 'oee':      return html`<${OEEPanel} ...${common} />`;
+      case 'epi':      return html`<${EPIPanel} ...${common} />`;
+      case 'fisio':    return html`<${FisioPanel} ...${common} />`;
       case 'medicoes': return html`<${MedicoesPanel} ...${common} />`;
       case 'projeto':  return html`<${ProjetoPanel} ...${common} />`;
       case 'context':  return html`<${ContextPanel} ...${common} getFrame=${getFrame} />`;
@@ -936,6 +947,8 @@ export function App({ sessao = null }) {
     ${s.studioInspect && html`<${StudioInspect} onClose=${() => store.set({ studioInspect: false })} />`}
     ${s.studioCounter && html`<${StudioCounter} onPickFile=${pickFile} onResetState=${resetState} onClose=${() => store.set({ studioCounter: false })} />`}
     ${s.studioTakt && html`<${StudioTakt} onClose=${() => store.set({ studioTakt: false })} />`}
+    ${s.studioOEE && html`<${StudioOEE} onClose=${() => store.set({ studioOEE: false })} />`}
+    ${s.studioFisio && html`<${StudioFisio} onClose=${() => store.set({ studioFisio: false })} />`}
     ${s.studioVideo && html`<${StudioVideo} source=${source} onPickFile=${pickFile} onClose=${() => store.set({ studioVideo: false })} />`}
     ${s.panels.via && html`<${ViaPainel} onClose=${closePanel('via')} source=${source} displayCanvas=${displayCanvas} />`}
   `;

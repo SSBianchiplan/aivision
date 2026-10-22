@@ -47,6 +47,21 @@ const MODULOS = [
     tela: 'studioInspect', telaRotulo: 'Abrir Studio Inspect',
     telaDica: 'Tela cheia GPlanSiS|Inspect: ao vivo, última peça, veredito, medidas, histórico, revisão humana, estatística e editor de programa',
   },
+  {
+    // CV-46 (onda 1-b): máquina sem CLP — movimento na ROI + CounterVision/Takt/Inspect quando presentes
+    id: 'oee', op: 'maquina.estado', icone: '⚙', nome: 'OEE pela câmera',
+    desc: 'Máquina sem CLP: movimento na área marcada decide rodando, parada ou setup com histerese. Peças do CounterVision, ' +
+          'operador do Takt e OK/NOK do Inspect quando estão no Pipeline. D × P × Q por turno, motivos de parada por clique, Pareto e relatório.',
+    tela: 'studioOEE', telaRotulo: 'Abrir Studio OEE',
+    telaDica: 'Tela cheia GPlanSiS|OEE: vídeo com a máquina, OEE, linha do tempo, paradas com motivo, Pareto, turnos e exportar',
+  },
+  {
+    // CV-48 (onda 1-b): estágio 1 sem treino (pose + CLIP); estágio 2 pelo +Projeto
+    id: 'epi', op: 'epi.monitor', icone: '⛑', nome: 'Monitor de EPI (capacete e colete)',
+    desc: 'Sem treino: a pose recorta cabeça e tronco e o MobileCLIP2 decide por frases, com votação por pessoa e conformidade por zona. ' +
+          'Rosto borrado. Coleta amostras rotuladas para treinar um detector no +Projeto (estágio 2).',
+    ativar: () => import('./EPIPanel.js').then((m) => { m.ativarEPI({ abrirPipeline: true }); store.set({ panels: { ...store.get().panels, epi: true } }); persist(); }),
+  },
 ];
 
 /** Põe o operador do módulo no Pipeline (ou liga o que já existe) e abre o painel. */
