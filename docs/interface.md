@@ -23,10 +23,10 @@ A barra se mede: se não couber, primeiro tira os rótulos de Análise e Ferrame
 
 | Painel | Tecla | Para que serve |
 |---|---|---|
-| **Módulos** | `m` | Catálogo dos 28 módulos; clique num operador para acrescentá-lo ao fim do Pipeline. |
+| **Módulos** | `m` | Catálogo dos 40 módulos (80 operadores); clique num operador para acrescentá-lo ao fim do Pipeline. |
 | **Modelos** | `d` | Todos os modelos com licença, tamanho e estado; **Carregar todos / Descarregar todos** (um por vez); bloco AGPL (YOLO26, YOLOE, treinados YOLO26) com aceite explícito. |
 | **Coisas** | — | O que o YOLOE procura: busca em português nas 4.585 classes ("capacete" → helmet), modo *Qualquer coisa* (filtro) ou *Por texto* (qualquer palavra), listas prontas (EPI, logística, escritório, cozinha, trânsito, agro) e listas salvas com nome; **Aplicar no Pipeline**. |
-| **Pipeline** | `p` | A cadeia de operadores: ordem, ligar/desligar, parâmetros. Presets por grupo (51) — clássicos, movimento, detectar e ler, entender a cena, YOLO26/YOLOE, mãos/rosto/olhos, Bike Fit, modelos livres. |
+| **Pipeline** | `p` | A cadeia de operadores: ordem, ligar/desligar, parâmetros. 81 presets em 11 grupos — clássicos, movimento, ferramentas de cena, detectar e ler, entender a cena, vocabulário aberto e YOLO26, mãos/rosto/olhos, Bike Fit, esportes e biomecânica, industrial, modelos livres. |
 | **Fonte** | `f` | Câmera, arquivo, tela, YouTube, RTMP — ver [fontes.md](fontes.md). |
 | **Telemetria** | `t` | fps, tempo por operador. |
 | **Exportar** | `e` | *(menu do avatar)* Grafo da cadeia (JSON) e captura. |

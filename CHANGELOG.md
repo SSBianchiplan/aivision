@@ -2,6 +2,11 @@
 
 As versões seguem o `VERSION` do service worker (`site/sw.js`).
 
+## Repositório — 2026-10-21
+- README completo com capa, telas, arquitetura e chamado para colaboradores; `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, modelos de issue e de PR; [roadmap](docs/roadmap.md) com as ideias abertas para contribuição.
+- `ferramentas/servir.py` (servidor local com COOP/COEP) e `ferramentas/baixar-wasm.sh` (`.wasm` do ONNX Runtime Web 1.20.1 e 1.29.0).
+- Docs atualizadas para a v86 (40 módulos, 80 operadores, 81 presets) e caminhos `servicos/*`.
+
 ## v86 — 2026-10-21
 - **Página principal** (`site/index.html`) refeita com todas as novidades: Industrial (BeltScan, CounterVision, Takt, Inspect), Via, +Projeto, editor GPlanSiS|Vídeo, Esportes e Studio Bike Fit, números tirados do próprio registro (40 módulos, 80 operadores).
 - **CTAs mais fortes** (entrar no sistema, Treinar, código-fonte) e **animações por módulo** nas visualizações dos modelos; continua autocontida, no mesmo tema e design.

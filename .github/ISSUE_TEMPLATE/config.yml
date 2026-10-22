@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Sistema no ar
+    url: https://aivision.gplansis.com
+    about: Experimente o GPlanSiS|iaVision antes de abrir a issue.
+  - name: Documentação
+    url: https://github.com/SSBianchiplan/aivision/tree/main/docs
+    about: Arquitetura, módulos, Studios, desempenho, compatibilidade e licenças.
+  - name: Falha de segurança
+    url: https://github.com/SSBianchiplan/aivision/blob/main/SECURITY.md
+    about: Não abra issue pública; siga a política de segurança (e-mail contato@gplansis.com).

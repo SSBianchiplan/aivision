@@ -1,0 +1,68 @@
+name: Bug
+description: Algo não funciona como deveria.
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por relatar! Falha de segurança **não** vai aqui: veja o SECURITY.md.
+        Não cole chaves de API, senhas nem imagens com pessoas ou dados de terceiros.
+  - type: textarea
+    id: oque
+    attributes:
+      label: O que aconteceu
+      description: O que você esperava e o que aconteceu de fato.
+    validations:
+      required: true
+  - type: textarea
+    id: passos
+    attributes:
+      label: Como reproduzir
+      description: Passo a passo, com a cadeia do Pipeline (Exportar › grafo JSON ajuda) e a fonte (câmera, arquivo, tela, YouTube, RTMP).
+      placeholder: |
+        1. Abrir Industrial › Studio CounterVision
+        2. Abrir exemplo
+        3. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: onde
+    attributes:
+      label: Onde
+      options:
+        - Sistema no ar (aivision.gplansis.com)
+        - Rodando localmente (ferramentas/servir.py)
+        - Serviço (servicos/treino, youtube ou via)
+    validations:
+      required: true
+  - type: input
+    id: versao
+    attributes:
+      label: Versão
+      description: A VERSION do service worker, por exemplo iav-v86-vps (está em /sw.js no sistema no ar ou em site/sw.js).
+      placeholder: iav-v86-vps
+  - type: input
+    id: navegador
+    attributes:
+      label: Navegador e sistema
+      placeholder: Chrome 141 no Windows 11 / Safari 26 no iPhone 15
+    validations:
+      required: true
+  - type: input
+    id: gpu
+    attributes:
+      label: GPU / aparelho
+      description: Importante para bugs de WebGPU. Em chrome://gpu aparece o adaptador.
+      placeholder: Intel Iris Xe / Apple M2 / Galaxy S23
+  - type: textarea
+    id: console
+    attributes:
+      label: Console e Telemetria
+      description: Erros do console do navegador, EP do modelo (painel Modelos) e ms por quadro, se houver.
+      render: text
+  - type: textarea
+    id: midia
+    attributes:
+      label: Print ou vídeo
+      description: Arraste aqui. Borre rostos e dados sensíveis.

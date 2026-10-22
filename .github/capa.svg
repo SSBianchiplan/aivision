@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-label="GPlanSiS|iaVision — Visão computacional em tempo real, na tela e na palma da sua mão.">
+  <title>GPlanSiS|iaVision</title>
+  <defs>
+    <style>
+      .f { font-family: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif; }
+      .m { font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+    </style>
+    <pattern id="pontos" width="32" height="32" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="1" fill="#FFFFFF" fill-opacity="0.10"/>
+    </pattern>
+    <radialGradient id="luz" cx="0.30" cy="0.42" r="0.85">
+      <stop offset="0" stop-color="#065A52"/>
+      <stop offset="1" stop-color="#02302C"/>
+    </radialGradient>
+  </defs>
+
+  <!-- fundo -->
+  <rect width="1280" height="640" fill="#04413C"/>
+  <rect width="1280" height="640" fill="url(#luz)"/>
+  <rect width="1280" height="640" fill="url(#pontos)"/>
+
+  <!-- cantoneiras de mira (quadro) -->
+  <g fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="square">
+    <path d="M40 92 V40 H92"/>
+    <path d="M1188 40 H1240 V92"/>
+    <path d="M40 548 V600 H92"/>
+    <path d="M1188 600 H1240 V548"/>
+  </g>
+
+  <!-- topo -->
+  <text x="72" y="84" class="m" font-size="20" letter-spacing="1.2" fill="#FFFFFF" fill-opacity="0.92">GPlanSiS|iaVision</text>
+  <text x="1208" y="84" class="m" font-size="18" letter-spacing="1" fill="#CFEBE4" fill-opacity="0.85" text-anchor="end">aivision.gplansis.com</text>
+
+  <!-- caixa de detecção sobre o wordmark (cor de sinal) -->
+  <g fill="none" stroke="#FFD84D" stroke-width="2.5">
+    <path d="M60 172 V150 H82"/>
+    <path d="M884 150 H906 V172"/>
+    <path d="M60 368 V390 H82"/>
+    <path d="M884 390 H906 V368"/>
+  </g>
+  <rect x="60" y="124" width="232" height="26" fill="#FFD84D"/>
+  <text x="70" y="143" class="m" font-size="15" font-weight="500" fill="#04413C">iaVision · 0,99 · ID 1</text>
+
+  <!-- wordmark -->
+  <text x="66" y="352" class="f" font-size="236" font-weight="700" letter-spacing="-12" fill="#FFFFFF">iaVision</text>
+
+  <!-- retícula à direita -->
+  <g transform="translate(1062 270)" fill="none" stroke="#CFEBE4" stroke-opacity="0.75" stroke-width="2">
+    <circle r="92"/>
+    <circle r="46" stroke-dasharray="6 8"/>
+    <path d="M-124 0 H-64 M64 0 H124 M0 -124 V-64 M0 64 V124"/>
+    <circle r="5" fill="#FFD84D" stroke="none"/>
+  </g>
+  <text x="1062" y="428" class="m" font-size="14" letter-spacing="1" fill="#CFEBE4" fill-opacity="0.7" text-anchor="middle">x 0,512 · y 0,421 · 30 q/s</text>
+
+  <!-- slogan -->
+  <text x="72" y="462" class="f" font-size="35" font-weight="400" letter-spacing="-0.8" fill="#FFFFFF">Visão computacional em tempo real,</text>
+  <text x="72" y="506" class="f" font-size="35" font-weight="400" font-style="italic" letter-spacing="-0.8" fill="#CFEBE4">na tela e na palma da sua mão.</text>
+
+  <!-- linha de números -->
+  <line x1="72" y1="540" x2="1208" y2="540" stroke="#FFFFFF" stroke-opacity="0.2"/>
+  <text x="72" y="576" class="m" font-size="19" letter-spacing="1.5" fill="#FFFFFF" fill-opacity="0.9">40 MÓDULOS · 80 OPERADORES · RODA NO DISPOSITIVO</text>
+  <text x="1208" y="576" class="m" font-size="17" letter-spacing="1" fill="#FFD84D" text-anchor="end">AGPL-3.0 · código aberto</text>
+</svg>

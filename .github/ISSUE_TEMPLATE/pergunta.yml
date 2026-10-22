@@ -1,0 +1,20 @@
+name: Pergunta
+description: Dúvida sobre uso, arquitetura, como contribuir ou rodar localmente.
+title: "[pergunta] "
+labels: ["pergunta"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Antes, dê uma olhada no README, no CONTRIBUTING e nas [docs](https://github.com/SSBianchiplan/aivision/tree/main/docs).
+  - type: textarea
+    id: pergunta
+    attributes:
+      label: Sua pergunta
+    validations:
+      required: true
+  - type: textarea
+    id: contexto
+    attributes:
+      label: Contexto
+      description: O que você está tentando fazer e o que já tentou.

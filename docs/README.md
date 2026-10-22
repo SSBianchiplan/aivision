@@ -16,7 +16,8 @@
 | [treinar.md](treinar.md) | Treinar: RF-DETR, PatchCore, YOLO26, fila, comparação, formato publicado |
 | [servicos.md](servicos.md) | Caddy, login, aivision-treino (com SSO de admin), aivision-yt, aivision-via (PostgreSQL), pacote AGPL |
 | [compatibilidade.md](compatibilidade.md) | o que funciona em cada navegador (Chrome/Edge, Safari 15 e 26, Firefox, celular), limitações e contornos |
-| [deploy-e-testes.md](deploy-e-testes.md) | rodar localmente, testes no navegador, publicar |
+| [deploy-e-testes.md](deploy-e-testes.md) | rodar localmente (`ferramentas/servir.py`, `ferramentas/baixar-wasm.sh`), testes no navegador, publicar |
 | [licencas.md](licencas.md) | licença do código e de cada modelo/biblioteca |
+| [roadmap.md](roadmap.md) | ideias abertas para contribuição, com esforço e as boas para começar |
 
-Histórico de versões: [../CHANGELOG.md](../CHANGELOG.md).
+Histórico de versões: [../CHANGELOG.md](../CHANGELOG.md). Como contribuir: [../CONTRIBUTING.md](../CONTRIBUTING.md).

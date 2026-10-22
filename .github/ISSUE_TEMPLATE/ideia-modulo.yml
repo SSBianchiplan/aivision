@@ -1,0 +1,50 @@
+name: Ideia de módulo ou operador
+description: Proponha um operador, Studio, preset ou melhoria (ou pegue uma ideia do roadmap).
+title: "[ideia] "
+labels: ["ideia"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Veja antes o [roadmap](https://github.com/SSBianchiplan/aivision/blob/main/docs/roadmap.md): talvez a ideia já esteja lá com número e esforço estimado.
+  - type: input
+    id: roadmap
+    attributes:
+      label: Número no roadmap (se houver)
+      placeholder: "I1, S2, 76…"
+  - type: textarea
+    id: problema
+    attributes:
+      label: Que problema resolve
+      description: Quem usa, em que situação, o que mede ou decide.
+    validations:
+      required: true
+  - type: textarea
+    id: como
+    attributes:
+      label: Como funcionaria
+      description: Quais operadores existentes combina (ex. `pose.rtmo` + `cena.zonas`), o que precisa de código novo e o que aparece na tela.
+    validations:
+      required: true
+  - type: dropdown
+    id: esforco
+    attributes:
+      label: Esforço estimado
+      options:
+        - P — preset (só encadear operadores)
+        - C — código pequeno (operador ou painel novo)
+        - T — treino próprio (dataset + RF-DETR/PatchCore)
+        - M — médio (componente novo de interface ou dados)
+        - Não sei
+  - type: textarea
+    id: modelos
+    attributes:
+      label: Modelos e licenças
+      description: Se precisar de modelo novo, de onde vêm os pesos, tamanho e licença (precisa ser compatível com AGPL-3.0).
+  - type: checkboxes
+    id: quero
+    attributes:
+      label: Participação
+      options:
+        - label: Quero implementar esta ideia
+        - label: Posso testar com vídeos ou aparelhos reais

@@ -38,7 +38,7 @@ A gaveta (`js/via/ViaPainel.js`), o cliente e o SDK carregam **sob demanda**: na
 
 A escolha é do usuário (Config › Via ou aba «Chave e modelo» da gaveta). **Esforço**: baixo, médio (padrão) ou alto — vai sempre explícito em `output_config.effort`.
 
-Ordem de grandeza: o prompt de sistema (regras + catálogo dos 65 operadores) tem ~9 mil tokens e fica em **cache** depois da primeira mensagem (leitura de cache custa uma fração da entrada). Uma pergunta típica com uma ou duas idas e vindas de ferramentas fica na casa de **centavos de dólar no Opus 5.5**, cerca de metade no Sonnet 5.5 e frações de centavo no Haiku 5.5. Cada quadro do vídeo acrescenta cerca de mil tokens. A gaveta mostra os tokens da conversa (entrada, cache lido, saída).
+Ordem de grandeza: o prompt de sistema (regras + catálogo dos 80 operadores) tem ~9 mil tokens e fica em **cache** depois da primeira mensagem (leitura de cache custa uma fração da entrada). Uma pergunta típica com uma ou duas idas e vindas de ferramentas fica na casa de **centavos de dólar no Opus 5.5**, cerca de metade no Sonnet 5.5 e frações de centavo no Haiku 5.5. Cada quadro do vídeo acrescenta cerca de mil tokens. A gaveta mostra os tokens da conversa (entrada, cache lido, saída).
 
 ## Como a chamada é feita
 
