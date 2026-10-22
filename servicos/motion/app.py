@@ -13,7 +13,7 @@ O QUE ESTE SERVIÇO FAZ (E O QUE NÃO FAZ)
     (vídeo apagado ao fim do job; artefatos e sessões em até AIV_MOTION_RETER_H horas).
   - O comando de cada motor vem do servidor (motores.py), nunca do cliente.
 
-ROTAS (prefixo /api/v1/motion — o Caddy repassa `handle /api/v1/motion/*` para 127.0.0.1:8997)
+ROTAS (prefixo /api/v1/motion — o Caddy repassa `handle /api/v1/motion/*` para 127.0.0.1:8988)
     GET    /health                      sem autenticação
     GET    /capabilities                motores e limites
     POST   /sessions                    cria sessão (metadados)               201

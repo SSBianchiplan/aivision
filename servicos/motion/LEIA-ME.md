@@ -47,9 +47,9 @@ Vídeo apagado assim que o job termina (sucesso, falha ou cancelamento); artefat
 ## Implantação (vps2) — NÃO FEITA
 ```
 /opt/aivision/motion/  app.py motores.py Dockerfile docker-compose.yml requirements.txt
-cd /opt/aivision/motion && docker compose up -d --build        # 127.0.0.1:8997 (confirme que está livre)
+cd /opt/aivision/motion && docker compose up -d --build        # 127.0.0.1:8988 (confirme que está livre)
 ```
-No Caddy, antes de `handle /api/*`: `handle /api/v1/motion/* { request_body { max_size 320MB } reverse_proxy 127.0.0.1:8997 }`.
+No Caddy, antes de `handle /api/*`: `handle /api/v1/motion/* { request_body { max_size 320MB } reverse_proxy 127.0.0.1:8988 }`.
 
 ## Testes
 ```
