@@ -19,6 +19,7 @@ import { YouTubeSection } from './YouTubeSource.js';
 import { SeletorCamera, tipoDaCamera } from './SeletorCamera.js';
 import { acharUltima, textoSettings, ICONE_IP, ICONE_BT } from '../camera/seletor.js';
 import { PRESETS_ONDA1A, criarMarcacoesModelo } from './presets-onda1a.js';
+import { PRESETS_ONDA2B, criarMarcacoesModeloOnda2b } from './presets-onda2b.js';   // onda 2-b (CV-60..67)
 import {
   PADRAO as STREAM_PADRAO, urlRtmp, conteudoMisto, diagnosticar, ehRedeLocal, baseHttps,
 } from '../camera/stream.js';
@@ -353,7 +354,7 @@ Object.assign(PAINEL_DO_PRESET, { 'Inspeção — presença e contagem': 'inspec
  * marcações-modelo. Grupo existente ganha os itens; grupo novo entra no fim.
  */
 const DESC_PRESET = {};
-for (const pr of PRESETS_ONDA1A) {
+for (const pr of [...PRESETS_ONDA1A, ...PRESETS_ONDA2B]) {
   let g = PRESET_GROUPS.find(([nome]) => nome === pr.grupo);
   if (!g) PRESET_GROUPS.push((g = [pr.grupo, {}]));
   g[1][pr.nome] = pr.specs;
@@ -387,7 +388,7 @@ function PresetPicker({ primeiro = null }) {
                   const painel = PAINEL_DO_PRESET[p.nome] || PAINEL_DO_GRUPO[g];
                   store.set(painel ? { nodes: chain(p.specs), panels: { ...store.get().panels, [painel]: true } } : { nodes: chain(p.specs) });
                   persist();
-                  criarMarcacoesModelo(p.nome);
+                  criarMarcacoesModelo(p.nome); criarMarcacoesModeloOnda2b(p.nome);
                 }}>
                 ${p.nome}${p.agpl ? html` <i class="presets-agpl">AGPL</i>` : ''}
               </button>
@@ -410,7 +411,7 @@ export function aplicarPreset(nome, painel = null) {
     const st = store.get();
     store.set({ nodes: chain(p.specs), panels: { ...st.panels, pipeline: true, ...(painel ? { [painel]: true } : {}) } });
     persist();
-    criarMarcacoesModelo(nome);
+    criarMarcacoesModelo(nome); criarMarcacoesModeloOnda2b(nome);
     return true;
   }
   return false;

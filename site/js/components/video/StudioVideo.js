@@ -559,7 +559,7 @@ export function StudioVideo({ onClose, source, onPickFile }) {
 
   // ------------------------------------------------------------ abrir mídia
 
-  const abrir = useCallback(async (blob, nome, origem) => {
+  const abrir = useCallback(async (blob, nome, origem, marcExtra = null) => {
     if (!blob || !blob.size) { setMsg('Arquivo vazio.'); return; }
     if (blob.type && !/^video\/|application\/octet-stream|^$/.test(blob.type) && !/\.(mp4|m4v|mov|webm|mkv)$/i.test(nome || '')) {
       setMsg('Isto não parece um vídeo (' + blob.type + ').'); return;
@@ -621,6 +621,8 @@ export function StudioVideo({ onClose, source, onPickFile }) {
       rc = salvo.recorte || RET_TODO; pr = salvo.proporcao || 'livre';
       if (salvo.fps && salvo.fps !== vv.fps) vv.fps = salvo.fps;
     }
+    // marcadores pedidos por quem abriu (ex.: Resumo de vídeo por eventos, CV-66), em µs da mídia
+    if (Array.isArray(marcExtra) && marcExtra.length) mk = [...new Set([...mk, ...marcExtra.filter(Number.isFinite).map(Math.round)])].sort((a, b) => a - b);
     if (mini.current) mini.current.liberar();
     if (onda.current) onda.current.liberar();
     E.current.v = vv;
@@ -657,7 +659,7 @@ export function StudioVideo({ onClose, source, onPickFile }) {
     (async () => {
       try {
         const blob = p.blob || await (await fetch(p.url)).blob();
-        await abrir(blob, p.nome || 'video-da-fonte', p.origem || 'fonte');
+        await abrir(blob, p.nome || 'video-da-fonte', p.origem || 'fonte', p.marcadores || null);
       } catch (err) { setMsg('Não consegui abrir o vídeo pedido: ' + err.message); }
     })();
   }, []);

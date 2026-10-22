@@ -24,7 +24,7 @@
  * ========================================================================
  */
 
-const VERSION = 'iav-v91-vps';   // 22/10/2026: onda 1 — Studios OEE (CV-46) e Fisio (CV-47), Monitor de EPI (CV-48); página principal 48/94
+const VERSION = 'iav-v92-vps';   // 22/10/2026: onda 2-b — CV-60..67: NR-17/NIOSH, saída obstruída, fogo, varejo, foto de produto, ocupação, medidor, resumo de vídeo, velocidade
 const SHELL = `${VERSION}-shell`;
 /*
  * Pesos dos modelos num cache de nome FIXO: sobrevivem às publicações. Antes o

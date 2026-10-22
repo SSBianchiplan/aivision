@@ -7,6 +7,8 @@
  *   abrirEditorVideo()                       tela inicial (abrir arquivo, fonte, gravação…)
  *   abrirEditorVideo({ blob, nome })         já abre esta mídia
  *   abrirEditorVideo({ url, nome })          idem, a partir de um object URL (blob:)
+ *   abrirEditorVideo({ url, nome, marcadores })  idem, com marcadores (µs da mídia) já postos —
+ *                                            o Resumo de vídeo por eventos (CV-66) usa
  *   window.dispatchEvent(new CustomEvent('aiv:editar-video', { detail: { blob, nome } }))
  *                                            o mesmo, sem importar nada
  *

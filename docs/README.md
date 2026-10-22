@@ -27,3 +27,4 @@ Histórico de versões: [../CHANGELOG.md](../CHANGELOG.md). Como contribuir: [..
 - [OEE, Fisio e Monitor de EPI](oee-fisio-epi.md)
 - [Editor de vídeo: Seguir sujeito / reenquadrar](video-seguir.md)
 - [Fonte dentro dos Studios](fonte-nos-studios.md)
+- [Segurança, NR-17, varejo, ocupação, medidores (CV-60 a CV-67)](seguranca-varejo-cidade.md)

@@ -25,6 +25,7 @@ import { alarmesSeguranca, AVISO_NR12 } from '../cv/operators/livres-oa/seguranc
 import { corCalor } from '../cv/operators/livres-oa/mapa-calor.js';
 import { ROTULO_ESTADO } from '../cv/runtime/livres-oa/alarmes.js';
 import { baixar } from '../cv/marcacoes.js';
+import { secoesLivresS } from './medicoes-livres-s.js';   // onda 2-b (CV-60..67)
 
 function carregarCss() {
   if (document.querySelector('link[data-medicoes]')) return;
@@ -49,12 +50,13 @@ export function MedicoesPanel({ onClose, ...layout }) {
   const secoes = [
     tem('trafego', ['trafego.']) && html`<${SecaoTrafego} key="t" />`,
     (tem('mostrador', ['instrumento.']) || ler('display7')) && html`<${SecaoInstrumentos} key="i" />`,
-    (tem('cerca', ['seguranca.']) || ler('queda') || ler('encontro')) && html`<${SecaoSeguranca} key="s" />`,
+    (tem('cerca', ['seguranca.cerca', 'seguranca.queda', 'seguranca.ponto_encontro']) || ler('queda') || ler('encontro')) && html`<${SecaoSeguranca} key="s" />`,
     tem('sprint', ['esportes.sprint']) && html`<${SecaoSprint} key="sp" />`,
     tem('mapa_calor', ['cena.mapa_calor']) && html`<${SecaoCalor} key="c" />`,
     (tem('etiquetas', ['logistica.etiqueta'])) && html`<${SecaoEtiquetas} key="e" />`,
     (tem('pallets', ['logistica.pallet'])) && html`<${SecaoPallets} key="p" />`,
     (tem('tempo_tela', ['midia.tempo_tela'])) && html`<${SecaoTempoTela} key="tt" />`,
+    ...secoesLivresS(tem),
   ].filter(Boolean);
   return html`
     <${Panel} id="medicoes" title="Medições" subtitle=${secoes.length ? `${secoes.length} em uso` : 'tráfego, instrumentos, segurança, sprint…'} onClose=${onClose} ...${layout}>
