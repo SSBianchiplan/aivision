@@ -2,7 +2,7 @@
 
 > Gerado a partir do código (`site/js/cv/registry.js`) por `ferramentas/gerar-modulos.mjs` — não editar à mão.
 
-**48 módulos · 94 operadores · 38 modelos.**
+**83 módulos · 150 operadores · 38 modelos.**
 
 ## Módulos
 
@@ -56,6 +56,41 @@
 | CV-46 | Industrial — OEE pela câmera | 1 | client | livre |
 | CV-47 | Fisio — goniometria e testes funcionais | 1 | onnx | livre |
 | CV-48 | Industrial — monitor de EPI (sem treino) | 1 | onnx | livre |
+| CV-49 | Poka-yoke de sequência de montagem | 1 | client | livre |
+| CV-50 | Cubagem — esteira com laser e foto com régua | 2 | client | livre |
+| CV-51 | Conferência de doca | 1 | client | livre |
+| CV-52 | Nível pelo visor e gotejamento | 2 | client | livre |
+| CV-53 | Desalinhamento lateral de correia | 1 | client | livre |
+| CV-54 | Marca de torque desalinhada | 1 | client | livre |
+| CV-55 | Cor de chama e forno | 1 | client | livre |
+| CV-56 | Pontos de solda por posição | 1 | client | livre |
+| CV-57 | Opacidade de fumaça (Ringelmann, indicativo) | 1 | client | livre |
+| CV-58 | Ocupação do baú (estimativa) | 1 | client | livre |
+| CV-59 | Medição de fissuras | 1 | client | livre |
+| CV-60 | Ergonomia aplicada (NR-17) | 2 | client | livre |
+| CV-61 | Segurança predial (indicativo) | 2 | client | livre |
+| CV-62 | Varejo — preço e planograma | 2 | onnx | livre |
+| CV-63 | Foto de produto (e-commerce) | 1 | onnx | livre |
+| CV-64 | Ocupação por zona (mesas, vagas, lixeiras) | 2 | client | livre |
+| CV-65 | Hidrômetro e medidores | 1 | client | livre |
+| CV-66 | Resumo de vídeo por eventos | 1 | client | livre |
+| CV-67 | Velocidade média (duas linhas) | 1 | client | livre |
+| CV-70 | Sinais vitais sem contato | 2 | client | livre |
+| CV-71 | Rosto clínico — assimetria e orofacial | 2 | client | livre |
+| CV-72 | Movimento clínico — tremor, postura e marcha | 3 | client | livre |
+| CV-73 | Exercício domiciliar com correção por voz | 1 | client | livre |
+| CV-74 | Hospital e ILPI — higiene das mãos e queda | 2 | client | livre |
+| CV-75 | Comparar com a referência (movimento e yoga) | 2 | client | livre |
+| CV-76 | Esportes de ciclo — corda, luta, basquete, natação | 4 | client | livre |
+| CV-77 | Bateria PROESP-BR | 1 | client | livre |
+| CV-80 | Laboratório de física por vídeo | 1 | client | livre |
+| CV-81 | Acessibilidade: cena falada e mouse por cabeça | 2 | client | livre |
+| CV-82 | Libras — soletração | 1 | client | livre |
+| CV-83 | Sala de aula: gabarito e mãos levantadas | 2 | client | livre |
+| CV-84 | Mídia: cortes, miniatura, busca e fala | 2 | client | livre |
+| CV-85 | Agro e pecuária | 4 | client | livre |
+| CV-86 | Câmera de jogo amador | 1 | client | livre |
+| CV-87 | Diário de obra (RDO) | 1 | client | livre |
 
 ## Operadores por módulo
 
@@ -1467,6 +1502,919 @@ Monitor de EPI sem treino: a pose RTMO recorta cabeça e tronco de cada pessoa e
 | Máx. pessoas (`maxPessoas`) | int | 12 | 1–30 |
 | Intervalo mín. do CLIP (ms) (`everyMs`) | int | 250 | 0–3000 |
 | Caixas e estado no vídeo (`desenhar`) | bool | true |  |
+
+### CV-49 · Poka-yoke de sequência de montagem
+
+Confere a ordem em que a mão pega as peças (uma área por caixa) e a conclusão no gabarito: fora de ordem, peça a mais, passo pulado e montagem incompleta avisam na hora (alarme ISA-18.2) e ficam registrados por ciclo, com tempo de ciclo e FPY. Sobre Mãos e gestos (ou a pose RTMO). Indicador de qualidade, não intertravamento.
+
+#### Poka-yoke de sequência de montagem — `pokayoke.sequencia`
+
+Confere a ORDEM em que a mão pega as peças: uma área "Poka-yoke · caixa" por caixa/gaveta e (opcional) a área "Poka-yoke · conclusão" no gabarito. Sequência em texto ("Base; Placa; Parafuso x4; Tampa") ou pela ordem dos nomes. Desvio (fora de ordem, a mais, pulou, faltou passo) avisa na hora, alarme ISA-18.2 e registro por ciclo. Use depois de "Mãos e gestos" (câmera de cima).
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Sequência (ex.: Base; Placa; Parafuso x4; Tampa) — vazio = ordem dos nomes (`sequencia`) | text |  | –400 |
+| Ponto da mão (`ponto`) | enum | centro da palma | centro da palma, ponta do indicador, qualquer dedo |
+| Tempo na caixa para contar a pegada (s) (`tMin`) | float | 0.3 | 0–5 |
+| Tempo fora para soltar a caixa (s) (`tSaida`) | float | 0.4 | 0–5 |
+| Fora de ordem: esperar o passo certo (bloquear) ou seguir dali (`modo`) | enum | bloquear | bloquear, seguir |
+| Ciclo parado no meio = abandonado após (s) (`tCicloMax`) | float | 120 | 5–3600 |
+| Aviso de desvio visível por (s) (`alarmeSeg`) | float | 3 | 0.5–60 |
+| Desenhar caixas e mãos (`desenhar`) | bool | true |  |
+
+### CV-50 · Cubagem — esteira com laser e foto com régua
+
+Caixa a caixa na esteira: altura e largura pela triangulação laser do BeltScan, comprimento pela velocidade ou pela vista de cima; m³, peso cubado, código lido e CSV. Por foto parada: régua calibrada + contorno (ou SAM) em duas vistas (topo e lateral).
+
+#### Cubagem de caixas na esteira (laser) — `cubagem.esteira`
+
+Altura × largura × comprimento de cada caixa que passa sob o laser de linha (triangulação do BeltScan), com m³, peso cubado e o código lido. Área "Cubagem · faixa do laser" onde a linha aparece; deixe a esteira VAZIA nos primeiros quadros (referência). Comprimento pela velocidade da esteira ou pela vista de cima (área "Cubagem · vista de cima" + régua calibrada).
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Altura da câmera sobre a esteira (mm) (`Hc_mm`) | float | 1200 | 50–10000 |
+| Distância câmera–laser (base, mm) (`b_mm`) | float | 600 | 10–5000 |
+| Ângulo da câmera α (graus) (`alpha_deg`) | float | 26.6 | 1–89 |
+| Campo de visão horizontal (graus) (`hfov_deg`) | float | 60 | 10–150 |
+| Sentido de v (BeltScan v_sign) (`sentidoV`) | enum | −1 | −1, +1 |
+| Linha laser (`laser`) | enum | vermelho | vermelho, claro (mono) |
+| Limiar da linha (`thr`) | int | 25 | 3–200 |
+| Quadros de referência (esteira vazia) (`refQuadros`) | int | 20 | 3–200 |
+| Altura mínima de caixa (mm) (`hMin`) | float | 15 | 2–500 |
+| Largura mínima de caixa (mm) (`largMin`) | float | 40 | 5–3000 |
+| Velocidade da esteira (mm/s) (`velocidade`) | float | 300 | 1–5000 |
+| Fator de cubagem (kg/m³; rodoviário 300, aéreo 167) (`fator`) | float | 300 | 1–1000 |
+| Esteira corre na imagem (vista de cima) (`direcao`) | enum | vertical | vertical, horizontal |
+| Contraste caixa × fundo na vista de cima (`limiarVista`) | int | 25 | 5–120 |
+| Desenhar perfil e caixa (`desenhar`) | bool | true |  |
+
+#### Cubagem por foto com régua (2 vistas) — `cubagem.foto`
+
+Dimensões de um volume parado por foto: calibre a régua (Ferramentas de mouse) sobre uma medida conhecida NO PLANO da face e contorne a face com uma área "Cubagem · face" (retângulo, polígono ou o clique do SAM). Grave a vista de TOPO (comprimento × largura) e a LATERAL (altura) no painel Medições → volume e peso cubado.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Fator de cubagem (kg/m³) (`fator`) | float | 300 | 1–1000 |
+| Desenhar o retângulo medido (`desenhar`) | bool | true |  |
+
+### CV-51 · Conferência de doca
+
+Volumes e pallets que entram e saem por linha de porta, por placa ou ordem digitada, contra o esperado e a lista de códigos (QR/barras/SSCC): falta e sobra, registro por conferência e CSV. Sobre detector + Tracking com IDs.
+
+#### Conferência de doca (volumes e pallets) — `doca.conferencia`
+
+Conta volumes e pallets que entram e saem pela linha "Doca · porta" (seta = para dentro) e confere com a placa ou ordem digitada: volumes e pallets esperados e a lista de códigos (QR/barras/SSCC) — falta e sobra, registro por conferência e CSV. Depois de detector + Tracking com IDs (e do Leitor de códigos, se houver etiqueta).
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Placa ou ordem (troca = nova conferência) (`ordem`) | text |  | –60 |
+| Tipo (`tipo`) | enum | recebimento | recebimento, expedição |
+| Volumes esperados (−1 = não conferir) (`volumes`) | int | -1 | -1–99999 |
+| Pallets esperados (−1 = não conferir) (`pallets`) | int | -1 | -1–9999 |
+| Códigos esperados (um por linha ou ; ) (`codigos`) | text |  | –8000 |
+| Classes contadas como volume (`classesVolume`) | text | caixa, box, pacote, volume, suitcase, mala, bolsa | –200 |
+| Classes contadas como pallet (`classesPallet`) | text | palete, pallet | –200 |
+| Ponto do objeto (`ponto`) | enum | centro | centro, base |
+| Desenhar contagens na linha (`desenhar`) | bool | true |  |
+
+### CV-52 · Nível pelo visor e gotejamento
+
+Nível de silo/tanque pelo visor (degrau do perfil vertical, subpixel, faixa pelo nome) e gotejamento/vazamento (gotas por minuto e poça crescendo), com histórico e alarmes ISA-18.2.
+
+#### Nível pelo visor (silo/tanque) — `processo.nivel`
+
+Nível de líquido ou grão pelo visor de vidro: área "Processo · visor de nível" do fundo ao topo da escala. A interface é o degrau mais forte do perfil vertical (luz ou cor), com subpixel e mediana de 5 leituras. A faixa pode vir no nome ("Tanque 0-5000 L"). Histórico e alarmes ISA-18.2.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Valor no FUNDO do visor (`min`) | float | 0 | -1000000–1000000 |
+| Valor no TOPO do visor (`max`) | float | 100 | -1000000–1000000 |
+| Unidade (`unidade`) | text | % | –12 |
+| Contraste por luz ou por cor (saturação) (`canal`) | enum | luz | luz, cor |
+| Produto aparece (embaixo) (`polaridade`) | enum | auto | auto, escuro, claro |
+| Faixa central usada (fração da largura) (`faixaCentral`) | float | 0.5 | 0.1–1 |
+| Nitidez mínima do degrau (`forcaMin`) | float | 4 | 1–50 |
+| Alarmes (ex.: HH 95; H 85; L 15; LL 5) (`limites`) | text |  | –120 |
+| Banda morta (% do limite) (`bandaPct`) | float | 1 | 0–20 |
+| Atraso para ativar (s) (`atrasoOn`) | float | 2 | 0–600 |
+| Atraso para normalizar (s) (`atrasoOff`) | float | 2 | 0–600 |
+| Ler a cada (ms) (`intervalo`) | int | 300 | 0–10000 |
+| Largura de análise (px) (`largura`) | int | 960 | 320–1920 |
+
+#### Gotejamento e vazamento — `processo.gotejamento`
+
+Conta gotas que caem na área "Processo · gotejamento" (mancha pequena que desce, contra um fundo que aprende) e mede a poça: a fração da área que mudou desde o início, com tendência por minuto. Alarmes ISA-18.2 por gotas/min e por poça. Câmera fixa, fundo sem movimento.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Contraste da gota (`limiar`) | int | 20 | 4–120 |
+| Área mínima da gota (px de análise) (`aMin`) | int | 3 | 1–200 |
+| Área máxima da gota (px de análise) (`aMax`) | int | 400 | 4–5000 |
+| Contraste da poça contra o início (`limiarPoca`) | int | 18 | 4–120 |
+| Janela da taxa (s) (`janela`) | int | 60 | 10–3600 |
+| Alarmes de gotas/min (`limitesGotas`) | text | H 10; HH 30 | –80 |
+| Alarmes de poça (% da área) (`limitesPoca`) | text | H 10; HH 25 | –80 |
+| Banda morta (% do limite) (`bandaPct`) | float | 1 | 0–20 |
+| Atraso para ativar (s) (`atrasoOn`) | float | 2 | 0–600 |
+| Atraso para normalizar (s) (`atrasoOff`) | float | 2 | 0–600 |
+| Lado máximo da análise (px) (`analise`) | int | 200 | 60–640 |
+
+### CV-53 · Desalinhamento lateral de correia
+
+As duas bordas da correia por perfil transversal subpixel: desvio do centro em mm e % da largura, tendência em mm/min e alarmes ISA-18.2.
+
+#### Desalinhamento lateral de correia — `correia.alinhamento`
+
+Acha as duas bordas da correia na área "Correia · faixa" (atravessando a correia inteira) e mede o desvio do centro contra a referência (os primeiros quadros, ou "Zerar referência" no painel) em mm — a escala vem da largura nominal da correia — e em % da largura. Tendência em mm/min e alarmes ISA-18.2.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| A correia corre na imagem (`eixo`) | enum | vertical | vertical, horizontal |
+| Largura nominal da correia (mm; 0 = régua) (`larguraMm`) | float | 1000 | 0–5000 |
+| Leituras para a referência (`refQuadros`) | int | 30 | 3–300 |
+| Nitidez mínima das bordas (`forcaMin`) | float | 4 | 1–50 |
+| Alarmes do \|desvio\| (% da largura) (`limites`) | text | H 5; HH 10 | –80 |
+| Alarme de tendência (\|mm/min\|; 0 = sem) (`tendMax`) | float | 20 | 0–1000 |
+| Janela da tendência (s) (`janelaTend`) | int | 300 | 10–3600 |
+| Banda morta (% do limite) (`bandaPct`) | float | 1 | 0–20 |
+| Atraso para ativar (s) (`atrasoOn`) | float | 2 | 0–600 |
+| Atraso para normalizar (s) (`atrasoOff`) | float | 2 | 0–600 |
+| Ler a cada (ms) (`intervalo`) | int | 100 | 0–5000 |
+
+### CV-54 · Marca de torque desalinhada
+
+A tinta da marca de torque pela cor (ΔE2000): eixo na cabeça/porca × direção na base; giro acima da tolerância = NOK. Vários parafusos por quadro, registro.
+
+#### Marca de torque desalinhada — `inspecao.torque`
+
+Uma área redonda "Inspeção · marca de torque" por parafuso (centro no eixo, borda pegando a tinta na base). A tinta é achada pela cor (ΔE2000); o eixo da tinta na cabeça/porca é comparado com a direção da tinta na base: acima da tolerância = NOK (afrouxou). Risque a marca no sentido radial, ou grave a referência com tudo alinhado.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Cor da tinta (#rrggbb) (`cor`) | text | #e8d020 | –9 |
+| Tolerância de cor (ΔE2000) (`tolCor`) | float | 18 | 2–60 |
+| Raio da cabeça/porca (fração da área) (`rCab`) | float | 0.55 | 0.2–0.9 |
+| Tolerância de giro (graus) (`tolAng`) | float | 8 | 1–45 |
+| Ler a cada (ms) (`intervalo`) | int | 300 | 0–10000 |
+| Largura de análise (px) (`largura`) | int | 960 | 320–1920 |
+| Mostrar os pixels de tinta (`mostrarTinta`) | bool | false |  |
+
+### CV-55 · Cor de chama e forno
+
+Cor média da parte clara da chama/abertura do forno em Lab: ΔE2000 contra a referência, temperatura de cor correlata aproximada e faixa por alarmes ISA-18.2.
+
+#### Cor de chama / forno (ΔE2000) — `processo.cor_chama`
+
+Cor média da parte clara da área "Processo · chama/forno" em Lab: ΔE2000 contra a cor de referência (hex ou "Gravar referência" no painel), temperatura de cor correlata aproximada (McCamy) e a faixa por alarmes ISA-18.2 do ΔE. Exposição e balanço de branco da câmera FIXOS — automáticos mudam a cor medida.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Cor de referência (#rrggbb; vazio = 1ª leitura ou "Gravar") (`referencia`) | text |  | –9 |
+| Usar só os pixels acima do percentil de luz (`pClaro`) | float | 0.5 | 0–0.98 |
+| Alarmes de ΔE2000 (faixa) (`limites`) | text | H 6; HH 12 | –80 |
+| Banda morta (% do limite) (`bandaPct`) | float | 1 | 0–20 |
+| Atraso para ativar (s) (`atrasoOn`) | float | 2 | 0–600 |
+| Atraso para normalizar (s) (`atrasoOff`) | float | 2 | 0–600 |
+| Ler a cada (ms) (`intervalo`) | int | 250 | 0–10000 |
+| Largura de análise (px) (`largura`) | int | 640 | 320–1920 |
+
+### CV-56 · Pontos de solda por posição
+
+Presença e posição de cada ponto de solda nas posições marcadas (disco × anel do diâmetro nominal), pontos sobrando na peça, peça OK/NOK e registro.
+
+#### Pontos de solda por posição — `inspecao.solda`
+
+Cada PONTO "Inspeção · posição de solda" é onde um ponto deve estar: procura uma mancha circular do diâmetro nominal em volta (disco × anel), marca presente, faltando ou deslocado (mm com a régua calibrada); manchas na área "Inspeção · peça (solda)" longe das posições contam como SOBRANDO. Peça OK/NOK e registro.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Diâmetro do ponto (mm, com régua) (`diametroMm`) | float | 6 | 0.5–50 |
+| Diâmetro do ponto (px, sem régua) (`diametroPx`) | float | 12 | 3–200 |
+| Raio de busca (× raio do ponto) (`busca`) | float | 1.5 | 0.5–5 |
+| Contraste mínimo (`contraste`) | float | 18 | 3–200 |
+| O ponto aparece (`polaridade`) | enum | auto | auto, escuro, claro |
+| Tolerância de posição (mm; sem régua = raio) (`tolPosMm`) | float | 2 | 0.1–50 |
+| Ler a cada (ms) (`intervalo`) | int | 400 | 0–10000 |
+| Largura de análise (px) (`largura`) | int | 1280 | 320–1920 |
+
+### CV-57 · Opacidade de fumaça (Ringelmann, indicativo)
+
+Opacidade aparente da pluma escura contra o céu (luminância linear) e o número de Ringelmann equivalente, % do tempo acima do limite e alarme. INDICATIVO — não é laudo ambiental.
+
+#### Opacidade de fumaça (Ringelmann, indicativo) — `ambiente.ringelmann`
+
+Opacidade aparente da pluma escura contra o céu: área "Fumaça · pluma" logo acima da saída da chaminé e área "Fumaça · céu" ao lado, na mesma altura. Luminância linear, opacidade = 1 − pluma/céu e Ringelmann = 5 × opacidade; % do tempo acima do limite e alarme ISA-18.2. INDICATIVO — estimativa por câmera da opacidade aparente; não substitui a avaliação por observador qualificado nem laudo ambiental (ex.: Ringelmann pela norma/legislação aplicável).
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Luminância da fumaça opaca (0 = preta) (`yFumaca`) | float | 0 | 0–0.5 |
+| Limite (nº de Ringelmann) (`limite`) | float | 2 | 0.5–5 |
+| Janela da % do tempo (s) (`janela`) | int | 3600 | 60–86400 |
+| Banda morta (% do limite) (`bandaPct`) | float | 1 | 0–20 |
+| Atraso para ativar (s) (`atrasoOn`) | float | 2 | 0–600 |
+| Atraso para normalizar (s) (`atrasoOff`) | float | 2 | 0–600 |
+| Ler a cada (ms) (`intervalo`) | int | 500 | 0–10000 |
+
+### CV-58 · Ocupação do baú (estimativa)
+
+Ocupação do baú do caminhão em %, estimada pela profundidade relativa (Depth Anything V2) entre a moldura da porta e a parede do fundo. ESTIMATIVA: carga encostada no fundo, câmera no eixo.
+
+#### Ocupação do baú (estimativa por profundidade) — `logistica.ocupacao_bau`
+
+Ocupação do baú do caminhão em %, ESTIMADA pela profundidade relativa (ponha "Profundidade (Depth Anything)" antes): retângulo "Baú · porta" na moldura da porta e "Baú · fundo" na parede do fundo. Grave o baú vazio no painel para referência. ESTIMATIVA pela profundidade relativa de uma câmera: supõe carga encostada no fundo e câmera no eixo do baú. Não substitui cubagem nem conferência.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Calcular a cada (ms) (`intervalo`) | int | 500 | 0–10000 |
+| Mediana das últimas N leituras (`suavizar`) | int | 5 | 1–30 |
+| Mostrar a grade de enchimento (`mostrarGrade`) | bool | true |  |
+
+### CV-59 · Medição de fissuras
+
+Largura (subpixel, pelo perfil normal ao eixo) e comprimento de fissuras com a régua calibrada, classe da abertura, mapa, CSV e relatório para vistoria.
+
+#### Medição de fissuras (largura e comprimento) — `civil.fissuras`
+
+Fissuras escuras na área "Civil · fissuras" (ou no quadro todo): fundo por média larga, histerese, esqueleto; comprimento pela direção local e LARGURA pelo perfil normal ao eixo (subpixel). Em mm com a régua calibrada no plano da parede (ou um alvo de medida conhecida). Classe (capilar/fissura/trinca/rachadura/fenda), mapa, CSV e relatório no painel Medições. Foto de frente, luz rasante evitada, foco na parede.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Raio do fundo (px; > 3× a fissura mais larga) (`raioFundo`) | int | 14 | 4–80 |
+| Limiar forte (× ruído) (`kAlto`) | float | 5 | 2–20 |
+| Limiar fraco (× ruído) (`kBaixo`) | float | 2.5 | 1–10 |
+| Área mínima (px) (`areaMin`) | int | 40 | 5–5000 |
+| Alongamento mínimo (`alongMin`) | float | 3 | 1–20 |
+| Contraste de fissura cheia (0 = automático) (`escuroCheio`) | float | 0 | 0–255 |
+| Medir a cada (ms) (`intervalo`) | int | 1500 | 200–60000 |
+| Largura de análise (px) (`largura`) | int | 1280 | 320–2560 |
+| Congelar a última medição (foto) (`congelar`) | bool | false |  |
+
+### CV-60 · Ergonomia aplicada (NR-17)
+
+AEP por posto: consolida a Ergonomia RULA/REBA e o Tempo de posto (Takt) — tempo em cada nível de risco, pior postura com rosto borrado, alertas e prioridade — num relatório para imprimir/PDF. Levantamento de carga pela equação revisada do NIOSH (H e V pela pose e régua; carga, pega, duração e assimetria informadas). APOIO ao ergonomista: não substitui a AEP/AET.
+
+#### AEP por posto (NR-17) — apoio ao ergonomista — `aep.posto`
+
+Consolida por posto (áreas "Takt · posto") a Ergonomia RULA/REBA, o tempo em cada nível de risco, a pior postura (rosto borrado), os alertas, os KPIs do Tempo de posto e o IL do NIOSH, com prioridade sugerida. Relatório para imprimir/PDF no painel Medições. Coloque DEPOIS de Ergonomia (RULA/REBA). Rascunho de APOIO ao ergonomista — não é a AEP/AET.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Método principal do relatório (`metodo`) | enum | RULA | RULA, REBA |
+| Alerta: tempo contínuo em faixa alta (s) (`alertaS`) | int | 10 | 1–600 |
+| Pessoa fora dos postos (`semPosto`) | enum | posto "Geral" | posto "Geral", ignorar |
+| Empresa/unidade (relatório) (`empresa`) | text |  | –80 |
+| Setor (relatório) (`setor`) | text |  | –80 |
+| Atividade (relatório) (`atividade`) | text |  | –120 |
+| Jornada e pausas (relatório) (`jornada`) | text |  | –60 |
+| Ergonomista responsável (relatório) (`avaliador`) | text |  | –80 |
+| Desenhar os postos (`desenhar`) | bool | true |  |
+
+#### Levantamento de carga (NIOSH) — `ergonomia.niosh`
+
+Equação revisada do NIOSH: H (distância horizontal das mãos aos tornozelos) e V (altura das mãos) medidos pela pose com a escala da RÉGUA calibrada ou da estatura; cada subida das mãos ≥ "amplitude" é um levantamento (origem → destino, D). Carga, pega, duração, assimetria e (opcional) frequência são entradas manuais. LPR, IL na origem e no destino e classificação. Câmera de LADO. Coloque depois da Pose (RTMO).
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Carga levantada (kg) (`carga`) | float | 10 | 0–100 |
+| Qualidade da pega (`pega`) | enum | razoável | boa, razoável, ruim |
+| Duração da tarefa (`duracao`) | enum | 2 a 8 h | até 1 h, 1 a 2 h, 2 a 8 h |
+| Assimetria (torção, °) (`assimetria`) | int | 0 | 0–180 |
+| Frequência (lev./min; 0 = medir) (`freqManual`) | float | 0 | 0–20 |
+| Movimento avaliado (`tarefa`) | enum | levantar | levantar, abaixar, ambos |
+| Escala (cm por px) (`escala`) | enum | régua calibrada | régua calibrada, estatura |
+| Estatura do trabalhador (cm) (`estatura`) | int | 170 | 120–220 |
+| Altura do tornozelo ao piso (cm) (`tornozelo`) | int | 8 | 0–20 |
+| Amplitude mínima de um levantamento (cm) (`amplitude`) | int | 30 | 10–120 |
+| Score mín. do ponto (`kpConf`) | float | 0.3 | 0–1 |
+| Desenhar H, V e o IL (`desenhar`) | bool | true |  |
+
+### CV-61 · Segurança predial (indicativo)
+
+Saída/corredor de emergência obstruído (objeto parado na área por N s, ignorando quem passa) e indício de fogo por cor e cintilação, sem treino. Alarmes ISA-18.2. INDICATIVO: não substitui detector certificado, o alarme de incêndio (NBR 17240) nem a inspeção das rotas de fuga.
+
+#### Saída de emergência obstruída — `seguranca.saida_obstruida`
+
+Alerta quando um OBJETO PARADO ocupa a área "Segurança · saída de emergência" (porta, corredor, extintor) por mais de N s: compara com a cena vazia (capturada sozinha com a cena parada, ou no painel Medições) e ignora quem só passa. Com detector antes, as caixas de pessoa são excluídas. Indicador de gestão (NR-23).
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Obstruída após (s parado) (`tempoS`) | int | 30 | 1–3600 |
+| Área mínima ocupada (fração) (`fracMin`) | float | 0.08 | 0.01–0.9 |
+| Diferença de brilho (níveis) (`limiar`) | int | 24 | 5–80 |
+| Capturar a cena vazia sozinha (cena parada 3 s) (`auto`) | bool | true |  |
+| Adaptação lenta da referência (0 = fixa) (`aprender`) | float | 0 | 0–0.01 |
+| Ignorar caixas de pessoa do detector (`excluirPessoas`) | bool | true |  |
+| Desenhar as áreas (`desenhar`) | bool | true |  |
+
+#### Fogo por cor e cintilação (indicativo) — `seguranca.fogo`
+
+Indício de chama SEM treino: pixels vermelho/laranja/amarelo vivos (regra de Chen) que TREMULAM ao longo do tempo; objeto laranja parado ou que só se move não conta. Alerta após N s. INDICATIVO — não substitui detector certificado nem o alarme de incêndio (NBR 17240). Use ROI/exclusão para tirar telas e LEDs.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Vermelho mínimo (Rt) (`Rt`) | int | 135 | 80–250 |
+| Saturação (St) (`St`) | int | 55 | 10–120 |
+| Cintilação mínima (\|ΔR\| médio) (`cint`) | float | 10 | 2–60 |
+| Fração da cor que tremula (`fracCint`) | float | 0.3 | 0.05–1 |
+| Área mínima (fração do quadro) (`areaMin`) | float | 0.002 | 0.0002–0.2 |
+| Alertar após (s) (`tempoS`) | float | 2 | 0–60 |
+| Desenhar a região (`desenhar`) | bool | true |  |
+
+### CV-62 · Varejo — preço e planograma
+
+Auditoria de preço: OCR e EAN das etiquetas de gôndola conferidos com a tabela CSV do sistema, divergências e CSV. Vitrine × planograma: grade marcada, cada célula comparada com a referência pelo MobileCLIP2 (trocado ou vazio).
+
+#### Auditoria de preço (etiqueta × tabela) — `varejo.preco`
+
+Lê o preço, a descrição e o EAN de cada etiqueta de gôndola (OCR PT-BR + leitor de códigos) e confere com a tabela CSV do sistema importada no painel Medições (código; descrição; preço). Lista as divergências com CSV. Desenhe áreas "Varejo · faixa de etiquetas" sobre a borda das prateleiras (lê em resolução plena) — ou ponha OCR PT-BR e Códigos antes.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Tolerância (R$) (`tolerancia`) | float | 0 | 0–5 |
+| Semelhança mínima da descrição (`simMin`) | float | 0.5 | 0.2–1 |
+| Raio da etiqueta (alturas do preço) (`raio`) | float | 6 | 2–20 |
+| Ler as áreas a cada (ms) (`intervalo`) | int | 2500 | 300–20000 |
+| Largura de leitura das áreas (px) (`largura`) | int | 1920 | 640–3840 |
+| Desenhar as etiquetas (`desenhar`) | bool | true |  |
+
+#### Vitrine × planograma (CLIP por célula) — `varejo.planograma`
+
+Compara cada célula da grade marcada (área "Varejo · planograma", linhas × colunas) com a REFERÊNCIA (a vitrine/gôndola arrumada, capturada sozinha na 1ª leitura ou no painel Medições) pelo cosseno do MobileCLIP2: célula diferente vira "trocado" ou, pelo texto, "vazio (ruptura)". Conformidade por grade e CSV.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Linhas da grade (`linhas`) | int | 3 | 1–12 |
+| Colunas da grade (`colunas`) | int | 4 | 1–16 |
+| Similaridade mínima (cosseno) (`limiar`) | float | 0.82 | 0.5–0.99 |
+| Leituras para confirmar (`votos`) | int | 3 | 1–9 |
+| Prob. mínima para "vazio" (senão "trocado") (`vazioMin`) | float | 0.9 | 0.5–0.99 |
+| Frase do vazio (`textoVazio`) | text | an empty store shelf | –120 |
+| Frase do abastecido (`textoCheio`) | text | products on a store shelf | –120 |
+| Ler a cada (ms) (`intervalo`) | int | 1500 | 200–20000 |
+| Desenhar a grade (`desenhar`) | bool | true |  |
+
+### CV-63 · Foto de produto (e-commerce)
+
+Recorte de fundo com o BiRefNet, enquadramento padrão (1:1, 4:5…), fundo branco/cor/transparente e sombra de contato; exportação em resolução plena e em lote (ZIP).
+
+#### Foto de produto (fundo branco, enquadrada) — `produto.foto`
+
+Tira o fundo com o BiRefNet (borda fina), centraliza o produto no enquadramento padrão (1:1, 4:5…) com margem fixa, fundo branco, cor ou transparente e sombra suave de contato. Prévia ao vivo; no painel Medições: exportar a foto em resolução plena e processar um LOTE de fotos num ZIP.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Proporção (`proporcao`) | enum | 1:1 | 1:1, 4:5, 3:4, 16:9 |
+| Margem (fração) (`margem`) | float | 0.08 | 0–0.3 |
+| Posição vertical (`base`) | enum | centro | centro, apoiado |
+| Fundo (`fundo`) | enum | branco | branco, cor, transparente |
+| Cor do fundo (#rrggbb) (`cor`) | text | #f4f4f4 | –9 |
+| Sombra de contato (`sombra`) | float | 0.35 | 0–1 |
+| Dureza da borda (`dureza`) | float | 0.3 | 0–1 |
+| Limiar do recorte (`limiar`) | float | 0.5 | 0.05–0.95 |
+| Lado maior da foto exportada (px) (`saida`) | int | 1600 | 400–4000 |
+| Recortar a cada (ms) (`everyMs`) | int | 1500 | 0–10000 |
+
+### CV-64 · Ocupação por zona (mesas, vagas, lixeiras)
+
+Mesa livre/ocupada/suja pelas detecções COCO; vagas de bicicleta, patinete, moto ou carro por zona com capacidade (detecções ou diferença da cena vazia); lixeira cheia pelo nível da boca. Giro, tempos e CSV.
+
+#### Mesas: livre, ocupada ou suja — `ocupacao.mesas`
+
+Por área "Ocupação · mesa": pessoa (detecção COCO) junto da mesa = OCUPADA; sem pessoa e com copo, taça, garrafa, tigela, talheres ou comida sobre ela = SUJA (aguardando limpeza); nada = LIVRE. Troca só após N s. Giro, tempo médio de ocupação e espera pela limpeza, CSV no Medições. Coloque depois de um detector COCO.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Objetos que sujam a mesa (classes) (`itens`) | text | copo, taça, garrafa, tigela, garfo, faca, colher, sanduíche, pizza, bolo, rosquinha, banana, maçã, laranja, cachorro-quente, brócolis, cenoura | –300 |
+| Pessoa "na mesa": margem em volta (× mesa) (`margem`) | float | 0.35 | 0–1.5 |
+| Ocupada após (s) (`esperaOcupada`) | float | 3 | 0–120 |
+| Livre/suja após a saída (s) (`esperaLivre`) | float | 8 | 0–600 |
+| Confiança mínima (`confMin`) | float | 0.3 | 0–0.95 |
+| Desenhar as mesas (`desenhar`) | bool | true |  |
+
+#### Vagas e lixeiras (ocupação por zona) — `ocupacao.zona`
+
+Área "Ocupação · vaga": conta bicicletas, motos, carros (classes) com o ponto de referência dentro, até a capacidade do nome ("Bicicletário (8)"); sem detector (patinete e o que o COCO não tem), estima pela diferença da cena vazia. Área "Ocupação · lixeira" (boca/topo): nível pela diferença da cena vazia e alerta de cheia. % de ocupação, tempo ocupado, giro, CSV no Medições.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Classes que ocupam a vaga (`classes`) | text | bicicleta, moto | –200 |
+| Vagas por (`modo`) | enum | automático | automático, detecções, diferença da cena |
+| Ponto de referência do objeto (`ponto`) | enum | centro | base, centro |
+| Confiança mínima (`confMin`) | float | 0.3 | 0–0.95 |
+| Diferença de brilho (níveis) (`limiar`) | int | 24 | 5–80 |
+| Fração diferente = 100 % (diferença) (`fracCheia`) | float | 0.6 | 0.1–1 |
+| Lixeira cheia a partir de (%) (`cheiaPct`) | int | 80 | 30–100 |
+| Alerta de lixeira cheia após (s) (`cheiaS`) | int | 60 | 0–3600 |
+| Capturar a cena vazia sozinha (cena parada 3 s) (`auto`) | bool | true |  |
+| Desenhar as áreas (`desenhar`) | bool | true |  |
+
+### CV-65 · Hidrômetro e medidores
+
+Leitura de hidrômetro/medidor por OCR (rolos) ou 7 segmentos numa área marcada, com dígitos e decimais fixos, filtro de acumulador (só sobe), consumo e vazão média.
+
+#### Leitura de hidrômetro / medidor — `medidor.leitura`
+
+Lê o número do medidor dentro da área "Medidor · leitura" — OCR (rolos do hidrômetro, gás, contador mecânico) ou 7 segmentos (eletrônico, o leitor do CV-42) — com dígitos e casas decimais fixos (hidrômetro: 8 dígitos, 3 decimais em m³). Só aceita leitura que sobe e se repete; consumo, vazão média, histórico e CSV no Medições.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Leitor (`modo`) | enum | OCR (rolos/números) | OCR (rolos/números), 7 segmentos |
+| Dígitos no mostrador (0 = qualquer) (`digitos`) | int | 8 | 0–12 |
+| Casas decimais (rolos vermelhos) (`decimais`) | int | 3 | 0–6 |
+| Unidade (`unidade`) | text | m³ | –12 |
+| Consumo máximo plausível (unid./h; 0 = sem) (`maxPorHora`) | float | 10 | 0–1000000 |
+| Leituras iguais para aceitar (`confirmar`) | int | 2 | 1–10 |
+| 7 seg.: segmento aceso é (`polaridade`) | enum | auto | auto, claro, escuro |
+| 7 seg.: inclinação (°) (`inclinacao`) | float | 0 | -20–20 |
+| Ler a cada (ms) (`intervalo`) | int | 3000 | 200–600000 |
+| Largura de leitura (px) (`largura`) | int | 1920 | 640–3840 |
+| Desenhar a leitura (`desenhar`) | bool | true |  |
+
+### CV-66 · Resumo de vídeo por eventos
+
+Subtração de fundo → linha do tempo de eventos com miniatura (movimento borrado), clique leva ao instante, CSV e marcadores no editor GPlanSiS|Vídeo.
+
+#### Resumo de vídeo por eventos — `video.resumo`
+
+Subtração de fundo → atividade → linha do tempo de EVENTOS (movimento acima do limiar por um tempo mínimo), com miniatura (região do movimento borrada). No painel Medições: clique leva o vídeo ao instante; CSV; e "Abrir no GPlanSiS|Vídeo" com um marcador por evento. Opcional: áreas "Resumo · área de interesse".
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Atividade mínima (fração da imagem) (`limiar`) | float | 0.01 | 0.001–0.5 |
+| Duração mínima do evento (s) (`minS`) | float | 0.5 | 0–30 |
+| Fecha após quietude de (s) (`silencioS`) | float | 2 | 0.2–120 |
+| Diferença de brilho (níveis) (`sensibilidade`) | int | 26 | 5–100 |
+| Aprendizado do fundo (`aprendizado`) | float | 0.03 | 0.002–0.3 |
+| Guardar miniatura de cada evento (`miniaturas`) | bool | true |  |
+| Borrar a região do movimento na miniatura (LGPD) (`borrar`) | bool | true |  |
+| Desenhar a região do movimento (`desenhar`) | bool | true |  |
+
+### CV-67 · Velocidade média (duas linhas)
+
+Velocidade de cada veículo rastreado entre duas linhas a distância conhecida (instante interpolado), média, mediana, V85, máxima e excessos por classe e sentido.
+
+#### Velocidade média por duas linhas — `transito.velocidade`
+
+Duas linhas "Trânsito · velocidade" (A e B) atravessando a via a uma distância conhecida: cada veículo rastreado que cruza as duas tem v = distância / tempo (instante interpolado entre quadros). Média, mediana, V85, máxima e excessos sobre o limite, por classe e sentido; CSV no Medições. Coloque depois do detector + Tracking com IDs. Use vídeo em tempo real ou arquivo (o tempo é o do vídeo).
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Distância entre as linhas (m; 0 = régua) (`distancia`) | float | 20 | 0–500 |
+| Limite de velocidade (km/h; 0 = sem) (`limite`) | int | 40 | 0–200 |
+| Classes (vazio = todas) (`classes`) | text | carro, moto, ônibus, caminhão, bicicleta | –200 |
+| Ponto do veículo (`ponto`) | enum | base | base, centro |
+| Tempo máximo entre as linhas (s) (`maxS`) | float | 30 | 1–600 |
+| Desenhar linhas e velocidades (`desenhar`) | bool | true |  |
+
+### CV-70 · Sinais vitais sem contato
+
+Frequência respiratória pela oscilação do tórax (ROI + FFT) e frequência cardíaca por rPPG na pele do rosto (Malha do rosto + POS ou CHROM), com faixa de confiança e avisos de iluminação e movimento. Studio Vitais com o sinal e o espectro. Não é dispositivo médico.
+
+#### Frequência respiratória (tórax, sem contato) — `vitais.respiracao`
+
+Respirações por minuto pela oscilação do tórax: perfil vertical do gradiente numa ROI do tórax (da pose, de uma área "Vitais · tórax" ou do centro), deslocamento sub-pixel e pico do espectro (FFT) em 6–42 rpm, com faixa de confiança e avisos de luz e movimento. Pessoa parada, sentada ou deitada. Não é dispositivo médico: medida de apoio ao profissional habilitado, sem diagnóstico. Pose e malha 2D sem marcador têm erro; confira a filmagem.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Região do tórax (`roi`) | enum | pose (tórax) | pose (tórax), marcação, centro do quadro |
+| Janela (s) (`janelaS`) | int | 30 | 15–120 |
+| Mínimo (rpm) (`minRpm`) | int | 6 | 3–20 |
+| Máximo (rpm) (`maxRpm`) | int | 42 | 20–80 |
+| Imagem espelhada (automático = segue a Fonte) (`espelhada`) | enum | automático | automático, sim, não |
+| Visibilidade mín. (`minVis`) | float | 0.4 | 0.1–0.95 |
+| Re-detectar pessoa (ms) (`detectarMs`) | int | 4000 | 1000–30000 |
+
+#### Frequência cardíaca rPPG (rosto, sem contato) — `vitais.cardiaca`
+
+Batimentos por minuto pela variação de cor da pele (rPPG): testa e bochechas pela Malha do rosto (coloque rosto.malha ANTES na cadeia) ou uma área "Vitais · pele", método POS (Wang 2017), CHROM (de Haan 2013) ou só o canal verde, pico do espectro em 42–180 bpm, faixa de confiança e avisos de luz e movimento. Rosto parado, luz contínua e de frente. Nenhuma identificação facial. Não é dispositivo médico: medida de apoio ao profissional habilitado, sem diagnóstico. Pose e malha 2D sem marcador têm erro; confira a filmagem.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Método (`metodo`) | enum | POS (Wang 2017) | POS (Wang 2017), CHROM (de Haan 2013), canal verde |
+| Janela (s) (`janelaS`) | int | 15 | 8–60 |
+| Mínimo (bpm) (`minBpm`) | int | 42 | 30–80 |
+| Máximo (bpm) (`maxBpm`) | int | 180 | 100–240 |
+
+### CV-71 · Rosto clínico — assimetria e orofacial
+
+Assimetria de olho, sobrancelha e comissura em expressões guiadas (excursão de cada lado em relação ao repouso) e exercícios orofaciais de fono (repetições, amplitude, tempo sustentado) pela Malha do rosto. Sem identificação facial. Não é dispositivo médico.
+
+#### Assimetria facial (expressões guiadas) — `rosto.assimetria`
+
+Mede a assimetria de olho (abertura), sobrancelha e comissura labial pela malha de 478 pontos, em repouso e nas expressões guiadas (fechar os olhos, elevar as sobrancelhas, sorrir, bico): a excursão de cada lado em relação ao repouso e o índice |D − E| / média. Registra cada expressão para acompanhar a evolução. Não gradua (House-Brackmann é do profissional). Coloque rosto.malha antes. Não é dispositivo médico: medida de apoio ao profissional habilitado, sem diagnóstico. Pose e malha 2D sem marcador têm erro; confira a filmagem.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Expressão pedida (`expressao`) | enum | repouso (rosto relaxado) | repouso (rosto relaxado), fechar os olhos com força, elevar as sobrancelhas (testa), sorrir mostrando os dentes, fazer bico (assobio) |
+| Cabeça inclinada: avisar acima de (°) (`rollMax`) | int | 12 | 3–30 |
+
+#### Exercícios orofaciais (fono) — `rosto.orofacial`
+
+Exercícios de motricidade orofacial pela malha do rosto: abrir a boca, sorriso largo, bico, boca para os lados e inflar as bochechas. Conta as repetições, mede a amplitude (em distâncias entre os olhos, independente da distância da câmera) e o tempo sustentado; na lateralização compara os dois lados. Coloque rosto.malha antes. Não é dispositivo médico: medida de apoio ao profissional habilitado, sem diagnóstico. Pose e malha 2D sem marcador têm erro; confira a filmagem.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Exercício (`exercicio`) | enum | abrir bem a boca | abrir bem a boca, sorriso largo (lábios fechados), bico (protrusão dos lábios), boca para os lados (alternar), inflar as bochechas |
+| Meta de repetições (`metaReps`) | int | 10 | 1–100 |
+| Janela analisada (s) (`janelaS`) | int | 60 | 10–300 |
+
+### CV-72 · Movimento clínico — tremor, postura e marcha
+
+Tremor de mão (frequência e amplitude), postura estática (ombros, pelve, cabeça, escoliose aparente, linha de prumo) e marcha clínica sobre o motor da Corrida com piso calibrado (velocidade, cadência, passada, apoio). Não é dispositivo médico.
+
+#### Tremor de mão (frequência e amplitude) — `clinica.tremor`
+
+Frequência (Hz) e amplitude pico a pico (cm, pelo comprimento da mão informado) do tremor de um ponto da mão: tira o movimento voluntário (< 2 Hz), projeta no eixo principal e procura o pico do espectro em 3–12 Hz. Use "Mãos e gestos" antes na cadeia (sem ela, o punho da pose). A taxa de quadros limita a frequência medida. Não é dispositivo médico: medida de apoio ao profissional habilitado, sem diagnóstico. Pose e malha 2D sem marcador têm erro; confira a filmagem.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Mão (`mao`) | enum | qualquer | qualquer, direita, esquerda |
+| Ponto medido (`ponto`) | enum | ponta do indicador | ponta do indicador, dorso da mão (base do dedo médio), punho |
+| Condição do teste (`condicao`) | enum | repouso (mão apoiada) | repouso (mão apoiada), postural (braço estendido), ação (dedo ao nariz) |
+| Comprimento da mão (punho → ponta do médio, cm) (`maoCm`) | float | 18 | 10–25 |
+| Janela (s) (`janelaS`) | int | 10 | 4–30 |
+| Imagem espelhada (automático = segue a Fonte) (`espelhada`) | enum | automático | automático, sim, não |
+| Visibilidade mín. (`minVis`) | float | 0.4 | 0.1–0.95 |
+| Re-detectar pessoa (ms) (`detectarMs`) | int | 4000 | 1000–30000 |
+
+#### Postura estática (ombros, pelve, escoliose aparente) — `clinica.postura`
+
+Avaliação postural por foto ou vídeo, pessoa parada: de frente/costas, inclinação dos ombros, da pelve e da cabeça, desvio lateral do tronco e a diferença ombros − pelve (indicador de escoliose APARENTE, que não substitui o teste de Adams nem a radiografia); de lado, cabeça anteriorizada, tronco, quadril e a linha de prumo. Mediana de ~2 s, linhas de referência no vídeo e registro por captura. Não é dispositivo médico: medida de apoio ao profissional habilitado, sem diagnóstico. Pose e malha 2D sem marcador têm erro; confira a filmagem.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Vista (frontal = de frente ou de costas) (`vista`) | enum | frontal | frontal, lateral |
+| Mediana dos últimos (s) (`janelaS`) | float | 2 | 0.5–10 |
+| Imagem espelhada (automático = segue a Fonte) (`espelhada`) | enum | automático | automático, sim, não |
+| Visibilidade mín. (`minVis`) | float | 0.4 | 0.1–0.95 |
+| Re-detectar pessoa (ms) (`detectarMs`) | int | 4000 | 1000–30000 |
+
+#### Marcha clínica (velocidade, passada, cadência, apoio) — `clinica.marcha`
+
+Marcha de lado para a câmera, sobre o motor da Corrida (pés e pelve por quadro): cadência, tempo de passo, % de apoio de cada pé e, com o PISO CALIBRADO (duas linhas "Marcha · piso" a uma distância conhecida), a velocidade pelo tempo entre as linhas e o comprimento da passada. Sem as linhas, escala aproximada pela estatura. Não é dispositivo médico: medida de apoio ao profissional habilitado, sem diagnóstico. Pose e malha 2D sem marcador têm erro; confira a filmagem.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Distância entre as linhas do piso (m) (`distanciaM`) | float | 4 | 1–20 |
+| Estatura (cm, 0 = sem; escala de reserva) (`alturaCm`) | int | 0 | 0–220 |
+| Janela analisada (s) (`janelaS`) | int | 12 | 5–60 |
+| Imagem espelhada (automático = segue a Fonte) (`espelhada`) | enum | automático | automático, sim, não |
+| Visibilidade mín. (`minVis`) | float | 0.4 | 0.1–0.95 |
+| Re-detectar pessoa (ms) (`detectarMs`) | int | 4000 | 1000–30000 |
+
+### CV-73 · Exercício domiciliar com correção por voz
+
+A série prescrita em casa sobre o motor da Academia: prescrição por link, contagem e correção de forma por voz (pt-BR), descanso, relato de dor e relatório para o fisioterapeuta. Não é dispositivo médico.
+
+#### Exercício domiciliar com correção por voz — `casa.exercicio`
+
+Para o paciente em casa: coloque DEPOIS de "Academia — repetições e forma" (o motor que conta e corrige a forma). Segue a prescrição do fisioterapeuta (exercício, séries, repetições, descanso — também por link), fala a contagem e a correção de forma em português (síntese de voz do navegador), avisa o descanso e o fim, registra cada série e o relato de dor, e gera o relatório para o fisioterapeuta. Não é dispositivo médico: medida de apoio ao profissional habilitado, sem diagnóstico. Pose e malha 2D sem marcador têm erro; confira a filmagem.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Exercício prescrito (`exercicio`) | enum | Agachamento | automático, Agachamento, Flexão de braço, Rosca bíceps, Desenvolvimento de ombro, Levantamento terra, Afundo (lunge), Polichinelo, Abdominal, Prancha |
+| Séries (`series`) | int | 3 | 1–20 |
+| Repetições por série (`reps`) | int | 10 | 1–100 |
+| Descanso (s) (`descansoS`) | int | 60 | 0–600 |
+| Voz (`voz`) | enum | contagem e correção | contagem e correção, só correção, desligada |
+| Orientação do fisioterapeuta (`obs`) | text |  | –300 |
+
+### CV-74 · Hospital e ILPI — higiene das mãos e queda
+
+Higienização das mãos (tempo de fricção e os 6 movimentos da OMS, indicativo) e queda/imobilidade de paciente com o detector do CV-43 em modo "só esqueleto". Sem identificar ninguém.
+
+#### Higiene das mãos (passos da OMS, indicativo) — `hospital.maos`
+
+Conta as higienizações (mãos juntas friccionando), o tempo de fricção contra a meta da OMS (20–30 s com álcool, 40–60 s com água e sabão) e os 6 movimentos (palma com palma, dorsos, entrelaçados, dedos travados, polegar, pontas dos dedos) pela geometria das duas mãos — INDICATIVO: com uma câmera as mãos se escondem. Coloque "Mãos e gestos" (máx. 2 mãos) antes. Sem identificar ninguém. Apoio à auditoria da CCIH, não a substitui.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Método (`metodo`) | enum | fricção com álcool (20–30 s) | fricção com álcool (20–30 s), água e sabão (40–60 s) |
+| Passo conta com (s acumulados) (`minPassoS`) | float | 2 | 0.5–10 |
+
+#### Queda de paciente (hospital/ILPI), só esqueleto — `hospital.queda`
+
+O detector de queda e imobilidade do CV-43 (seguranca.queda, importado sem mudança) com os ajustes de quarto (alarme de pessoa no chão em 10 s, imobilidade em 60 s) e o modo "só esqueleto": o vídeo vira fundo escuro e fica só a pose — sem rosto, sem imagem do paciente. Coloque a Pose multi-pessoa (RTMO) antes. Indicador de apoio à equipe; não substitui a ronda nem sensor homologado.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Exibição (`privacidade`) | enum | só esqueleto | só esqueleto, vídeo normal |
+| Alarme de pessoa no chão após (s) (`noChaoS`) | float | 10 | 1–600 |
+| Imobilidade: parado por (s) (`imovelS`) | float | 60 | 2–600 |
+| Score mínimo do ponto (`kpConf`) | float | 0.3 | 0.05–0.95 |
+
+### CV-75 · Comparar com a referência (movimento e yoga)
+
+Grava o movimento modelo e compara cada tentativa por DTW das séries de ângulos, com nota e articulação divergente por fase; yoga com pose de referência e tempo sustentado. Studio lado a lado.
+
+#### Comparar com o movimento de referência — `referencia.comparar`
+
+Grave o movimento modelo (saque, chute, golpe, passo de dança, exercício) e compare cada tentativa: as séries de ângulos (cotovelos, ombros, quadris, joelhos, tronco) são alinhadas no tempo por DTW, e cada FASE ganha uma nota 0–100, a articulação que mais diverge (com o sinal) e o ritmo relativo. Gatilho automático pelo movimento ou manual. Studio com a referência e a tentativa lado a lado.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Modo (`modo`) | enum | comparar com a referência | comparar com a referência, gravar referência |
+| Nome da referência (`referencia`) | text | movimento 1 | –60 |
+| Início e fim (`gatilho`) | enum | automático (movimento) | automático (movimento), manual (painel) |
+| Fases (`nFases`) | int | 4 | 2–8 |
+| Aceitar o lado trocado (canhoto × destro) (`espelho`) | bool | true |  |
+| Imagem espelhada (automático = segue a Fonte) (`espelhada`) | enum | automático | automático, sim, não |
+| Visibilidade mín. (`minVis`) | float | 0.4 | 0.1–0.95 |
+| Re-detectar pessoa (ms) (`detectarMs`) | int | 4000 | 1000–30000 |
+
+#### Yoga — pose de referência e tempo sustentado — `yoga.pose`
+
+Capture a pose de referência (o professor na pose, botão "Capturar pose" no painel) e o aluno a reproduz: semelhança 0–100 pelos ângulos das articulações, a articulação mais longe da referência e o tempo sustentado acima do limiar (quedas curtas toleradas). Aceita o lado trocado. Registra cada sustentação.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Nome da pose de referência (`referencia`) | text | pose 1 | –60 |
+| Conta como "na pose" acima de (`limiar`) | int | 80 | 50–98 |
+| Aceitar o lado trocado (`espelho`) | bool | true |  |
+| Imagem espelhada (automático = segue a Fonte) (`espelhada`) | enum | automático | automático, sim, não |
+| Visibilidade mín. (`minVis`) | float | 0.4 | 0.1–0.95 |
+| Re-detectar pessoa (ms) (`detectarMs`) | int | 4000 | 1000–30000 |
+
+### CV-76 · Esportes de ciclo — corda, luta, basquete, natação
+
+Pular corda (motor do Salto), golpes de punho (contagem e velocidade), arremesso de basquete (ângulo de soltura e acerto por zona do aro) e braçadas de natação, pela pose.
+
+#### Pular corda — saltos e ritmo — `corda.saltos`
+
+Conta os saltos de corda e mede o ritmo (saltos/min), a regularidade, as paradas, o tempo de voo e de contato e a altura pelo tempo de voo — com o motor do Salto (CV-31, teste de saltos contínuos), de lado ou de frente, corpo inteiro.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Estatura do atleta (cm, 0 = sem escala) (`alturaCm`) | int | 0 | 0–220 |
+| Série analisada (s) (`janelaS`) | int | 120 | 10–300 |
+| Imagem espelhada (automático = segue a Fonte) (`espelhada`) | enum | automático | automático, sim, não |
+| Visibilidade mín. (`minVis`) | float | 0.4 | 0.1–0.95 |
+| Re-detectar pessoa (ms) (`detectarMs`) | int | 4000 | 1000–30000 |
+
+#### Golpes de luta — contagem e velocidade do punho — `luta.golpes`
+
+Conta os golpes de punho (jab, direto, cruzado) por mão — o braço estende a ≥ 85 % do comprimento com pico de velocidade — e mede a velocidade do punho (em comprimentos de braço/s e, com a estatura, em m/s), o ritmo por minuto e a maior velocidade. De frente ou de lado para a câmera.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Estatura do atleta (cm, 0 = sem escala) (`alturaCm`) | int | 0 | 0–220 |
+| Golpe: braço estendido a (fração) (`extensao`) | float | 0.85 | 0.6–0.98 |
+| Golpe: punho acima de (braços/s) (`vMin`) | float | 3 | 1–10 |
+| Imagem espelhada (automático = segue a Fonte) (`espelhada`) | enum | automático | automático, sim, não |
+| Visibilidade mín. (`minVis`) | float | 0.4 | 0.1–0.95 |
+| Re-detectar pessoa (ms) (`detectarMs`) | int | 4000 | 1000–30000 |
+
+#### Arremesso de basquete — soltura e acerto por zona — `basquete.arremesso`
+
+Detecta a soltura do arremesso (cotovelo estendendo com o punho acima da cabeça) e mede o ângulo de soltura — pela parábola da BOLA quando um detector antes na cadeia acha "sports ball"/bola, senão pela direção do punho. Acerto: a bola entra descendo na área "Basquete · aro" (ou marque Cesta/Erro no painel). Zona do arremesso: os pés dentro das áreas "Basquete · zona" (nome = zona). Aproveitamento por zona.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Esperar a bola até (s) (`esperaS`) | float | 3 | 1–6 |
+| Imagem espelhada (automático = segue a Fonte) (`espelhada`) | enum | automático | automático, sim, não |
+| Visibilidade mín. (`minVis`) | float | 0.4 | 0.1–0.95 |
+| Re-detectar pessoa (ms) (`detectarMs`) | int | 4000 | 1000–30000 |
+
+#### Natação — braçadas e ritmo — `natacao.bracadas`
+
+Conta as braçadas — no crawl e no costas cada volta completa de um braço (ângulo ombro→punho desenrolado), no peito e na borboleta o ciclo do punho — e mede o ritmo (braçadas/min) e a regularidade de cada braço. Vídeo de lado (borda da piscina ou subaquático); a pose dentro d'água falha mais: confira.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Estilo (`estilo`) | enum | crawl ou costas (volta do braço) | crawl ou costas (volta do braço), peito ou borboleta (ciclo) |
+| Imagem espelhada (automático = segue a Fonte) (`espelhada`) | enum | automático | automático, sim, não |
+| Visibilidade mín. (`minVis`) | float | 0.3 | 0.1–0.95 |
+| Re-detectar pessoa (ms) (`detectarMs`) | int | 4000 | 1000–30000 |
+
+### CV-77 · Bateria PROESP-BR
+
+Salto horizontal, corrida de 20 m, quadrado e abdominal em 1 min com os motores existentes; resultado por código do aluno (sem rosto) e classe pela tabela do manual carregada pelo professor.
+
+#### Bateria PROESP-BR (escola) — `proesp.bateria`
+
+Testes do PROESP-BR pela câmera: salto horizontal (motor do Salto), corrida de 20 m e teste do quadrado (linhas "PROESP · linha" cruzadas pelo quadril, tempo interpolado entre quadros) e abdominal em 1 min (com a Academia antes na cadeia). Resultado por CÓDIGO do aluno, idade e sexo, sem rosto nem identificação; classe pela tabela do manual carregada no painel. Relatório e CSV por turma.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Teste (`teste`) | enum | Salto horizontal | Salto horizontal, Corrida de 20 m, Teste do quadrado (4 m), Abdominal em 1 min |
+| Código do aluno (sem nome) (`aluno`) | text |  | –30 |
+| Turma (`turma`) | text |  | –30 |
+| Idade (anos) (`idade`) | int | 10 | 6–17 |
+| Sexo (`sexo`) | enum | M | M, F |
+| Estatura (cm; necessária no salto) (`alturaCm`) | int | 0 | 0–220 |
+| Corrida: distância entre as linhas (m) (`distanciaM`) | float | 20 | 5–50 |
+| Imagem espelhada (automático = segue a Fonte) (`espelhada`) | enum | automático | automático, sim, não |
+| Visibilidade mín. (`minVis`) | float | 0.4 | 0.1–0.95 |
+| Re-detectar pessoa (ms) (`detectarMs`) | int | 4000 | 1000–30000 |
+
+### CV-80 · Laboratório de física por vídeo
+
+Filme a queda livre, o lançamento, o pêndulo ou o plano inclinado: o objeto é seguido (SAM 2, detector ou cor), a régua calibrada dá os metros e saem a tabela posição × tempo, velocidade, aceleração, a parábola ajustada e o g estimado, com gráfico e CSV.
+
+#### Laboratório de física (trajetória) — `fisica.trajetoria`
+
+Segue um objeto (SAM 2, detector ou cor) e registra posição × tempo em metros pela régua calibrada: velocidade, aceleração, ajuste de parábola e g estimado (queda livre, lançamento), período do pêndulo e aceleração no plano inclinado. Tabela, gráfico e CSV no painel Aplicações.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Objeto de (`fonte`) | enum | automático | automático, seguir (SAM 2), detecções, cor |
+| Classes do objeto (detecções) (`classes`) | text | bola, sports ball, ball | –120 |
+| Cor do objeto (fonte = cor) (`cor`) | enum | laranja | laranja, vermelho, amarelo, verde, azul, rosa |
+| Experimento (`modo`) | enum | queda / lançamento | queda / lançamento, pêndulo, plano inclinado |
+| Comprimento do pêndulo (m; 0 = sem g) (`comprimento`) | float | 0 | 0–20 |
+| Escala manual (mm/px; 0 = régua calibrada) (`mmPorPx`) | float | 0 | 0–100 |
+| Câmera lenta (fator: 240 fps tocado a 30 = 8) (`lenta`) | float | 1 | 1–32 |
+| Gravar amostras (`gravar`) | bool | true |  |
+| Máximo de amostras (`maxAmostras`) | int | 600 | 20–3000 |
+| Desenhar a trajetória (`rastro`) | bool | true |  |
+
+### CV-81 · Acessibilidade: cena falada e mouse por cabeça
+
+«O que tem na minha frente?»: objetos, posição, textos e códigos falados em português pela voz do navegador, tudo local. Mouse por cabeça: cursor pela orientação do rosto e clique por piscada longa, com calibração (dentro do iaVision).
+
+#### O que tem na minha frente? (voz) — `acessivel.falar`
+
+Descreve em voz alta, em português, o que a cadeia vê: objetos agrupados e a posição (à esquerda, à frente, à direita, bem perto), os textos lidos pelo OCR e os códigos. Fala ao mudar a cena, a cada N segundos ou pelo botão grande do painel. Síntese de voz do próprio navegador (voz local quando existe).
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Quando falar (`modo`) | enum | ao mudar a cena | ao mudar a cena, a cada intervalo, só pelo botão |
+| Intervalo (s) (`intervaloS`) | int | 8 | 2–120 |
+| Cena parada antes de falar (s) (`estavelS`) | float | 1.2 | 0.2–5 |
+| Velocidade da fala (`taxa`) | float | 1 | 0.5–2 |
+| Confiança mínima (`minScore`) | float | 0.45 | 0.1–0.95 |
+| Ler textos (OCR) (`textos`) | bool | true |  |
+| Ler códigos (`codigos`) | bool | true |  |
+| Usar a legenda (Florence-2), se houver (`legenda`) | bool | true |  |
+
+#### Mouse por cabeça e piscada — `acessivel.mouse_cabeca`
+
+Move um cursor dentro do iaVision com a cabeça (orientação do rosto.malha) e clica com uma piscada longa dos dois olhos; olhos fechados por 2 s pausam/retomam. Calibração de 5 posições no painel. Precisa do «Malha do rosto» antes na cadeia. Só funciona nesta página (fora dela precisa de app nativo).
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Cursor ligado (`ligado`) | bool | true |  |
+| Suavidade (`suavidade`) | float | 0.5 | 0–1 |
+| Sem calibração: graus até a borda (`ganhoGraus`) | float | 18 | 5–45 |
+| Piscada longa: mínimo (s) (`piscaMin`) | float | 0.4 | 0.2–1.5 |
+| Piscada longa: máximo (s) (`piscaMax`) | float | 1.2 | 0.5–3 |
+| Olhos fechados para pausar (s) (`pausaS`) | float | 2 | 1–6 |
+| Inverter horizontal (sem calibração) (`inverterX`) | bool | false |  |
+
+### CV-82 · Libras — soletração
+
+Alfabeto manual ESTÁTICO da Libras sobre os 21 pontos da mão: regras para 13 letras e exemplos gravados pelo usuário (kNN). Só soletração — não reconhece sinais nem letras com movimento e não substitui intérprete.
+
+#### Libras — soletração (alfabeto manual) — `libras.soletrar`
+
+Reconhece letras do alfabeto manual da Libras com a mão parada (21 pontos do «Mãos e gestos») e monta o texto. Regras prontas para 13 letras (prévia) e exemplos gravados por você (poucos por letra, kNN). Só soletração (alfabeto manual estático). Não reconhece sinais da Libras nem as letras com movimento (H, J, K, X, Z, Ç) e não substitui intérprete.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Reconhecer por (`modo`) | enum | exemplos + regras | exemplos + regras, só exemplos, só regras |
+| Letra parada por (s) (`estavelS`) | float | 0.7 | 0.2–3 |
+| Sem mão por (s) → espaço (`espacoS`) | float | 1.5 | 0.5–5 |
+| Exemplos: distância máxima (`distancia`) | float | 0.35 | 0.1–1 |
+| Mão que soletra (`mao`) | enum | qualquer | qualquer, direita, esquerda |
+
+### CV-83 · Sala de aula: gabarito e mãos levantadas
+
+Correção de gabarito (OMR) com folha-modelo imprimível (cantos pretos, matrícula, até 200 questões), nota e CSV; contagem de mãos levantadas pela pose, sem identificar ninguém.
+
+#### Correção de gabarito (OMR) — `educacao.gabarito`
+
+Corrige folhas-resposta impressas pelo painel (botão «Folha-modelo»): acha os 4 cantos pretos, lê cada bolha, aponta branco, dupla marcação e marca incerta, lê a matrícula e dá a nota contra a chave. Cada folha entra na lista quando a leitura se repete; CSV no painel. Marque a área «Gabarito · folha» ou use o quadro inteiro.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Questões (`questoes`) | int | 20 | 1–200 |
+| Alternativas (`alternativas`) | int | 5 | 2–8 |
+| Colunas na folha (`colunas`) | int | 2 | 1–4 |
+| Dígitos da matrícula (`digitos`) | int | 4 | 0–8 |
+| Chave (ABCDE… ou 1A 2C…; * anula) (`chave`) | text |  | –600 |
+| Bolha cheia a partir de (`marca`) | float | 0.5 | 0.2–0.9 |
+| Leituras iguais para registrar (`repeticoes`) | int | 3 | 1–10 |
+| Intervalo entre leituras (ms) (`intervaloMs`) | int | 350 | 100–3000 |
+
+#### Mãos levantadas (sala) — `educacao.maos_levantadas`
+
+Conta as mãos levantadas na sala pela pose (punho acima da cabeça, cotovelo alto), com tempo mínimo para confirmar. Só contagem: ninguém é identificado e nada da imagem é guardado. Máximo e série por segundo no painel.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Confiança dos pontos (`conf`) | float | 0.3 | 0.1–0.9 |
+| Mão no alto por (s) (`segurarS`) | float | 0.5 | 0–3 |
+| Marcar as mãos no vídeo (`mostrar`) | bool | true |  |
+
+### CV-84 · Mídia: cortes, miniatura, busca e fala
+
+Corte de cena automático e melhor quadro para miniatura → editor GPlanSiS|Vídeo; busca semântica em vídeo gravado (MobileCLIP por segundo + transcrição Whisper local, índice no navegador); capítulos, legendas SRT/VTT e melhores trechos pela fala.
+
+#### Corte de cena automático — `midia.corte_cena`
+
+Acha os cortes secos de cena enquanto o vídeo toca (histograma de cor + diferença de quadro, limiar adaptativo, cena mínima) e manda os instantes como marcadores para o editor GPlanSiS|Vídeo. Para varrer um arquivo inteiro mais rápido, use «Varrer arquivo» no painel. Fusões lentas não contam como corte.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Sensibilidade (× ruído recente; menor = mais cortes) (`k`) | float | 4 | 1.5–12 |
+| Diferença mínima (`minimo`) | float | 0.28 | 0.05–0.9 |
+| Cena mínima (s) (`cenaMinS`) | float | 0.6 | 0.1–10 |
+
+#### Melhor quadro para miniatura — `midia.miniatura`
+
+Dá nota a cada quadro (nitidez, rosto bem enquadrado e de olhos abertos pelo «Malha do rosto», exposição) e guarda os melhores, a pelo menos 1 s um do outro. No painel: baixar JPEG em resolução plena ou abrir o editor GPlanSiS|Vídeo naquele instante.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Avaliar a cada (ms) (`intervaloMs`) | int | 200 | 50–2000 |
+| Peso do rosto (`pesoRosto`) | float | 0.4 | 0–0.9 |
+| Só quadros com rosto (`exigirRosto`) | bool | false |  |
+| Quantos guardar (`guardar`) | int | 6 | 1–12 |
+
+### CV-85 · Agro e pecuária
+
+Índice de verde (ExG) de pasto e lavoura, insetos em armadilha adesiva, escore de locomoção de bovinos pela trajetória e peso estimado pela área dorsal (régua + calibração com a balança). Indicadores de manejo.
+
+#### Índice de verde (pasto/lavoura) — `agro.verde`
+
+Cobertura verde e índice médio pelas cores do pixel (ExG = 2g−r−b ou ExG−ExR, nas cromáticas), em cada área «Agro · área de verde» ou no quadro inteiro. Limiar automático (Otsu) ou fixo, máscara pintada e série no painel. Câmera comum (RGB): não substitui NDVI de sensor multiespectral; sol forte e sombra mudam o valor.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Índice (`indice`) | enum | ExG−ExR | ExG, ExG−ExR |
+| Limiar (`limiarModo`) | enum | fixo | automático (Otsu), fixo |
+| Limiar fixo (`limiar`) | float | 0 | -0.5–1 |
+| Pintar o que é verde (`pintar`) | bool | true |  |
+| Intervalo (ms) (`intervaloMs`) | int | 300 | 0–5000 |
+
+#### Insetos em armadilha adesiva — `agro.armadilha`
+
+Conta os insetos (manchas escuras) em cada área «Agro · armadilha» (cartão amarelo ou azul), sem as linhas da grade impressa; grudados viram vários pela área típica. Tamanho mínimo em mm² com a régua calibrada. Histórico por cartão e CSV no painel. Não identifica a espécie.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Mais escuro que o cartão (fração) (`contraste`) | float | 0.35 | 0.1–0.8 |
+| Tamanho mínimo (mm²; sem régua usa px) (`minMm2`) | float | 0.5 | 0–50 |
+| Tamanho mínimo sem régua (px) (`minPx`) | int | 6 | 2–400 |
+| Contar a cada (ms) (`intervaloMs`) | int | 1000 | 100–60000 |
+
+#### Escore de locomoção (bovinos) — `agro.locomocao`
+
+Para cada animal que atravessa a cena de lado (detector + Tracking com IDs), mede velocidade em corpos/s, regularidade do passo, paradas e o balanço vertical do dorso/cabeça e dá um escore de 1 (normal) a 5. Indicador de manejo/triagem — não é diagnóstico veterinário nem pesagem legal. Use câmera fixa, de lado, no corredor de saída da ordenha.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Classes do animal (`classes`) | text | vaca, boi, bovino, cow, cattle | –160 |
+| Lento abaixo de (corpos/s) (`lento`) | float | 0.45 | 0.1–2 |
+| Passo irregular acima de (CV) (`cvMax`) | float | 0.35 | 0.1–1 |
+| Balanço vertical acima de (fração da altura) (`bobMax`) | float | 0.035 | 0.01–0.2 |
+| Fecha a passagem após sumir por (s) (`perdidoS`) | float | 1.2 | 0.3–5 |
+
+#### Peso estimado pela área dorsal — `agro.peso_dorsal`
+
+Câmera de cima no corredor/balança: mede a área dorsal do animal na área «Agro · pesagem» (contraste com o piso ou a máscara do BiRefNet) em m² pela régua calibrada e estima kg = a·A^b. Calibre com 3 ou mais pesagens reais no painel (ajuste em log–log). ESTIMATIVA — Indicador de manejo/triagem — não é diagnóstico veterinário nem pesagem legal.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Animal por (`fonte`) | enum | contraste com o piso | contraste com o piso, máscara (BiRefNet) |
+| Fórmula: a (0 = usar a calibração) (`a`) | float | 0 | 0–5000 |
+| Fórmula: b (expoente) (`b`) | float | 1.5 | 0.3–3 |
+| Mediana de N leituras (`estabilizar`) | int | 9 | 1–60 |
+| Intervalo (ms) (`intervaloMs`) | int | 250 | 50–5000 |
+
+### CV-86 · Câmera de jogo amador
+
+Câmera fixa grande-angular → vídeo que segue a jogada (bola e jogadores), reenquadrado ao vivo com a suavização do «Seguir sujeito»; com arquivo, a trajetória vai para o editor para exportar 16:9 ou 9:16.
+
+#### Câmera de jogo (segue a jogada) — `jogo.camera`
+
+Reenquadramento automático ao vivo para jogo amador filmado com câmera fixa: o recorte segue a bola e os jogadores (detector antes na cadeia; com a Quadra, os mesmos) com a suavização do «Seguir sujeito» do editor. O quadro sai ampliado (gravável). Com vídeo em arquivo, o painel aplica a trajetória no editor GPlanSiS|Vídeo para exportar em 16:9 ou 9:16.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Classes da bola (`classesBola`) | text | bola, sports ball, ball | –120 |
+| Classes dos jogadores (`classesJogador`) | text | pessoa, jogador, person | –120 |
+| Peso da bola no centro (`pesoBola`) | float | 0.65 | 0–1 |
+| Ampliação (`zoom`) | float | 1.8 | 1–4 |
+| Abrir quando os jogadores se espalham (`zoomAuto`) | bool | true |  |
+| Suavidade (como no Seguir sujeito) (`suavidade`) | float | 0.6 | 0–1 |
+| Zona morta (fração da largura) (`zonaMorta`) | float | 0.02 | 0–0.1 |
+| Velocidade máx. (larguras/s) (`vMax`) | float | 0.7 | 0.1–3 |
+| Sair reenquadrado (senão, só o retângulo) (`reenquadrar`) | bool | true |  |
+
+### CV-87 · Diário de obra (RDO)
+
+Efetivo e equipamentos por hora (máximo simultâneo, entradas pelo portão), fotos periódicas e o RDO do dia em HTML/PDF; resumo redigido pela Via só com aceite e a chave do usuário.
+
+#### Diário de obra (RDO) — `obra.diario`
+
+Conta por hora as pessoas e os equipamentos do canteiro (máximo ao mesmo tempo e entradas pela área «Obra · portão»), guarda uma foto a cada N minutos neste navegador e monta o RDO do dia no painel (HTML para imprimir/PDF). Opcional e só com o seu aceite: a Via redige o resumo com a SUA chave. Ninguém é identificado; use «Borrar rostos» antes na cadeia.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| O que contar (classes) (`classes`) | text | pessoa, caminhão, betoneira, escavadeira, carro | –200 |
+| Foto a cada (min; 0 = só pelo botão) (`fotoMin`) | int | 30 | 0–240 |
+| Contar a cada (ms) (`intervaloMs`) | int | 500 | 100–10000 |
 
 ## Modelos
 
