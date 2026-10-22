@@ -47,10 +47,52 @@ export function trechos(v, clipes, t0, t1) {
   return out;
 }
 
-/** Tamanho de saída: o recorte em pixels da mídia, vezes a escala, em números pares. */
+/**
+ * Tamanho de saída: o recorte em pixels da mídia, vezes a escala, em números
+ * pares. `escala` também pode ser um tamanho fixo { w, h } (predefinições
+ * como 1080×1920 do "Seguir sujeito"): a saída é exatamente esse tamanho.
+ */
 export function tamanhoSaida(v, recorte, escala = 1) {
   const par = (x) => Math.max(2, Math.round(x / 2) * 2);
+  if (escala && typeof escala === 'object') return { w: par(escala.w), h: par(escala.h) };
   return { w: par(recorte.w * v.largura * escala), h: par(recorte.h * v.altura * escala) };
+}
+
+/**
+ * Tamanhos predefinidos de saída (redes sociais). Cada um vale quando a
+ * proporção do recorte bate (±1,5%) — o quadro nunca é distorcido.
+ */
+export const PREDEFINIDOS = [
+  { id: '1080x1920', w: 1080, h: 1920, rot: '1080×1920 (9:16 vertical)' },
+  { id: '1080x1350', w: 1080, h: 1350, rot: '1080×1350 (4:5)' },
+  { id: '1080x1080', w: 1080, h: 1080, rot: '1080×1080 (1:1)' },
+  { id: '1920x1080', w: 1920, h: 1080, rot: '1920×1080 (16:9)' },
+];
+export function predefinidosValidos(v, recorte) {
+  const p = (recorte.w * v.largura) / (recorte.h * v.altura);
+  return PREDEFINIDOS.filter((x) => Math.abs(x.w / x.h / p - 1) < 0.015);
+}
+
+/**
+ * Fonte de desenho no referencial da TELA: vídeo girado (matriz de rotação
+ * do MP4) chega do VideoDecoder deitado; aqui ele é girado uma vez num
+ * canvas do tamanho exibido, e o recorte é tirado dele — o mesmo que o
+ * <video> do visor mostra.
+ */
+let giroCv = null;
+export function fonteExibida(f, rot) {
+  const sw = f.displayWidth || f.videoWidth || f.width, sh = f.displayHeight || f.videoHeight || f.height;
+  if (!rot) return { src: f, sw, sh };
+  const W = rot % 180 ? sh : sw, H = rot % 180 ? sw : sh;
+  if (!giroCv || giroCv.width !== W || giroCv.height !== H) giroCv = new OffscreenCanvas(W, H);
+  const g = giroCv.getContext('2d', { alpha: false });
+  g.save();
+  if (rot === 90) { g.translate(W, 0); g.rotate(Math.PI / 2); }
+  else if (rot === 180) { g.translate(W, H); g.rotate(Math.PI); }
+  else if (rot === 270) { g.translate(0, H); g.rotate(-Math.PI / 2); }
+  g.drawImage(f, 0, 0, sw, sh);
+  g.restore();
+  return { src: giroCv, sw: W, sh: H };
 }
 
 /** Bitrate de exportação (~0,12 bit/pixel/quadro, 2–40 Mbit/s), multiplicado pela qualidade. */
@@ -107,7 +149,8 @@ export async function podeDecodificar(ix) {
 }
 
 function configDecoder(v) {
-  const c = { codec: v.codec, codedWidth: v.largura, codedHeight: v.altura };
+  // vídeo girado (celular em pé): largura/altura são as da TELA; o decodificador quer as codificadas
+  const c = { codec: v.codec, codedWidth: v.larguraCod || v.largura, codedHeight: v.alturaCod || v.altura };
   if (v.descricao) c.description = v.descricao;
   return c;
 }
@@ -171,7 +214,7 @@ async function esperarFila(obj, lim) {
  * Decodifica os quadros das partes, em ordem, chamando `aoQuadro(frame, q, parte)`
  * só para os quadros [qa, qb) de cada parte. O frame é fechado depois.
  */
-async function percorrer({ blob, v, partes, cfgDec, aoQuadro, cancelado }) {
+export async function percorrer({ blob, v, partes, cfgDec, aoQuadro, cancelado }) {
   const pend = [];
   let erro = null;
   const dec = new VideoDecoder({ output: (f) => pend.push(f), error: (e) => { erro = e; } });
@@ -475,7 +518,8 @@ export async function exportarVideo({ blob, url, ix, clipes, recorte, t0, t1, es
         const ts = Math.round(parte.tOut + v.pts[q] - v.pts[parte.qa]);
         if (ts > tCursor + dq / 2) await preto(ts);
         const ret = enquadramento(v, parte.c, q, recorte);
-        desenhar(ctx, f, f.displayWidth, f.displayHeight, ret, W, H);
+        const fe = fonteExibida(f, v.rotacao || 0);
+        desenhar(ctx, fe.src, fe.sw, fe.sh, ret, W, H);
         const dur = v.pts[q + 1] - v.pts[q];
         await codificar(ts, dur);
         tCursor = ts + dur;
@@ -548,7 +592,7 @@ async function exportarTempoReal({ url, v, partes, recorte, W, H, fps, bitrate, 
     for (const p of partes) {
       if (cancelado()) throw new Cancelado();
       await buscar((v.pts[p.qa] + (v.pts[p.qa + 1] - v.pts[p.qa]) / 2) / 1e6 + desloc);
-      ctx.drawImage(video, ...retPx(recorte, video), 0, 0, W, H);
+      ctx.drawImage(video, ...retPx(enquadramento(v, p.c, p.qa, recorte), video), 0, 0, W, H);
       conferir();
       if (!iniciado) { rec.start(1000); iniciado = true; } else if (rec.state === 'paused') rec.resume();
       const fimT = v.pts[p.qb] / 1e6;
@@ -636,7 +680,8 @@ export async function exportarQuadros({ blob, url, ix, clipes, recorte, t0, t1, 
       aoQuadro: async (f, q, parte) => {
         const t = escolhidos.get(parte.ip + '-' + q);
         if (t === undefined) return;
-        await emitir(f, f.displayWidth, f.displayHeight, enquadramento(v, parte.c, q, recorte), t, q);
+        const fe = fonteExibida(f, v.rotacao || 0);
+        await emitir(fe.src, fe.sw, fe.sh, enquadramento(v, parte.c, q, recorte), t, q);
       },
     });
     return out;

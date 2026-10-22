@@ -5,6 +5,10 @@
  *              clicar/arrastar move o playhead
  *   V1         clipes com miniaturas (miniaturas.js), seleção, aparo nas
  *              bordas, arrastar para mover/reordenar, navalha
+ *   keyframes  losangos na base da faixa V1 do clipe (reenquadramento
+ *              "Seguir sujeito"): clique seleciona e leva o playhead,
+ *              arrastar move no tempo (sem cruzar os vizinhos), ⌥/Alt+clique
+ *              apaga (Delete apaga o selecionado, no StudioVideo)
  *   A1         forma de onda (onda.js) dos mesmos clipes
  *   rolagem    barra fina embaixo (arrastável)
  *
@@ -25,7 +29,7 @@
  * PRÉVIA durante o arrasto e, ao soltar, entrega a lista nova por
  * `aoAlterar(clipes, rotulo)` — uma entrada só no desfazer.
  */
-import { fimClipe, quadroNoClipe, tempoDoQuadro, aparar, mover } from './edl.js';
+import { fimClipe, quadroNoClipe, tempoDoQuadro, aparar, mover, keyframesVisiveis, moverKeyframe, apagarKeyframe } from './edl.js';
 import { quadroEm } from './midia.js';
 import { FATIAS_POR_S } from './onda.js';
 
@@ -377,8 +381,9 @@ export class Timeline {
     ctx.fillRect(xa, yV, xb - xa, 14);
     ctx.fillStyle = '#fff';
     ctx.font = '600 10px "IBM Plex Mono", ui-monospace, monospace';
-    if (x1 - x0 > 50) ctx.fillText(`q${c.a}–${c.b - 1}${c.kb ? ' · KB' : ''}`, Math.max(x0, ROT) + 5, yV + 10.5);
+    if (x1 - x0 > 50) ctx.fillText(`q${c.a}–${c.b - 1}${c.seg ? ' · SEGUIR' : c.kb ? ' · KB' : ''}`, Math.max(x0, ROT) + 5, yV + 10.5);
     ctx.restore();
+    this.keyframesClipe(c, yV + V1 - 8);
     // áudio
     ctx.save();
     ctx.beginPath(); roundRect(ctx, x0 + 0.5, yA + 0.5, Math.max(1, x1 - x0 - 1), A1 - 1, 5); ctx.clip();
@@ -398,6 +403,42 @@ export class Timeline {
       ctx.fillRect(xb2, yV, 4, V1);
       ctx.fillRect(xb2, yA, 4, A1);
     }
+  }
+
+  /** Losangos dos keyframes do reenquadramento, na faixa de título do clipe. */
+  keyframesClipe(c, y) {
+    const idx = keyframesVisiveis(c);
+    if (!idx.length) return;
+    const { ctx, cores: k, e } = this;
+    const v = e.v;
+    // linha fina ligando os keyframes: o trecho com reenquadramento
+    const xs = idx.map((i) => this.xDe(tempoDoQuadro(v, c, c.seg.k[i][0])));
+    ctx.strokeStyle = 'rgba(255,216,77,.55)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(Math.max(ROT, xs[0]), y + 0.5); ctx.lineTo(Math.min(this.w, xs[xs.length - 1]), y + 0.5); ctx.stroke();
+    const sel = e.kfSel && e.kfSel.id === c.id ? e.kfSel.i : -1;
+    idx.forEach((i, j) => {
+      const x = xs[j];
+      if (x < ROT - 6 || x > this.w + 6) return;
+      const r = i === sel ? 6 : 4.5;
+      ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x + r, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r, y); ctx.closePath();
+      ctx.fillStyle = i === sel ? '#fff' : k.acento; ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,.7)'; ctx.lineWidth = 1; ctx.stroke();
+    });
+  }
+
+  /** Keyframe sob (x, y), se houver: { c, i }. */
+  acertarKeyframe(x, y) {
+    const v = this.e.v;
+    const yK = REGUA + GAP + V1 - 8;   // linha dos losangos (base da faixa V1)
+    if (!v || y < yK - 9 || y > yK + 9) return null;
+    let melhor = null, dist = 7;
+    for (const c of this.e.clipes) {
+      for (const i of keyframesVisiveis(c)) {
+        const d = Math.abs(this.xDe(tempoDoQuadro(v, c, c.seg.k[i][0])) - x);
+        if (d < dist) { dist = d; melhor = { c, i }; }
+      }
+    }
+    return melhor;
   }
 
   miniaturasClipe(c, x0, xa, xb, y, h) {
@@ -527,6 +568,15 @@ export class Timeline {
       this.arrasto = { tipo: 'rolar', x0: x, i0: this.inicio };
       return;
     }
+    const kf = this.e.ferramenta !== 'navalha' ? this.acertarKeyframe(x, y) : null;
+    if (kf) {
+      const v = this.e.v;
+      if (ev.altKey) { this.cb.aoAlterar(apagarKeyframe(this.e.clipes, kf.c.id, kf.i), 'Keyframe apagado'); this.arrasto = { tipo: 'nada' }; return; }
+      if (this.cb.aoKeyframe) this.cb.aoKeyframe({ id: kf.c.id, i: kf.i });
+      this.cb.aoPlayhead(tempoDoQuadro(v, kf.c, kf.c.seg.k[kf.i][0]), false);
+      this.arrasto = { tipo: 'kf', c: kf.c, i: kf.i, x0: x, ativo: false };
+      return;
+    }
     const h = this.acertar(x);
     if (this.e.ferramenta === 'navalha') {
       if (h && h.c) this.cb.aoCortar(h.t);
@@ -562,6 +612,7 @@ export class Timeline {
       let cursor = 'default';
       let hover = null;
       if (z === 'regua' || z === 'rotulo') cursor = 'ew-resize';
+      else if (z === 'trilha' && this.e.ferramenta !== 'navalha' && this.acertarKeyframe(x, y)) cursor = 'ew-resize';
       else if (z === 'trilha') {
         const h = this.acertar(x);
         hover = h;
@@ -583,6 +634,19 @@ export class Timeline {
       return;
     }
     if (a.tipo === 'playhead') { this.cb.aoPlayhead(this.tDe(Math.max(ROT, x)), true); this.autoRolar(x); return; }
+    if (a.tipo === 'kf') {
+      if (!a.ativo && Math.abs(x - a.x0) < 3) return;
+      a.ativo = true;
+      const c = a.c;
+      const t = Math.max(c.em, Math.min(fimClipe(v, c) - 1, this.tDe(x)));
+      const q = quadroNoClipe(v, c, t);
+      this.previa = moverKeyframe(this.e.clipes, c.id, a.i, q);
+      const n = this.previa.find((k) => k.id === c.id);
+      if (n && n.seg) this.cb.aoPlayhead(tempoDoQuadro(v, c, n.seg.k[a.i][0]), true);
+      this.autoRolar(x);
+      this.pedir();
+      return;
+    }
     if (a.tipo === 'rolar') {
       const b = this.barra;
       this.inicio = a.i0 + (x - a.x0) / (this.w - ROT - 4) * (b ? b.tot : this.duracao);
@@ -638,7 +702,11 @@ export class Timeline {
     if (!a) return;
     const v = this.e.v;
     if (a.tipo === 'playhead') this.cb.aoPlayhead(null, false);
-    else if (a.tipo === 'aparar' && a.ativo && this.previa) {
+    else if (a.tipo === 'kf' && a.ativo && this.previa) {
+      const p = this.previa;
+      this.previa = null;
+      this.cb.aoAlterar(p, 'Keyframe movido');
+    } else if (a.tipo === 'aparar' && a.ativo && this.previa) {
       const p = this.previa;
       this.previa = null;
       this.cb.aoAlterar(p, 'Aparar');

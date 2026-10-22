@@ -24,7 +24,7 @@
  * ========================================================================
  */
 
-const VERSION = 'iav-v88-vps';   // 22/10/2026: botão Fonte dentro dos Studios; troca de câmera a quente, desconexão e vazamentos de MediaStream
+const VERSION = 'iav-v89-vps';   // 22/10/2026: editor de vídeo — Seguir sujeito / reenquadrar 9:16, 1:1, 4:5; rotação na exportação
 const SHELL = `${VERSION}-shell`;
 /*
  * Pesos dos modelos num cache de nome FIXO: sobrevivem às publicações. Antes o

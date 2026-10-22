@@ -9,6 +9,12 @@
  *               captura e abre o resultado).
  *   Visor       quadro exato (reprodutor.js), timecode HH:MM:SS:FF, saída
  *               com recorte/Ken Burns; modo recorte com alças e proporções.
+ *   Seguir      "Seguir sujeito / Reenquadrar" (seguir.js): clique no sujeito
+ *               (ou "pessoa principal"), análise quadro a quadro pela fila
+ *               de inferência (YOLOX + ByteTrack, aparência ou SAM 2),
+ *               trajetória suavizada → keyframes do recorte no clipe (c.seg),
+ *               editáveis na timeline; saída 9:16 · 1:1 · 4:5 · 16:9 e
+ *               predefinição 1080×1920 na exportação.
  *   Timeline    régua, V1 com miniaturas, A1 com forma de onda, zoom até o
  *               quadro, seleção, navalha, aparo, mover/reordenar, marcadores,
  *               entrada/saída (timeline.js).
@@ -35,13 +41,14 @@ import { indexar, indiceSintetico } from './midia.js';
 import {
   Historico, clipeInicial, cortar, cortarEmTodos, apagar, apagarFaixa, fecharLacunas, fimTimeline, fimClipe,
   clipeEm, quadroNoClipe, passoQuadro, ajustarAoQuadro, timecode, chaveMidia, salvarProjeto, carregarProjeto,
-  listarRecentes, clipesValidos, ordenar, durClipe,
+  listarRecentes, clipesValidos, ordenar, durClipe, tempoDoQuadro, porKeyframe, apagarKeyframe, keyframesVisiveis,
 } from './edl.js';
 import { Timeline, ALTURA_TIMELINE } from './timeline.js';
 import { Reprodutor, ajustarProporcao } from './reprodutor.js';
 import { Miniaturas } from './miniaturas.js';
 import { Onda } from './onda.js';
-import { exportarVideo, exportarQuadros, tamanhoSaida, sondarExportacao, Cancelado } from './exportar.js';
+import { exportarVideo, exportarQuadros, tamanhoSaida, sondarExportacao, Cancelado, predefinidosValidos } from './exportar.js';
+import { analisarClipe, keyframesDaAnalise, detectarPessoasNoQuadro, sam2Disponivel, SUAVIZACAO_PADRAO } from './seguir.js';
 import { montarZip } from './zip.js';
 import { tomarPedido, ultimaGravacao, emitirPrints } from './ponte.js';
 import { FonteStudio, fonteStudioAberta } from '../studio/FonteStudio.js';
@@ -60,8 +67,10 @@ await new Promise((r) => {
 const RET_TODO = { x: 0, y: 0, w: 1, h: 1 };
 const PROPORCOES = [
   ['livre', 'Livre', null], ['orig', 'Original', 'orig'], ['16:9', '16:9', 16 / 9], ['9:16', '9:16', 9 / 16],
-  ['1:1', '1:1', 1], ['4:3', '4:3', 4 / 3],
+  ['1:1', '1:1', 1], ['4:5', '4:5', 4 / 5], ['4:3', '4:3', 4 / 3],
 ];
+/* proporções do "Seguir sujeito" (saída para redes) */
+const PROP_SEGUIR = [['9:16', 9 / 16], ['1:1', 1], ['4:5', 4 / 5], ['16:9', 16 / 9]];
 
 export function StudioVideo({ onClose, source, onPickFile }) {
   // ------------------------------------------------------------ estado
@@ -90,6 +99,11 @@ export function StudioVideo({ onClose, source, onPickFile }) {
   const [gravando, setGravando] = useState(null);     // { inicio, rec }
   const [arrastandoArq, setArrastandoArq] = useState(false);
   const [ondaPct, setOndaPct] = useState(0);
+  const [kfSel, setKfSel] = useState(null);           // keyframe selecionado { id, i } (Seguir sujeito)
+  const [alvo, setAlvo] = useState(null);             // modo 'alvo': { tipo: 'seguir', op } | { tipo: 'kf' }
+  const [alvoCaixas, setAlvoCaixas] = useState(null); // pessoas detectadas no quadro do clique (dica visual)
+  const [segEstado, setSegEstado] = useState(null);   // { fase, pct, txt, res, erro }
+  const [predefExp, setPredefExp] = useState(null);   // predefinição pré-escolhida no diálogo de exportação
 
   const videoRef = useRef(null);
   const visorRef = useRef(null);
@@ -126,8 +140,10 @@ export function StudioVideo({ onClose, source, onPickFile }) {
   const proporcaoEdicao = kbEdit && v ? (recorte.w * v.largura) / (recorte.h * v.altura) : pnAtual();
   Object.assign(E.current, {
     midia, v, clipes, sel, marcadores, entrada, saida, recorte, modo, kbEdit, retEdicao, ferramenta, encaixe,
-    loop, tocando, taxa, dialogo, proporcao: proporcaoEdicao, clipeSel,
+    loop, tocando, taxa, dialogo, proporcao: proporcaoEdicao, clipeSel, kfSel, alvo, alvoCaixas,
     rotuloEdicao: kbEdit ? (kbEdit === 'a' ? 'Ken Burns: início do clipe' : 'Ken Burns: fim do clipe') : 'recorte',
+    rotuloAlvo: alvo && alvo.tipo === 'kf' ? 'Clique onde o recorte deve centrar neste quadro (Esc cancela)'
+      : 'Clique no sujeito a seguir — ←/→ trocam de quadro · Esc cancela',
   });
 
   // ------------------------------------------------------------ montagem
@@ -165,7 +181,8 @@ export function StudioVideo({ onClose, source, onPickFile }) {
         tl.current.setEstado({ playhead: tt });
         void arrastando;
       },
-      aoSelecionar: (s) => setSel(s),
+      aoSelecionar: (s) => { setSel(s); setKfSel(null); },
+      aoKeyframe: (k) => { setKfSel(k); setSel(new Set([k.id])); },
       aoAlterar: (novos, rotulo) => aplicarRef.current(novos, rotulo),
       aoCortar: (x) => cortarEmRef.current(x),
       aoVista: () => { if (zoomRef.current && tl.current) zoomRef.current.value = String(tl.current.zoomNorm); },
@@ -177,6 +194,7 @@ export function StudioVideo({ onClose, source, onPickFile }) {
       obter: () => E.current,
       aoTempo: (x, toc) => { avisarT(x); if (tl.current) { tl.current.setEstado({ playhead: x }); if (toc) tl.current.seguir(x); } },
       aoRet: (ret, final) => aoRetRef.current(ret, final),
+      aoAlvo: (nx, ny) => aoAlvoRef.current(nx, ny),
       aoEstado: () => { setTocando(rep.current.tocando); setTaxa(rep.current.taxa); },
       aoAviso: (t) => { setMudo(true); setMsg(t); },
     });
@@ -187,11 +205,17 @@ export function StudioVideo({ onClose, source, onPickFile }) {
   // timeline acompanha o estado da edição
   useEffect(() => {
     if (!tl.current) return;
-    tl.current.setEstado({ v, clipes, sel, marcadores, entrada, saida, ferramenta, encaixe });
-  }, [v, clipes, sel, marcadores, entrada, saida, ferramenta, encaixe]);
+    tl.current.setEstado({ v, clipes, sel, marcadores, entrada, saida, ferramenta, encaixe, kfSel });
+  }, [v, clipes, sel, marcadores, entrada, saida, ferramenta, encaixe, kfSel]);
 
   // visor redesenha quando muda o que ele mostra
-  useEffect(() => { if (rep.current) rep.current.desenhar(); }, [recorte, modo, retEdicao, kbEdit, clipes]);
+  useEffect(() => { if (rep.current) rep.current.desenhar(); }, [recorte, modo, retEdicao, kbEdit, clipes, alvoCaixas]);
+  // keyframe selecionado que deixou de existir (desfazer, apagar clipe)
+  useEffect(() => {
+    if (!kfSel) return;
+    const c = clipes.find((x) => x.id === kfSel.id);
+    if (!c || !c.seg || !c.seg.k[kfSel.i]) setKfSel(null);
+  }, [clipes, kfSel]);
   useEffect(() => { if (videoRef.current) videoRef.current.muted = mudo; }, [mudo]);
 
   // limpeza da mídia
@@ -210,6 +234,7 @@ export function StudioVideo({ onClose, source, onPickFile }) {
   const restaurar = (s) => {
     setClipesBruto(s.clipes); setMarcadores(s.marcadores); setEntrada(s.entrada); setSaida(s.saida); setRecorte(s.recorte);
     setSel((old) => new Set([...old].filter((id) => s.clipes.some((c) => c.id === id))));
+    setKfSel(null);   // o índice do keyframe pode apontar para outro depois do desfazer
   };
   const aplicar = (novos, rotulo, extra) => {
     hist.current.guardar(snapshot());
@@ -352,7 +377,7 @@ export function StudioVideo({ onClose, source, onPickFile }) {
     setKbEdit(qual);
     setModo('recorte');
   };
-  const sairRecorte = () => { setModo('saida'); setKbEdit(null); };
+  const sairRecorte = () => { setModo('saida'); setKbEdit(null); setAlvo(null); setAlvoCaixas(null); };
 
   const aoRet = (ret, final) => {
     const e = E.current;
@@ -393,6 +418,143 @@ export function StudioVideo({ onClose, source, onPickFile }) {
     if (!e.clipeSel) return;
     aplicar(e.clipes.map((x) => (x.id === e.clipeSel.id ? { ...x, kb: undefined } : x)), 'Ken Burns removido do clipe');
     if (e.kbEdit) sairRecorte();
+  };
+
+  // ------------------------------------------------------------ seguir sujeito / reenquadrar
+
+  /** O clipe a reenquadrar: o selecionado, ou o que está sob o playhead. */
+  const clipeAlvo = () => {
+    const e = E.current;
+    if (!e.v) return null;
+    return e.clipeSel || clipeEm(e.v, e.clipes, tRef.current);
+  };
+  /** Quadro da mídia sob o playhead (no clipe c). */
+  const quadroAtual = (c) => {
+    const e = E.current;
+    const t = tRef.current;
+    if (t >= c.em && t < fimClipe(e.v, c)) return quadroNoClipe(e.v, c, t);
+    return c.a;
+  };
+
+  /** Começa: "clique no sujeito" entra no modo alvo; "pessoa principal" analisa direto. */
+  const iniciarSeguir = (op) => {
+    const e = E.current;
+    const c = clipeAlvo();
+    if (!c) { setMsg('Ponha o playhead sobre um clipe (ou selecione um) para seguir o sujeito.'); return; }
+    seguirOp.current = { ...op, clipeId: c.id };
+    if (op.alvo === 'clique') {
+      setDialogo(null); setSegEstado(null);
+      if (!(tRef.current >= c.em && tRef.current < fimClipe(e.v, c))) irPara(c.em);
+      setKbEdit(null);
+      setAlvo({ tipo: 'seguir', op });
+      setModo('alvo');
+      setAlvoCaixas(null);
+      // dica visual: as pessoas que o detector vê neste quadro (se o modelo já estiver em memória ou baixar rápido)
+      if (op.motor !== 'aparencia') {
+        rep.current.ocioso().then(() => detectarPessoasNoQuadro(videoRef.current)).then((cx) => {
+          if (E.current.modo === 'alvo') setAlvoCaixas(cx);
+        }).catch(() => {});
+      }
+      return;
+    }
+    analisarSeguir(c, quadroAtual(c), null, op);
+  };
+  const seguirOp = useRef(null);
+
+  const aoAlvo = (nx, ny) => {
+    const e = E.current;
+    const a = e.alvo;
+    if (!a) return;
+    if (a.tipo === 'kf') {
+      // reposiciona/cria o keyframe deste quadro: o recorte centra no ponto clicado
+      const c = clipeEm(e.v, e.clipes, tRef.current);
+      sairRecorte();
+      if (!c || !c.seg) { setMsg('O playhead não está num clipe com reenquadramento.'); return; }
+      const q = quadroNoClipe(e.v, c, tRef.current);
+      const novos = porKeyframe(e.clipes, c.id, q, nx, ny);
+      aplicar(novos, `Keyframe em q${q} ajustado`);
+      const i = novos.find((x) => x.id === c.id).seg.k.findIndex((x) => x[0] === q);
+      setKfSel({ id: c.id, i });
+      return;
+    }
+    const c = clipeEm(e.v, e.clipes, tRef.current) || e.clipes.find((x) => x.id === (seguirOp.current && seguirOp.current.clipeId));
+    sairRecorte();
+    if (!c) { setMsg('O playhead saiu do clipe: posicione-o num clipe e tente de novo.'); return; }
+    analisarSeguir(c, quadroAtual(c), { x: nx, y: ny }, a.op);
+  };
+  const aoAlvoRef = useRef(aoAlvo);
+  aoAlvoRef.current = aoAlvo;
+
+  /** Roda a análise e aplica os keyframes ao clipe (uma entrada no desfazer). */
+  const analisarSeguir = async (c, qRef, ponto, op) => {
+    const e = E.current;
+    const midia = e.midia;
+    if (!midia || !e.v) return;
+    const vv = e.v;
+    exp.current = { cancelar: false };
+    setDialogo('seguir');
+    setSegEstado({ fase: 'rodando', pct: 0, txt: 'Preparando…' });
+    if (mini.current) mini.current.pausar(true);
+    const t0ms = performance.now();
+    try {
+      const an = await analisarClipe({
+        blob: midia.blob, url: midia.url, ix: midia.ix, c, qRef, ponto, motor: op.motor, passo: op.passo,
+        deslocEl: rep.current ? rep.current.desloc : 0,
+        cancelado: () => exp.current.cancelar,
+        aoProgresso: (f, txt) => setSegEstado({ fase: 'rodando', pct: f, txt }),
+      });
+      // tamanho do recorte: o maior da proporção pedida, dividido pelo zoom
+      const prop = PROP_SEGUIR.find((x) => x[0] === op.prop) || PROP_SEGUIR[0];
+      const pn = prop[1] * vv.altura / vv.largura;
+      const max = ajustarProporcao({ x: 0, y: 0, w: 1, h: 1 }, pn);
+      const z = Math.max(1, op.zoom || 1);
+      const tam = { w: max.w / z, h: max.h / z };
+      const r = keyframesDaAnalise(vv, c, an.amostras, tam, { suavidade: op.suavidade, zonaMorta: op.zonaMorta });
+      if (!r || !r.k.length) throw new Error('não foi possível montar a trajetória');
+      const atual = E.current;
+      const novoRet = { x: (1 - tam.w) / 2, y: (1 - tam.h) / 2, w: tam.w, h: tam.h };
+      const seg = { k: r.k, motor: an.motor, prop: prop[0] };
+      const novos = atual.clipes.map((x) => { if (x.id !== c.id) return x; const n = { ...x, seg }; delete n.kb; return n; });
+      const NOMES = { pessoa: 'pessoa (YOLOX + ByteTrack)', aparencia: 'aparência', sam2: 'SAM 2' };
+      aplicar(novos, `Seguir sujeito: ${r.k.length} keyframes · ${NOMES[an.motor] || an.motor}`, { recorte: novoRet });
+      const idProp = PROPORCOES.find((x) => x[0] === prop[0]) ? prop[0] : 'livre';
+      setProporcao(idProp); setRetEdicao(novoRet);
+      setSel(new Set([c.id])); setKfSel(null);
+      const res = {
+        k: r.k.length, motor: an.motor, nomeMotor: NOMES[an.motor] || an.motor, analisados: an.analisados, perdidos: an.perdidos,
+        segundos: (performance.now() - t0ms) / 1000, prop: prop[0], saida: tamanhoSaida(vv, novoRet, 1), avisos: an.avisos || [],
+      };
+      resultados.current.seguir = { ...res, amostras: an.amostras, k: r.k, traj: r.traj, clipeId: c.id, tam };
+      setSegEstado({ fase: 'pronto', pct: 1, res });
+      // volta ao quadro do clique para mostrar o resultado
+      irPara(tempoDoQuadro(vv, c, qRef));
+    } catch (err) {
+      if (err instanceof Cancelado) { setSegEstado(null); setDialogo(null); setMsg('Análise cancelada.'); }
+      else { console.error('[vídeo] seguir:', err); setSegEstado({ fase: 'erro', erro: err.message || String(err) }); }
+    } finally {
+      if (mini.current) mini.current.pausar(false);
+    }
+  };
+
+  const removerSeguir = () => {
+    const e = E.current;
+    const c = e.clipeSel;
+    if (!c || !c.seg) return;
+    aplicar(e.clipes.map((x) => { if (x.id !== c.id) return x; const n = { ...x }; delete n.seg; return n; }), 'Reenquadramento removido do clipe');
+    setKfSel(null);
+  };
+  const apagarKfSel = () => {
+    const e = E.current;
+    if (!e.kfSel) return false;
+    aplicar(apagarKeyframe(e.clipes, e.kfSel.id, e.kfSel.i), 'Keyframe apagado');
+    setKfSel(null);
+    return true;
+  };
+  const reposicionarKf = () => {
+    const e = E.current;
+    const c = e.v && clipeEm(e.v, e.clipes, tRef.current);
+    if (!c || !c.seg) { setMsg('Leve o playhead a um clipe com reenquadramento.'); return; }
+    setKbEdit(null); setAlvo({ tipo: 'kf' }); setModo('alvo');
   };
 
   // ------------------------------------------------------------ abrir mídia
@@ -440,6 +602,13 @@ export function StudioVideo({ onClose, source, onPickFile }) {
       setMsg('Contêiner sem índice legível: quadros estimados pelo fps — a exportação será em tempo real.');
     } else {
       if (!ix.video.largura) { ix.video.largura = el.videoWidth; ix.video.altura = el.videoHeight; }
+      // vídeo de celular em pé (matriz de rotação 90/270): o editor trabalha no referencial da TELA
+      // (o do <video>); as dimensões codificadas ficam para o decodificador (exportar.js)
+      const vr = ix.video;
+      if ((vr.rotacao === 90 || vr.rotacao === 270) && !vr.larguraCod) {
+        vr.larguraCod = vr.largura; vr.alturaCod = vr.altura;
+        vr.largura = vr.alturaCod; vr.altura = vr.larguraCod;
+      }
     }
     const vv = ix.video;
     const chave = chaveMidia(nome, blob.size, ix.duracaoUs, vv.n);
@@ -459,7 +628,7 @@ export function StudioVideo({ onClose, source, onPickFile }) {
     E.current.recorte = rc;
     setMidia({ blob, url, nome: nome || 'vídeo', ix, chave, origem });
     setClipesBruto(cl); setMarcadores(mk); setEntrada(en); setSaida(sa); setRecorte(rc); setProporcao(pr);
-    setRetEdicao(rc); setSel(new Set()); setModo('saida'); setKbEdit(null);
+    setRetEdicao(rc); setSel(new Set()); setModo('saida'); setKbEdit(null); setKfSel(null); setAlvo(null); setAlvoCaixas(null);
     await r.calibrar();
     mini.current = new Miniaturas({ blob, url, v: vv, desloc: r.desloc, aoChegar: () => tl.current && tl.current.pedir() });
     let pctAnt = -1;
@@ -687,7 +856,7 @@ export function StudioVideo({ onClose, source, onPickFile }) {
       if (k === 'Escape') {
         pega();
         if (e.dialogo) setDialogo(null);
-        else if (e.modo === 'recorte') sairRecorte();
+        else if (e.modo === 'recorte' || e.modo === 'alvo') sairRecorte();
         else if (e.sel.size) setSel(new Set());
         else if (e.ferramenta === 'navalha') setFerramenta('selecao');
         return;
@@ -718,7 +887,7 @@ export function StudioVideo({ onClose, source, onPickFile }) {
         case 'ArrowDown': pontoEdicao(1); return;
         case 'Home': irPara(0); return;
         case 'End': irPara(fimTimeline(e.v, e.clipes) - 1); return;
-        case 'Delete': case 'Backspace': apagarSel(ev.shiftKey); return;
+        case 'Delete': case 'Backspace': if (!ev.shiftKey && apagarKfSel()) return; apagarSel(ev.shiftKey); return;
         case '=': case '+': tl.current.zoomPara(tl.current.pxPorS * 1.6); return;
         case '-': case '_': tl.current.zoomPara(tl.current.pxPorS / 1.6); return;
         case '?': setDialogo('atalhos'); return;
@@ -767,6 +936,8 @@ export function StudioVideo({ onClose, source, onPickFile }) {
       setRecorte: (r) => aplicar(null, null, { recorte: r }), escolherProporcao, setDialogo, tocar: () => tocarPausar(), shuttle, pausar,
       timeline: () => tl.current, reprodutor: () => rep.current, exportar: iniciarExport, quadros: iniciarQuadros,
       resultados: () => resultados.current, gravarTrecho, pararGravacao,
+      seguir: iniciarSeguir, alvo: (nx, ny) => aoAlvo(nx, ny), selecionarKf: (k) => setKfSel(k), apagarKf: apagarKfSel,
+      reposicionarKf, removerSeguir, segEstado: () => segEstado, cancelarSeguir: () => { exp.current.cancelar = true; },
     };
     return () => { delete window.aivVideo; };
   });
@@ -796,7 +967,9 @@ export function StudioVideo({ onClose, source, onPickFile }) {
         <span class="vde-sep"></span>
         <button class="vde-btn ${modo === 'recorte' && !kbEdit ? 'on' : ''}" disabled=${!v} onClick=${() => (modo === 'recorte' ? sairRecorte() : entrarRecorte())}
                 title="Recorte do quadro (C): arraste as alças sobre o visor">⛶<span class="vde-rot"> Recorte</span></button>
-        <button class="vde-btn acento" disabled=${!v} onClick=${() => setDialogo('exportar')} title="Exportar o vídeo editado (Ctrl/⌘+E)">⇪<span class="vde-rot"> Exportar</span></button>
+        <button class="vde-btn ${modo === 'alvo' ? 'on' : ''}" disabled=${!v} onClick=${() => (modo === 'alvo' ? sairRecorte() : (setSegEstado(null), setDialogo('seguir')))}
+                title="Seguir sujeito / Reenquadrar: o recorte acompanha uma pessoa ou objeto (9:16, 1:1, 4:5, 16:9)">◎<span class="vde-rot"> Seguir sujeito</span></button>
+        <button class="vde-btn acento" disabled=${!v} onClick=${() => { setPredefExp(null); setDialogo('exportar'); }} title="Exportar o vídeo editado (Ctrl/⌘+E)">⇪<span class="vde-rot"> Exportar</span></button>
         <button class="vde-btn" disabled=${!v} onClick=${() => setDialogo('quadros')} title="Exportar quadros do trecho como imagens (para o +Projeto/Treinar ou ZIP)">🖼<span class="vde-rot"> Quadros</span></button>
         <span class="vde-msg" role="status" aria-live="polite">${carregando || msg}</span>
         <button class="vde-btn ${inspetor ? 'on' : ''}" onClick=${() => setInspetor(!inspetor)} title="Mostrar/ocultar o inspetor (mídia, clipe, recorte)">☰</button>
@@ -814,6 +987,12 @@ export function StudioVideo({ onClose, source, onPickFile }) {
               aoGravar=${gravarTrecho} aoParar=${pararGravacao} recentes=${recentes} />`}
           ${carregando && html`<div class="vde-carregando" role="status"><span class="vde-giro"></span>${carregando}</div>`}
           ${midia && gravando && html`<div class="vde-rec-flutua"><b>● REC</b> <${Cronometro} desde=${gravando.inicio} /> <button class="vde-btn" onClick=${pararGravacao}>Parar e editar</button></div>`}
+          ${modo === 'alvo' && v && html`
+            <div class="vde-recorte-barra" role="toolbar" aria-label="Seguir sujeito">
+              <b>${alvo && alvo.tipo === 'kf' ? 'Reposicionar keyframe' : 'Seguir sujeito'}</b>
+              <span class="vde-dica-barra">${alvo && alvo.tipo === 'kf' ? 'clique onde o recorte deve centrar' : 'clique no sujeito (← → mudam o quadro)'}</span>
+              <button class="vde-chip" onClick=${sairRecorte}>Cancelar</button>
+            </div>`}
           ${modo === 'recorte' && v && html`
             <div class="vde-recorte-barra" role="toolbar" aria-label="Recorte">
               <b>${kbEdit ? (kbEdit === 'a' ? 'Ken Burns · início' : 'Ken Burns · fim') : 'Recorte'}</b>
@@ -827,6 +1006,8 @@ export function StudioVideo({ onClose, source, onPickFile }) {
             proporcao=${proporcao} kbEdit=${kbEdit} modo=${modo} ondaPct=${ondaPct} onda=${onda.current}
             aoProporcao=${escolherProporcao} aoRecorte=${() => (modo === 'recorte' && !kbEdit ? sairRecorte() : entrarRecorte())}
             aoRestaurar=${restaurarRecorte} aoKb=${entrarRecorte} aoKbLimpar=${kbLimpar}
+            kfSel=${kfSel} aoSeguir=${() => { setSegEstado(null); setDialogo('seguir'); }} aoReposKf=${reposicionarKf}
+            aoApagarKf=${apagarKfSel} aoRemoverSeguir=${removerSeguir}
             aoFps=${(f) => { if (v && f > 0) { v.fps = f; setVersao((n) => n + 1); tl.current.pedir(); } }}
             aoFechar=${() => setInspetor(false)} />`}
       </div>
@@ -888,7 +1069,11 @@ export function StudioVideo({ onClose, source, onPickFile }) {
               gravacao=${g} aoGravacao=${abrirGravacao} aoVivo=${Boolean(fonteAoVivo())} gravando=${gravando}
               aoGravar=${() => { setDialogo(null); gravarTrecho(); }} aoParar=${pararGravacao} recentes=${recentes} />
         <//>`}
-      ${dialogo === 'exportar' && v && html`<${DialogoExportar} v=${v} midia=${midia} recorte=${recorte} temIO=${temIO} estado=${expEstado}
+      ${dialogo === 'seguir' && v && html`<${DialogoSeguir} v=${v} clipe=${clipeSel || clipeEm(v, clipes, tRef.current)} estado=${segEstado}
+          aoIniciar=${iniciarSeguir} aoCancelar=${() => { exp.current.cancelar = true; }}
+          aoExportar=${(pd) => { setSegEstado(null); setPredefExp(pd); setDialogo('exportar'); }}
+          aoFechar=${() => { if (!segEstado || segEstado.fase !== 'rodando') { setDialogo(null); setSegEstado(null); } }} />`}
+      ${dialogo === 'exportar' && v && html`<${DialogoExportar} v=${v} midia=${midia} recorte=${recorte} temIO=${temIO} estado=${expEstado} predef=${predefExp}
           faixa=${faixa} aoIniciar=${iniciarExport} aoCancelar=${() => { exp.current.cancelar = true; }}
           aoBaixar=${async (res) => { const onde = await salvar(res); if (onde !== 'cancelado') setMsg(`Salvo: ${res.nome} · ${formatarBytes(res.blob.size)}`); }}
           aoUsar=${usarComoFonte} aoEditar=${(res) => { setExpEstado(null); abrir(res.blob, res.nome, 'exportação'); }}
@@ -971,7 +1156,10 @@ function TelaInicial({ embutida, aoArquivo, fonteArquivo, aoFonte, gravacao, aoG
     </div>`;
 }
 
-function Inspetor({ v, midia, clipeSel, sel, recorte, saidaPx, proporcao, kbEdit, modo, ondaPct, onda, aoProporcao, aoRecorte, aoRestaurar, aoKb, aoKbLimpar, aoFps, aoFechar }) {
+function Inspetor({ v, midia, clipeSel, sel, recorte, saidaPx, proporcao, kbEdit, modo, ondaPct, onda, aoProporcao, aoRecorte, aoRestaurar, aoKb, aoKbLimpar, aoFps, aoFechar,
+  kfSel, aoSeguir, aoReposKf, aoApagarKf, aoRemoverSeguir }) {
+  const kfs = clipeSel && clipeSel.seg ? keyframesVisiveis(clipeSel) : [];
+  const kfAqui = kfSel && clipeSel && kfSel.id === clipeSel.id && clipeSel.seg ? clipeSel.seg.k[kfSel.i] : null;
   return html`
     <aside class="vde-insp" aria-label="Inspetor">
       <button class="vde-insp-x" onClick=${aoFechar} aria-label="Fechar o inspetor">✕</button>
@@ -1005,7 +1193,20 @@ function Inspetor({ v, midia, clipeSel, sel, recorte, saidaPx, proporcao, kbEdit
             <button class="vde-chip ${kbEdit === 'b' ? 'on' : ''}" onClick=${() => aoKb('b')} title="Enquadramento no último quadro do clipe">Fim</button>
             <button class="vde-chip" disabled=${!clipeSel.kb} onClick=${aoKbLimpar}>Remover</button>
           </div>
-          <p class="vde-dica">${clipeSel.kb ? 'O enquadramento vai do início ao fim do clipe, suave nas pontas.' : 'Defina o enquadramento do início e do fim; a proporção é a do recorte.'}</p>`}
+          <p class="vde-dica">${clipeSel.seg ? 'Este clipe segue um sujeito (o reenquadramento tem prioridade sobre o Ken Burns).' : clipeSel.kb ? 'O enquadramento vai do início ao fim do clipe, suave nas pontas.' : 'Defina o enquadramento do início e do fim; a proporção é a do recorte.'}</p>
+          <p class="vde-sub">Seguir sujeito</p>
+          ${clipeSel.seg ? html`
+            <dl>
+              <dt>Keyframes</dt><dd>${kfs.length}${clipeSel.seg.prop ? ' · ' + clipeSel.seg.prop : ''}</dd>
+              ${kfAqui && html`<dt>Selecionado</dt><dd>q${kfAqui[0]} · x ${(kfAqui[1] * 100).toFixed(1)}% · y ${(kfAqui[2] * 100).toFixed(1)}%</dd>`}
+            </dl>
+            <div class="vde-linha">
+              <button class="vde-chip" onClick=${aoReposKf} title="Clique no visor para centrar o recorte neste quadro (cria ou ajusta o keyframe do quadro)">Ajustar aqui</button>
+              <button class="vde-chip" disabled=${!kfAqui} onClick=${aoApagarKf} title="Apagar o keyframe selecionado (Delete) — ⌥/Alt+clique no losango também apaga">Apagar keyframe</button>
+              <button class="vde-chip" onClick=${aoRemoverSeguir}>Remover</button>
+            </div>
+            <p class="vde-dica">Losangos na faixa do clipe: clique seleciona, arraste move no tempo.</p>` : html`
+            <div class="vde-linha"><button class="vde-chip" onClick=${aoSeguir}>Seguir sujeito…</button></div>`}`}
       </section>
       <section>
         <h3>Recorte</h3>
@@ -1043,13 +1244,17 @@ function Progresso({ estado, aoCancelar }) {
     </div>`;
 }
 
-function DialogoExportar({ v, midia, recorte, temIO, estado, faixa, aoIniciar, aoCancelar, aoBaixar, aoUsar, aoEditar, aoFechar }) {
-  const [op, setOp] = useState({ faixa: temIO ? 'io' : 'tudo', escala: 1, qualidade: 1, audio: true, modo: 'auto' });
+function DialogoExportar({ v, midia, recorte, temIO, estado, faixa, aoIniciar, aoCancelar, aoBaixar, aoUsar, aoEditar, aoFechar, predef }) {
+  const predefs = predefinidosValidos(v, recorte);
+  const inicial = predef && predefs.find((x) => x.id === predef) ? 'p:' + predef : '1';
+  const [op, setOp] = useState({ faixa: temIO ? 'io' : 'tudo', escala: inicial, qualidade: 1, audio: true, modo: 'auto' });
+  // escala: número (100%, 75%…) ou predefinição 'p:LxA' → tamanho fixo
+  const escalaDe = (x) => { const pd = String(x).startsWith('p:') && predefs.find((p) => 'p:' + p.id === x); return pd ? { w: pd.w, h: pd.h } : parseFloat(x) || 1; };
   // o navegador faz quadro exato COM som? (Safari 16.4–18 decodifica/codifica vídeo mas não codifica áudio)
   const [sonda, setSonda] = useState(null);
   useEffect(() => { let vivo = true; sondarExportacao(midia.ix, recorte).then((r) => { if (vivo) setSonda(r); }).catch(() => {}); return () => { vivo = false; }; }, []);
   const escolher = sonda && sonda.exato && !sonda.audio && midia.ix.audio && op.audio && typeof MediaRecorder !== 'undefined';
-  const px = tamanhoSaida(v, recorte, op.escala);
+  const px = tamanhoSaida(v, recorte, escalaDe(op.escala));
   const [t0, t1] = faixa(op.faixa);
   const rodando = estado && estado.fase === 'rodando';
   return html`
@@ -1062,8 +1267,9 @@ function DialogoExportar({ v, midia, recorte, temIO, estado, faixa, aoIniciar, a
               <option value="io" disabled=${!temIO}>Entrada → saída (I/O)</option>
             </select></label>
           <label>Tamanho
-            <select value=${op.escala} onChange=${(e) => setOp({ ...op, escala: parseFloat(e.target.value) })}>
+            <select value=${op.escala} onChange=${(e) => setOp({ ...op, escala: e.target.value })}>
               <option value="1">100%</option><option value="0.75">75%</option><option value="0.5">50%</option><option value="0.25">25%</option>
+              ${predefs.map((p) => html`<option key=${p.id} value=${'p:' + p.id}>${p.rot}</option>`)}
             </select></label>
           <label>Qualidade
             <select value=${op.qualidade} onChange=${(e) => setOp({ ...op, qualidade: parseFloat(e.target.value) })}>
@@ -1080,7 +1286,7 @@ function DialogoExportar({ v, midia, recorte, temIO, estado, faixa, aoIniciar, a
         ${escolher && html`<p class="vde-aviso">Este navegador não codifica áudio (${sonda.motivoAudio}). Com som, a exportação é em tempo real (sem garantia de quadro exato); quadro a quadro, sai sem som.</p>`}
         <p class="vde-dica">Saída ${px.w}×${px.h} · ${timecode(t1 - t0, v.fps)} · MP4 H.264${midia.ix.audio && op.audio ? ' + AAC' : ''}, quadro a quadro (WebCodecs). Sem suporte, cai para gravação em tempo real (WebM/MP4).</p>
         ${estado && estado.fase === 'erro' && html`<p class="vde-erro" role="alert">Falhou: ${estado.erro}</p>`}
-        <div class="vde-linha fim"><button class="vde-btn" onClick=${aoFechar}>Fechar</button><button class="vde-btn acento" onClick=${() => aoIniciar(op)}>Exportar</button></div>`}
+        <div class="vde-linha fim"><button class="vde-btn" onClick=${aoFechar}>Fechar</button><button class="vde-btn acento" onClick=${() => aoIniciar({ ...op, escala: escalaDe(op.escala) })}>Exportar</button></div>`}
       ${rodando && html`<${Progresso} estado=${estado} aoCancelar=${aoCancelar} />`}
       ${estado && estado.fase === 'pronto' && estado.res && html`
         <div class="vde-ok">
@@ -1092,6 +1298,74 @@ function DialogoExportar({ v, midia, recorte, temIO, estado, faixa, aoIniciar, a
             <button class="vde-btn" onClick=${() => aoEditar(estado.res)} title="Abrir o resultado no editor">Abrir no editor</button>
             <button class="vde-btn" onClick=${() => aoUsar(estado.res)} title="Abrir como fonte (arquivo) do iaVision e fechar o editor">Usar como fonte</button>
             <button class="vde-btn acento" onClick=${() => aoBaixar(estado.res)}>Baixar</button>
+          </div>
+        </div>`}
+    <//>`;
+}
+
+function DialogoSeguir({ v, clipe, estado, aoIniciar, aoCancelar, aoExportar, aoFechar }) {
+  const [op, setOp] = useState(() => {
+    let salvo = {};
+    try { salvo = JSON.parse(localStorage.getItem('gplansis.video.seguir') || '{}'); } catch (_) { salvo = {}; }
+    return { prop: '9:16', alvo: 'clique', motor: 'auto', passo: 1, zoom: 1, ...SUAVIZACAO_PADRAO, ...salvo };
+  });
+  const [temSam, setTemSam] = useState(null);
+  useEffect(() => { let vivo = true; sam2Disponivel().then((x) => { if (vivo) setTemSam(x); }); return () => { vivo = false; }; }, []);
+  const mudar = (p) => { const n = { ...op, ...p }; setOp(n); try { localStorage.setItem('gplansis.video.seguir', JSON.stringify(n)); } catch (_) { /* sem storage */ } };
+  // mesma proporção da mídia (16:9 de um 16:9): sem zoom não há para onde mover
+  const propN = (PROP_SEGUIR.find((x) => x[0] === op.prop) || PROP_SEGUIR[0])[1];
+  const mesma = Math.abs(propN / (v.largura / v.altura) - 1) < 0.02;
+  const rodando = estado && estado.fase === 'rodando';
+  const nq = clipe ? clipe.b - clipe.a : 0;
+  const pd = estado && estado.res ? { '9:16': '1080x1920', '1:1': '1080x1080', '4:5': '1080x1350', '16:9': '1920x1080' }[estado.res.prop] : null;
+  return html`
+    <${Modal} titulo="Seguir sujeito / Reenquadrar" aoFechar=${aoFechar}>
+      ${(!estado || estado.fase === 'erro') && html`
+        ${!clipe ? html`<p class="vde-aviso">Ponha o playhead sobre um clipe (ou selecione um).</p>` : html`
+        <div class="vde-form">
+          <label>Proporção
+            <span class="vde-linha">${PROP_SEGUIR.map(([id]) => html`<button key=${id} class="vde-chip ${op.prop === id ? 'on' : ''}" onClick=${() => mudar({ prop: id, zoom: Math.abs((PROP_SEGUIR.find((x) => x[0] === id)[1]) / (v.largura / v.altura) - 1) < 0.02 && op.zoom < 1.25 ? 1.5 : op.zoom })}>${id}</button>`)}</span></label>
+          <label>Sujeito
+            <select value=${op.alvo} onChange=${(e) => mudar({ alvo: e.target.value })}>
+              <option value="clique">Clicar no sujeito no visor</option>
+              <option value="principal">Pessoa principal (automático)</option>
+            </select></label>
+          <label>Rastreio
+            <select value=${op.motor} onChange=${(e) => mudar({ motor: e.target.value })}>
+              <option value="auto">Pessoa (YOLOX + ByteTrack); objeto: aparência</option>
+              <option value="aparencia" disabled=${op.alvo !== 'clique'}>Aparência (objeto qualquer, sem modelo)</option>
+              <option value="sam2" disabled=${!temSam || op.alvo !== 'clique'}>SAM 2 — máscara (preciso, lento)${temSam === false ? ' · indisponível' : ''}</option>
+            </select></label>
+          <label>Análise
+            <select value=${op.passo} onChange=${(e) => mudar({ passo: parseInt(e.target.value, 10) })}>
+              <option value="1">Cada quadro</option><option value="2">1 a cada 2 quadros</option><option value="3">1 a cada 3 quadros</option>
+            </select></label>
+          <label>Zoom
+            <select value=${op.zoom} onChange=${(e) => mudar({ zoom: parseFloat(e.target.value) })}>
+              <option value="1">1× (o maior recorte)</option><option value="1.25">1,25×</option><option value="1.5">1,5×</option><option value="2">2×</option>
+            </select></label>
+          <label>Suavidade
+            <input type="range" min="0" max="1" step="0.05" value=${op.suavidade} onInput=${(e) => mudar({ suavidade: parseFloat(e.target.value) })} /></label>
+          <label>Zona morta
+            <select value=${op.zonaMorta} onChange=${(e) => mudar({ zonaMorta: parseFloat(e.target.value) })}>
+              <option value="0">nenhuma</option><option value="0.008">pequena</option><option value="0.015">média</option><option value="0.03">grande</option>
+            </select></label>
+        </div>
+        ${mesma && op.zoom <= 1 && html`<p class="vde-aviso">A proporção é a mesma do vídeo: com zoom 1× o recorte é o quadro inteiro e não tem para onde se mover — use 1,5× ou 2×.</p>`}
+        <p class="vde-dica">Clipe ${timecode(v.pts[clipe.a], v.fps)} → ${timecode(v.pts[clipe.b], v.fps)} · ${Math.ceil(nq / Math.max(1, op.passo))} quadro(s) a analisar, pela fila de inferência (a interface segue livre). O recorte vira keyframes no clipe, editáveis na timeline; desfazer (Ctrl/⌘+Z) volta tudo.</p>`}
+        ${estado && estado.fase === 'erro' && html`<p class="vde-erro" role="alert">Falhou: ${estado.erro}</p>`}
+        <div class="vde-linha fim"><button class="vde-btn" onClick=${aoFechar}>Fechar</button>
+          <button class="vde-btn acento" disabled=${!clipe} onClick=${() => aoIniciar(op)}>${op.alvo === 'clique' ? 'Escolher o sujeito…' : 'Analisar'}</button></div>`}
+      ${rodando && html`<${Progresso} estado=${estado} aoCancelar=${aoCancelar} />`}
+      ${estado && estado.fase === 'pronto' && estado.res && html`
+        <div class="vde-ok">
+          <p><b>Reenquadrado:</b> ${estado.res.k} keyframes · ${estado.res.prop} · saída ${estado.res.saida.w}×${estado.res.saida.h}</p>
+          <p class="vde-dica">${estado.res.nomeMotor} · ${estado.res.analisados} quadros analisados em ${estado.res.segundos.toFixed(1)} s${estado.res.perdidos ? ` · sujeito perdido em ${estado.res.perdidos} (interpolado)` : ''}</p>
+          ${estado.res.avisos.map((x) => html`<p class="vde-aviso">${x}</p>`)}
+          <p class="vde-dica">Toque (espaço) para ver ao vivo. Na timeline, os losangos amarelos são os keyframes: arraste para mover, ⌥/Alt+clique ou Delete apaga; "Ajustar aqui" no inspetor reposiciona.</p>
+          <div class="vde-linha fim">
+            <button class="vde-btn" onClick=${aoFechar}>Fechar</button>
+            ${pd && html`<button class="vde-btn acento" onClick=${() => aoExportar(pd)}>Exportar ${pd.replace('x', '×')}…</button>`}
           </div>
         </div>`}
     <//>`;

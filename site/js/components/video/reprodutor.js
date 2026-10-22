@@ -22,8 +22,11 @@
  * (midia.js) — MP4 sem edit list, por exemplo. O deslocamento entra em todas
  * as buscas.
  *
- * O canvas do visor mostra a SAÍDA (recorte e Ken Burns aplicados) ou, no
- * modo recorte, o quadro inteiro com o retângulo e as alças.
+ * O canvas do visor mostra a SAÍDA (recorte, Ken Burns ou o reenquadramento
+ * "Seguir sujeito" aplicados) ou, no modo recorte, o quadro inteiro com o
+ * retângulo e as alças. No modo 'alvo' (Seguir sujeito: "clique no sujeito",
+ * ou reposicionar um keyframe) mostra o quadro inteiro com o enquadramento
+ * atual e o clique devolve o ponto normalizado em `aoAlvo(nx, ny)`.
  */
 import { ordenar, fimClipe, clipeEm, quadroNoClipe, tempoDoQuadro, enquadramento, ajustarAoQuadro } from './edl.js';
 import { quadroEm } from './midia.js';
@@ -383,6 +386,7 @@ export class Reprodutor {
     const el = this.video;
     const temQuadro = !this.lacuna && el.readyState >= 2;
     const vw = el.videoWidth || e.v.largura, vh = el.videoHeight || e.v.altura;
+    if (e.modo === 'alvo') { this.desenharAlvo(temQuadro); return; }
     if (e.modo === 'recorte') {
       const a = this.areaQuadro();
       if (temQuadro) ctx.drawImage(el, a.x, a.y, a.w, a.h);
@@ -431,6 +435,40 @@ export class Reprodutor {
     }
   }
 
+  /** Modo 'alvo': quadro inteiro, enquadramento atual escurecendo o resto, mira no ponteiro. */
+  desenharAlvo(temQuadro) {
+    const { ctx } = this;
+    const e = this.e;
+    const a = this.areaQuadro();
+    if (temQuadro) ctx.drawImage(this.video, a.x, a.y, a.w, a.h);
+    const c = this.clipeAtual;
+    const r = c && this.qMostrado >= 0 ? enquadramento(e.v, c, Math.min(c.b - 1, Math.max(c.a, this.qMostrado)), e.recorte) : e.recorte;
+    const rx = a.x + r.x * a.w, ry = a.y + r.y * a.h, rw = r.w * a.w, rh = r.h * a.h;
+    ctx.fillStyle = 'rgba(0,0,0,.45)';
+    ctx.fillRect(a.x, a.y, a.w, ry - a.y);
+    ctx.fillRect(a.x, ry + rh, a.w, a.y + a.h - ry - rh);
+    ctx.fillRect(a.x, ry, rx - a.x, rh);
+    ctx.fillRect(rx + rw, ry, a.x + a.w - rx - rw, rh);
+    ctx.strokeStyle = 'rgba(255,216,77,.8)'; ctx.lineWidth = 1.5; ctx.setLineDash([6, 4]);
+    ctx.strokeRect(rx, ry, rw, rh); ctx.setLineDash([]);
+    // caixas candidatas (pessoas detectadas no quadro), se houver
+    if (Array.isArray(e.alvoCaixas)) {
+      ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 2;
+      for (const b of e.alvoCaixas) ctx.strokeRect(a.x + b.x1 * a.w, a.y + b.y1 * a.h, (b.x2 - b.x1) * a.w, (b.y2 - b.y1) * a.h);
+    }
+    if (this.mira) {
+      const { x, y } = this.mira;
+      ctx.strokeStyle = '#FFD84D'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(x, y, 14, 0, Math.PI * 2); ctx.moveTo(x - 22, y); ctx.lineTo(x - 6, y); ctx.moveTo(x + 6, y); ctx.lineTo(x + 22, y);
+      ctx.moveTo(x, y - 22); ctx.lineTo(x, y - 6); ctx.moveTo(x, y + 6); ctx.lineTo(x, y + 22); ctx.stroke();
+    }
+    const txt = e.rotuloAlvo || 'Clique no sujeito';
+    ctx.font = '600 13px "IBM Plex Sans", system-ui, sans-serif';
+    const tw = ctx.measureText(txt).width;
+    ctx.fillStyle = 'rgba(0,0,0,.72)'; ctx.fillRect(a.x + 10, a.y + a.h - 34, tw + 20, 24);
+    ctx.fillStyle = '#FFD84D'; ctx.fillText(txt, a.x + 20, a.y + a.h - 17);
+  }
+
   alcas(x, y, w, h) {
     return [[x, y], [x + w / 2, y], [x + w, y], [x + w, y + h / 2], [x + w, y + h], [x + w / 2, y + h], [x, y + h], [x, y + h / 2]];
   }
@@ -441,6 +479,15 @@ export class Reprodutor {
 
   down(ev) {
     const e = this.e;
+    if (e.modo === 'alvo' && e.v) {
+      const { x, y } = this.pos(ev);
+      const a = this.areaQuadro();
+      const nx = (x - a.x) / a.w, ny = (y - a.y) / a.h;
+      if (nx < 0 || nx > 1 || ny < 0 || ny > 1) return;
+      ev.preventDefault();
+      if (this.cb.aoAlvo) this.cb.aoAlvo(nx, ny);
+      return;
+    }
     if (e.modo !== 'recorte' || !e.v) return;
     const { x, y } = this.pos(ev);
     const a = this.areaQuadro();
@@ -461,6 +508,8 @@ export class Reprodutor {
 
   move(ev) {
     const e = this.e;
+    if (e.modo === 'alvo') { this.cv.style.cursor = 'crosshair'; this.mira = this.pos(ev); this.desenhar(); return; }
+    this.mira = null;
     if (e.modo !== 'recorte') { this.cv.style.cursor = ''; return; }
     const { x, y } = this.pos(ev);
     const a = this.areaQuadro();

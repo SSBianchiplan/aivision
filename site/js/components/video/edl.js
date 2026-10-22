@@ -8,6 +8,9 @@
  *     em    onde o clipe começa na TIMELINE, em microssegundos
  *     kb    zoom/pan (Ken Burns) opcional: { a: ret, b: ret } — o enquadramento
  *           no primeiro e no último quadro do clipe, interpolado no meio
+ *     seg   reenquadramento por sujeito opcional ("Seguir sujeito"):
+ *           { k: [[q, cx, cy], ...] } — keyframes do centro do recorte
+ *           em quadros da mídia; tem prioridade sobre o kb
  *
  * A duração de um clipe é a soma das durações REAIS dos quadros dele
  * (pts[b] − pts[a]): um vídeo de taxa variável (gravação do navegador) não
@@ -98,12 +101,137 @@ export const lerpRet = (r1, r2, f) => ({ x: lerp(r1.x, r2.x, f), y: lerp(r1.y, r
 // suave nas pontas (o movimento começa e termina devagar)
 const suave = (f) => f * f * (3 - 2 * f);
 
-/** Retângulo de enquadramento do quadro q no clipe c (recorte geral se o clipe não tem Ken Burns). */
+/**
+ * Retângulo de enquadramento do quadro q no clipe c. Prioridade: o
+ * reenquadramento por sujeito (c.seg, "Seguir sujeito"), o Ken Burns (c.kb)
+ * e, sem nenhum dos dois, o recorte geral.
+ */
 export function enquadramento(v, c, q, recorte) {
-  if (!c || !c.kb) return recorte;
+  if (!c) return recorte;
+  if (c.seg && c.seg.k && c.seg.k.length) return retSeguir(v, c.seg.k, q, recorte);
+  if (!c.kb) return recorte;
   const dur = v.pts[c.b - 1] - v.pts[c.a];
   const f = dur > 0 ? Math.min(1, Math.max(0, (v.pts[q] - v.pts[c.a]) / dur)) : 0;
   return lerpRet(c.kb.a, c.kb.b, suave(f));
+}
+
+/* ------------------------------------------------------------ seguir sujeito (reenquadramento) */
+
+/*
+ * c.seg = { k: [[q, cx, cy], ...], prop?, motor? } — keyframes do CENTRO do
+ * recorte (normalizado 0..1) em quadros q da MÍDIA, em ordem. O tamanho do
+ * retângulo é sempre o do recorte geral (a saída tem um tamanho só); só o
+ * centro anda. Os keyframes ficam na mídia, não na timeline: cortar, aparar
+ * e mover o clipe não os desloca (o sujeito continua onde estava no quadro).
+ * Entre keyframes: cúbica de Hermite monótona (Fritsch–Carlson) sobre o pts
+ * real — sem "quinas" de velocidade nos keyframes e sem passar do valor dos
+ * vizinhos (logo, sem sair da imagem se os keyframes estão dentro).
+ */
+
+/** Derivadas de Fritsch–Carlson para os pontos (xs, ys). */
+function derivadasMonotonas(xs, ys) {
+  const n = xs.length;
+  const d = new Float64Array(n), m = new Float64Array(Math.max(1, n - 1));
+  for (let i = 0; i < n - 1; i++) m[i] = (ys[i + 1] - ys[i]) / Math.max(1e-9, xs[i + 1] - xs[i]);
+  if (n === 1) return d;
+  d[0] = m[0]; d[n - 1] = m[n - 2];
+  for (let i = 1; i < n - 1; i++) {
+    if (m[i - 1] * m[i] <= 0) d[i] = 0;
+    else {
+      const h0 = xs[i] - xs[i - 1], h1 = xs[i + 1] - xs[i];
+      const w1 = 2 * h1 + h0, w2 = h1 + 2 * h0;
+      d[i] = (w1 + w2) / (w1 / m[i - 1] + w2 / m[i]);   // média harmônica ponderada
+    }
+  }
+  // nas pontas: não deixa a tangente inverter nem passar de 3× a inclinação
+  for (const [i, j] of [[0, 0], [n - 1, n - 2]]) {
+    if (d[i] * m[j] <= 0) d[i] = 0;
+    else if (Math.abs(d[i]) > 3 * Math.abs(m[j])) d[i] = 3 * m[j];
+  }
+  return d;
+}
+
+/** Valor em x da cúbica monótona pelos pontos (xs, ys); `ds` = derivadas já calculadas. */
+export function hermiteMonotona(xs, ys, x, ds) {
+  const n = xs.length;
+  if (!n) return NaN;
+  if (x <= xs[0]) return ys[0];
+  if (x >= xs[n - 1]) return ys[n - 1];
+  let lo = 0, hi = n - 1;
+  while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (xs[mid] <= x) lo = mid; else hi = mid; }
+  const d = ds || derivadasMonotonas(xs, ys);
+  const h = xs[hi] - xs[lo], s = (x - xs[lo]) / h;
+  const s2 = s * s, s3 = s2 * s;
+  return (2 * s3 - 3 * s2 + 1) * ys[lo] + (s3 - 2 * s2 + s) * h * d[lo] + (-2 * s3 + 3 * s2) * ys[hi] + (s3 - s2) * h * d[hi];
+}
+
+// cache por lista de keyframes (a lista é imutável: cada edição cria outra)
+const cacheSeg = new WeakMap();
+function prepSeg(v, k) {
+  let p = cacheSeg.get(k);
+  if (p && p.v === v) return p;
+  const xs = k.map((x) => v.pts[Math.max(0, Math.min(v.n, x[0]))] / 1e6);
+  const cx = k.map((x) => x[1]), cy = k.map((x) => x[2]);
+  p = { v, xs, cx, cy, dx: derivadasMonotonas(xs, cx), dy: derivadasMonotonas(xs, cy) };
+  cacheSeg.set(k, p);
+  return p;
+}
+
+/** Centro {cx, cy} do recorte no quadro q, pelos keyframes k. */
+export function centroSeguir(v, k, q) {
+  const p = prepSeg(v, k);
+  const t = v.pts[Math.max(0, Math.min(v.n, q))] / 1e6;
+  return { cx: hermiteMonotona(p.xs, p.cx, t, p.dx), cy: hermiteMonotona(p.xs, p.cy, t, p.dy) };
+}
+
+/** Retângulo do recorte (tamanho do recorte geral) centrado no sujeito, sempre dentro da imagem. */
+export function retSeguir(v, k, q, recorte) {
+  const { cx, cy } = centroSeguir(v, k, q);
+  const w = recorte.w, h = recorte.h;
+  return { x: Math.min(1 - w, Math.max(0, cx - w / 2)), y: Math.min(1 - h, Math.max(0, cy - h / 2)), w, h };
+}
+
+/** Clipes com o keyframe i do clipe `id` levado ao quadro q (sem cruzar os vizinhos). */
+export function moverKeyframe(clipes, id, i, q) {
+  return clipes.map((c) => {
+    if (c.id !== id || !c.seg) return c;
+    const k = c.seg.k;
+    const min = i > 0 ? k[i - 1][0] + 1 : -Infinity, max = i < k.length - 1 ? k[i + 1][0] - 1 : Infinity;
+    const nq = Math.max(min, Math.min(max, Math.round(q)));
+    if (nq === k[i][0]) return c;
+    return { ...c, seg: { ...c.seg, k: k.map((x, j) => (j === i ? [nq, x[1], x[2]] : x)) } };
+  });
+}
+
+/** Clipes sem o keyframe i do clipe `id` (sem keyframes, o clipe volta ao recorte geral). */
+export function apagarKeyframe(clipes, id, i) {
+  return clipes.map((c) => {
+    if (c.id !== id || !c.seg) return c;
+    const k = c.seg.k.filter((_, j) => j !== i);
+    if (!k.length) { const n = { ...c }; delete n.seg; return n; }
+    return { ...c, seg: { ...c.seg, k } };
+  });
+}
+
+/** Clipes com um keyframe (q, cx, cy) no clipe `id` — substitui o do mesmo quadro. */
+export function porKeyframe(clipes, id, q, cx, cy) {
+  return clipes.map((c) => {
+    if (c.id !== id) return c;
+    const k = (c.seg ? c.seg.k : []).filter((x) => x[0] !== q);
+    k.push([q, cx, cy]);
+    k.sort((a, b) => a[0] - b[0]);
+    const n = { ...c, seg: { ...(c.seg || {}), k } };
+    delete n.kb;
+    return n;
+  });
+}
+
+/** Índices dos keyframes do clipe que caem dentro do trecho [a, b) usado. */
+export function keyframesVisiveis(c) {
+  if (!c.seg || !c.seg.k) return [];
+  const out = [];
+  c.seg.k.forEach((x, i) => { if (x[0] >= c.a && x[0] < c.b) out.push(i); });
+  return out;
 }
 
 /* ------------------------------------------------------------ operações */
@@ -300,5 +428,7 @@ export function listarRecentes() {
 export function clipesValidos(v, clipes) {
   return Array.isArray(clipes) && clipes.length > 0 && clipes.every((c) =>
     c && typeof c.id === 'string' && Number.isInteger(c.a) && Number.isInteger(c.b) &&
-    c.a >= 0 && c.b <= v.n && c.a < c.b && Number.isFinite(c.em) && c.em >= 0);
+    c.a >= 0 && c.b <= v.n && c.a < c.b && Number.isFinite(c.em) && c.em >= 0 &&
+    (!c.seg || (c.seg && Array.isArray(c.seg.k) && c.seg.k.every((x) => Array.isArray(x) && Number.isInteger(x[0]) &&
+      x[0] >= 0 && x[0] <= v.n && Number.isFinite(x[1]) && Number.isFinite(x[2])))));
 }
