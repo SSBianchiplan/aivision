@@ -85,7 +85,7 @@ export const programa = {
   params: {
     largura: { type: 'int', min: 320, max: 1920, step: 160, default: 1280, label: 'Largura da inspeção (px do quadro congelado)' },
     desenhar: { type: 'bool', default: true, label: 'Desenhar gatilho e resultados no vídeo' },
-    modelo: { type: 'enum', options: ['—', 'presenca', 'dimensional', 'cor_defeito'], default: '—', label: 'Modelo de programa (presets)' },
+    modelo: { type: 'enum', options: ['—', 'presenca', 'dimensional', 'cor_defeito', 'rotulo', 'extrusao'], default: '—', label: 'Modelo de programa (presets)' },
   },
   apply(src, p, state, ctx) {
     if (p.modelo && p.modelo !== '—' && state.modelo !== p.modelo) {
@@ -193,6 +193,8 @@ function opFerramenta({ op, tipo, label, desc, params, spec, preparar }) {
         state.esc = src.width / img.width;
       }
       const res = state.res || [];
+      // para os operadores seguintes (midia.tempo_tela): o veredito de cada ferramenta avulsa
+      ctx.inspecao = (ctx.inspecao || []).concat(res.map((r) => ({ op: def.op, nome: r.nome, status: r.status, value: r.value })));
       if (p.desenhar) {
         desenharResultados(ctx.overlay, res, state.esc || 1);
         if (!marcas.length && def.roi === 'linha') {

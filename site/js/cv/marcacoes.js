@@ -179,8 +179,31 @@ const FUNCOES_INS = {
   linha: [['ins_paquimetro', 'Inspect · paquímetro']],
 };
 
+/**
+ * Funções registradas por módulos (operators/livres-oa.js e outros): cada uma
+ * vale para os `tipos` de forma e só aparece no seletor com um nó cujo op
+ * começa por um dos `ops` no Pipeline — ou quando a marcação já tem essa
+ * função (uma marcação salva não perde a função se o nó sair).
+ *   { valor, rotulo, tipos: ['retangulo', …], ops: ['seguranca.cerca'], cor, nome }
+ */
+export const FUNCOES_EXTRA = [];
+export function registrarFuncao(f) {
+  if (!f || !f.valor || FUNCOES_EXTRA.some((x) => x.valor === f.valor)) return;
+  FUNCOES_EXTRA.push(f);
+  if (f.cor) COR_FUNC[f.valor] = f.cor;
+  if (f.nome) NOME_FUNC[f.valor] = f.nome;
+}
+
+function funcoesExtra(tipo, atual) {
+  if (!FUNCOES_EXTRA.length) return [];
+  const nos = store.get().nodes || [];
+  return FUNCOES_EXTRA.filter((f) => f.tipos.includes(tipo)
+    && (atual === f.valor || nos.some((n) => f.ops.some((o) => String(n.op).startsWith(o)))))
+    .map((f) => [f.valor, f.rotulo]);
+}
+
 export function funcoesDe(tipo, atual = null) {
-  const base = funcoesBase(tipo, atual);
+  const base = [...funcoesBase(tipo, atual), ...funcoesExtra(tipo, atual)];
   const ins = AREAS.has(tipo) ? FUNCOES_INS.area : tipo === 'linha' || tipo === 'regua' ? FUNCOES_INS.linha : null;
   if (!ins) return base;
   const comNo = (store.get().nodes || []).some((n) => String(n.op).startsWith('inspect.'));

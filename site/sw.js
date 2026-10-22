@@ -24,7 +24,7 @@
  * ========================================================================
  */
 
-const VERSION = 'iav-v89-vps';   // 22/10/2026: editor de vídeo — Seguir sujeito / reenquadrar 9:16, 1:1, 4:5; rotação na exportação
+const VERSION = 'iav-v90-vps';   // 22/10/2026: onda 1 — 26 presets, CV-41..45 (tráfego CVC, mostrador, cerca/queda, sprint, logística), painel Medições
 const SHELL = `${VERSION}-shell`;
 /*
  * Pesos dos modelos num cache de nome FIXO: sobrevivem às publicações. Antes o

@@ -92,6 +92,8 @@ const StudioTakt = telaSobDemanda(() => import('./components/industrial/StudioTa
 // CV-40 Inspeção visual (Inspect): painel e a tela cheia GPlanSiS|Inspect, sob demanda (a reserva usa o fundo da .bsc)
 // +Projeto: modelo novo a partir das marcações (prints, caixas, Treinar, Pipeline) — sob demanda
 const ProjetoPanel = painelSobDemanda(() => import('./components/ProjetoPanel.js'), 'ProjetoPanel', 'projeto', '+Projeto');
+// Onda 1-a: painel Medições (CVC, instrumentos, segurança por pose, fotocélula, mapa de calor, logística) — sob demanda
+const MedicoesPanel = painelSobDemanda(() => import('./components/MedicoesPanel.js'), 'MedicoesPanel', 'medicoes', 'Medições');
 const InspectPanel = painelSobDemanda(() => import('./components/industrial/InspectPanel.js'), 'InspectPanel', 'inspecao', 'Inspeção visual');
 const StudioInspect = telaSobDemanda(() => import('./components/industrial/StudioInspect.js'), 'StudioInspect', 'bsc', 'GPlanSiS|Inspect');
 // Editor de vídeo GPlanSiS|Vídeo (✂ na barra de vídeo): sob demanda; a reserva usa o fundo da .bsc (o CSS do editor vem com ele)
@@ -120,13 +122,13 @@ const ViaPainel = sobDemanda(() => import('./via/ViaPainel.js'), 'ViaPainel', (p
 
 /** Ordem de empilhamento dentro de cada coluna. */
 const RAIL_ORDER = ['modules', 'models', 'coisas', 'esportes', 'bikefit', 'ergonomia', 'academia', 'salto', 'corrida', 'swing', 'vbt', 'quadra',
-                    'industrial', 'beltscan', 'contador', 'takt', 'inspecao', 'projeto', 'config', 'camera', 'auth',
+                    'industrial', 'beltscan', 'contador', 'takt', 'inspecao', 'medicoes', 'projeto', 'config', 'camera', 'auth',
                     'context', 'codes', 'captions', 'pipeline', 'stats', 'export'];
 /*
  * Coluna padrão dos painéis que ainda não estão no `dock` do store (os do
  * Industrial): sem isto um painel novo só apareceria no celular.
  */
-const DOCK_EXTRA = { industrial: 'right', beltscan: 'right', contador: 'right', takt: 'right', inspecao: 'right', projeto: 'right' };
+const DOCK_EXTRA = { industrial: 'right', beltscan: 'right', contador: 'right', takt: 'right', inspecao: 'right', medicoes: 'right', projeto: 'right' };
 
 /*
  * Disposição padrão dos widgets (versão 2): Ferramentas de mouse colada na
@@ -826,6 +828,7 @@ export function App({ sessao = null }) {
       case 'inspecao': return html`<${InspectPanel} ...${common} />`;
       case 'contador': return html`<${CounterPanel} ...${common} onPickFile=${pickFile} />`;
       case 'takt':     return html`<${TaktPanel} ...${common} />`;
+      case 'medicoes': return html`<${MedicoesPanel} ...${common} />`;
       case 'projeto':  return html`<${ProjetoPanel} ...${common} />`;
       case 'context':  return html`<${ContextPanel} ...${common} getFrame=${getFrame} />`;
       case 'codes':    return html`<${CodePanel} ...${common} />`;

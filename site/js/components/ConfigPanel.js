@@ -229,6 +229,43 @@ const GUIDE = {
     cost: 'Reusa a malha do CV-26 quando ela vem antes na cadeia.',
     sensitive: true,
   },
+  // onda 1-a
+  'CV-41': {
+    what: 'Contagem volumétrica classificada (CVC): carro, moto, ônibus, caminhão, bicicleta e pedestre por movimento ' +
+          '(zona de origem → zona de destino) e por linha, em blocos de 15 min, com matriz de giro e CSV (painel Medições).',
+    when: 'Estudos de tráfego, contagem em interseção, fluxo de pedestres.',
+    not: 'Depende do detector: à noite, com chuva ou oclusão forte o rastreio troca IDs. Câmera alta e fixa.',
+    cost: 'JS puro sobre RF-DETR/YOLOX + Tracking + Zonas; ~1 ms por quadro.',
+  },
+  'CV-42': {
+    what: 'Leitura de manômetros/mostradores de agulha (3 pontos marcados: zero, centro, fundo) e de displays de 7 segmentos, ' +
+          'com histórico e alarmes ISA-18.2.',
+    when: 'Ronda de instrumentos sem sinal digital, registro de pressão/temperatura locais, balança antiga.',
+    not: 'Escala linear; reflexo no vidro e câmera fora do eixo pioram a leitura. Não substitui transmissor calibrado.',
+    cost: 'JS puro: ~3–8 ms por leitura (a cada 200 ms).',
+  },
+  'CV-43': {
+    what: 'Cerca virtual por parte do corpo (mãos, pés, cabeça), pessoa caída/no chão/imóvel e contagem no ponto de encontro, ' +
+          'pela pose RTMO, com alarmes ISA-18.2.',
+    when: 'Indicadores de gestão de segurança: quase-acidentes, investigação, rondas noturnas, simulados de evacuação.',
+    not: 'NÃO é função de segurança (NR-12): não para máquina nem substitui proteção, intertravamento ou cortina de luz.',
+    cost: 'Sobre o RTMO (CV-18); a lógica custa < 1 ms.',
+    sensitive: true,
+  },
+  'CV-44': {
+    what: 'Fotocélula virtual: linhas desenhadas, o tronco da pose corta cada linha e o instante é interpolado entre quadros; ' +
+          'parciais, velocidade por trecho e modo agilidade.',
+    when: 'Sprint 10–40 m, testes de agilidade e ida-e-volta em clube e escola.',
+    not: 'A precisão depende da pose a cada quadro: com a pose atrasada (aparelho lento) o tempo também atrasa. Câmera de lado e fixa.',
+    cost: 'Sobre o RTMO (CV-18); a lógica custa < 1 ms.',
+  },
+  'CV-45': {
+    what: 'Chave de acesso NF-e/CT-e (dígito verificador, UF, CNPJ) e rastreio dos Correios a partir de códigos e OCR; ' +
+          'pallets por QR com local por zona; tempo de tela de logo/marca.',
+    when: 'Recebimento e expedição, inventário de pátio, patrocínio em vídeo.',
+    not: 'Não consulta a SEFAZ: valida só a estrutura da chave.',
+    cost: 'JS puro sobre QR e códigos, OCR PT-BR e Inspect.',
+  },
 };
 
 export function ConfigPanel({ onClose, ring, ...layout }) {

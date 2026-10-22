@@ -100,6 +100,22 @@ export const MODELOS = {
       { type: 'defect_area', code: 'MANCHA', name: 'Manchas/queimado', ranges: [FAIXAS_HSV.queimado], within_object: true, max_pct: 2, min_spot_px: 20, max_spots: null },
     ],
   },
+  // onda 1-a (I5): conferência de rótulo — lote da ordem, validade mínima e código; marcações LOTE, VALIDADE e CODIGO
+  rotulo: {
+    nome: 'Rótulo — lote, validade e código', codigo: 'P-ROTULO', lote: 'A12',
+    tools: [
+      { type: 'ocr', code: 'LOTE', name: 'Lote impresso = L + lote da ordem', field: 'lot', pattern: null, expected: 'L{LOT}', date_format: '%d/%m/%Y', min_char_conf: 0.8, min_days_valid: null },
+      { type: 'ocr', code: 'VALIDADE', name: 'Validade ≥ hoje + 180 dias', field: 'date', pattern: null, expected: null, date_format: '%d/%m/%Y', min_char_conf: 0.8, min_days_valid: 180 },
+      { type: 'code', code: 'CODIGO', name: 'Código do produto (EAN-13 / DataMatrix GS1)', formats: ['EAN13', 'DataMatrix', 'QRCode', 'Code128'], pattern: null, gs1: false, gtin_check: true, expect_gtin: null },
+    ],
+  },
+  // onda 1-a (53): diâmetro contínuo em extrusão (fio, cabo, tubo) — paquímetro a cada 1 s, Cpk no Studio Inspect
+  extrusao: {
+    nome: 'Extrusão — diâmetro contínuo (Cpk)', codigo: 'P-EXTRUSAO', trigger: { mode: 'interval', seconds: 1 },
+    tools: [
+      { type: 'caliper', code: 'DIAMETRO', name: 'Diâmetro do fio/tubo', p0: [0, 0], p1: [0, 0], width: 15, edge_min_contrast: 20, nominal_mm: 10, tol_mm: 0.2 },
+    ],
+  },
 };
 
 /** Exemplos do Inspect (programas de demonstração, mesma resolução das imagens de lá). */
@@ -151,6 +167,8 @@ export function deModelo(chave) {
     p.codigo = m.codigo;
     p.tools = m.tools.map((t) => normalizarFerramenta({ ...clonar(t), marcacao: null, ativo: true }));
     p.modelo = chave;
+    if (m.trigger) p.trigger = { ...p.trigger, ...clonar(m.trigger) };
+    if (m.lote) p.lote = m.lote;
     return p;
   }
   const e = EXEMPLOS_INSPECT[chave];

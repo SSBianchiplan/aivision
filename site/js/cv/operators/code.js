@@ -193,6 +193,8 @@ export const scanCode = {
       }
     }
 
+    // para os operadores seguintes (logistica.etiqueta, logistica.pallet): { text, format, box, corners } em 0–1
+    ctx.codigos = state.results || [];
     ctx.metrics['códigos'] = (state.results || []).length;
     ctx.metrics['lidos'] = codeLog.items.length;
     ctx.metrics['leitor'] = backendName();

@@ -1,0 +1,61 @@
+/* ==========================================================================
+   MEDIÇÕES — painel dos operadores da onda 1-a (CVC, instrumentos, segurança
+   por pose, fotocélula, mapa de calor, logística). Carregado sob demanda por
+   components/MedicoesPanel.js. Só tokens de css/theme.css (3 temas).
+   ========================================================================== */
+
+.med-cab { display: flex; justify-content: space-between; align-items: center; gap: 6px; flex-wrap: wrap; }
+.med-acoes { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+.med-kpis { flex-wrap: wrap; }
+.med-kpis .kpi { min-width: 64px; padding: 6px 4px; }
+.med-kpis .kpi b { font-size: 15px; }
+
+.med-sel { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ink-2); margin: 0 0 8px; }
+.med-sel select { background: var(--panel-solid); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; font: inherit; }
+
+.med-tab { overflow-x: auto; margin: 0 0 10px; border: 1px solid var(--line-2); border-radius: 8px; }
+.med-tab table { border-collapse: collapse; width: 100%; font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.med-tab th, .med-tab td { padding: 4px 6px; border-bottom: 1px solid var(--line-2); text-align: left; color: var(--ink-2); }
+.med-tab thead th { color: var(--ink-3); font-weight: 600; font-size: 10.5px; }
+.med-tab tbody th { color: var(--ink); font-weight: 600; }
+.med-tab td.v { text-align: right; font-family: var(--mono); color: var(--ink); }
+.med-tab td.z { color: var(--ink-3); }
+.med-tab td.s { font-weight: 700; }
+.med-tab tr.fora td { opacity: .6; }
+.med-tab code, .med-lista code { font-size: 10.5px; color: var(--ink-2); word-break: break-all; }
+
+.med-instr { border: 1px solid var(--line-2); border-radius: 8px; padding: 8px 10px; margin: 0 0 8px; }
+.med-instr-v { display: flex; align-items: baseline; gap: 6px; }
+.med-instr-v b { font-family: var(--mono); font-size: 24px; color: var(--ok); font-weight: 600; }
+.med-instr-v b.warn { color: var(--warn); }
+.med-instr-v em { font-style: normal; color: var(--ink-3); font-size: 12px; }
+.med-instr-n { font-size: 11px; color: var(--ink-3); margin: 2px 0 4px; }
+.med-spark { display: block; width: 100%; height: 40px; }
+.med-spark polyline { fill: none; stroke: var(--cyan); stroke-width: 1.6; vector-effect: non-scaling-stroke; }
+
+.med-al, .med-log, .med-lista { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 11.5px; }
+.med-al li { padding: 5px 8px; border-radius: 6px; border: 1px solid var(--line-2); color: var(--ink-2); }
+.med-al li b { color: var(--ink); margin-right: 4px; }
+.med-al li em { display: block; font-style: normal; font-size: 10.5px; color: var(--ink-3); }
+.med-al li.p1 { background: var(--err-bg); border-color: var(--err-line); color: var(--err-ink); }
+.med-al li.p2 { background: var(--warn-bg); border-color: var(--warn-line); color: var(--warn-ink); }
+.med-al li.p3 { background: var(--info-bg); border-color: var(--info-line); color: var(--info-ink); }
+.med-al li.nr { animation: med-pisca 1.2s steps(2, start) infinite; }
+@media (prefers-reduced-motion: reduce) { .med-al li.nr { animation: none; font-weight: 700; } }
+@keyframes med-pisca { to { filter: brightness(1.25); } }
+.med-log li { color: var(--ink-3); }
+.med-log li b { color: var(--ink-2); }
+.med-lista li { padding: 5px 8px; border-radius: 6px; border: 1px solid var(--line-2); color: var(--ink-2); }
+.med-lista li.ok { border-color: var(--ok-line); }
+.med-lista li.nok { border-color: var(--err-line); background: var(--err-bg); }
+.med-lista li code { display: block; margin-top: 2px; }
+
+.med-aviso { margin: 4px 0 10px; padding: 7px 9px; border-radius: 8px; font-size: 11.5px; line-height: 1.5;
+  background: var(--warn-bg); border: 1px solid var(--warn-line); color: var(--warn-ink); }
+.med-encontro { margin: 0 0 10px; padding: 8px 10px; border-radius: 8px; font-size: 13px; color: var(--ink); border: 1px solid var(--line-2); }
+.med-encontro b { font-family: var(--mono); font-size: 20px; }
+.med-encontro.falta { background: var(--err-bg); border-color: var(--err-line); color: var(--err-ink); }
+.med-encontro.ok { background: var(--ok-bg); border-color: var(--ok-line); color: var(--ok-ink); }
+
+.med-calor { display: block; width: 100%; image-rendering: auto; border-radius: 6px; border: 1px solid var(--line-2);
+  background: repeating-conic-gradient(var(--bg-2) 0 25%, var(--panel-solid) 0 50%) 0 0 / 12px 12px; }

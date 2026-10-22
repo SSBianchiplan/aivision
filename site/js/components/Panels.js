@@ -18,6 +18,7 @@ import { disponivel as telaDisponivel } from '../camera/screen.js';
 import { YouTubeSection } from './YouTubeSource.js';
 import { SeletorCamera, tipoDaCamera } from './SeletorCamera.js';
 import { acharUltima, textoSettings, ICONE_IP, ICONE_BT } from '../camera/seletor.js';
+import { PRESETS_ONDA1A, criarMarcacoesModelo } from './presets-onda1a.js';
 import {
   PADRAO as STREAM_PADRAO, urlRtmp, conteudoMisto, diagnosticar, ehRedeLocal, baseHttps,
 } from '../camera/stream.js';
@@ -335,11 +336,24 @@ const PAINEL_DO_PRESET = { 'Contagem por cor': 'contador', 'Contagem com detecto
 // CV-40: os presets da Inspeção visual abrem o painel dela
 Object.assign(PAINEL_DO_PRESET, { 'Inspeção — presença e contagem': 'inspecao', 'Inspeção — dimensional (paquímetro)': 'inspecao', 'Inspeção — cor e defeito': 'inspecao' });
 
+/*
+ * Onda 1-a (components/presets-onda1a.js): presets com descrição e
+ * marcações-modelo. Grupo existente ganha os itens; grupo novo entra no fim.
+ */
+const DESC_PRESET = {};
+for (const pr of PRESETS_ONDA1A) {
+  let g = PRESET_GROUPS.find(([nome]) => nome === pr.grupo);
+  if (!g) PRESET_GROUPS.push((g = [pr.grupo, {}]));
+  g[1][pr.nome] = pr.specs;
+  if (pr.painel) PAINEL_DO_PRESET[pr.nome] = pr.painel;
+  DESC_PRESET[pr.nome] = pr.desc;
+}
+
 /** Preset disponível só se todos os operadores existem; marca os que usam AGPL. */
 function presetsVisiveis() {
   return PRESET_GROUPS.map(([g, ps]) => [g, Object.entries(ps)
     .filter(([, specs]) => specs.every(([op]) => getOperator(op)))
-    .map(([nome, specs]) => ({ nome, specs, agpl: specs.some(([op]) => getOperator(op).agpl) }))])
+    .map(([nome, specs]) => ({ nome, specs, agpl: specs.some(([op]) => getOperator(op).agpl), desc: DESC_PRESET[nome] || '' }))])
     .filter(([, l]) => l.length > 0);
 }
 
@@ -356,11 +370,12 @@ function PresetPicker({ primeiro = null }) {
           <div class="presets-t">${g}</div>
           <span class="presets">
             ${lista.map((p) => html`
-              <button key=${p.nome} class="btn tiny" title=${p.specs.map(([op]) => getOperator(op).label).join(' → ')}
+              <button key=${p.nome} class="btn tiny" title=${(p.desc ? p.desc + '\n\n' : '') + p.specs.map(([op]) => getOperator(op).label).join(' → ')}
                 onClick=${() => {
                   const painel = PAINEL_DO_PRESET[p.nome] || PAINEL_DO_GRUPO[g];
                   store.set(painel ? { nodes: chain(p.specs), panels: { ...store.get().panels, [painel]: true } } : { nodes: chain(p.specs) });
                   persist();
+                  criarMarcacoesModelo(p.nome);
                 }}>
                 ${p.nome}${p.agpl ? html` <i class="presets-agpl">AGPL</i>` : ''}
               </button>
@@ -383,6 +398,7 @@ export function aplicarPreset(nome, painel = null) {
     const st = store.get();
     store.set({ nodes: chain(p.specs), panels: { ...st.panels, pipeline: true, ...(painel ? { [painel]: true } : {}) } });
     persist();
+    criarMarcacoesModelo(nome);
     return true;
   }
   return false;
