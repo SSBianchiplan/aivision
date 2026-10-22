@@ -103,6 +103,8 @@ const StudioOnda2c = telaSobDemanda(() => import('./components/saude/StudioOnda2
 const ProjetoPanel = painelSobDemanda(() => import('./components/ProjetoPanel.js'), 'ProjetoPanel', 'projeto', '+Projeto');
 // Onda 1-a: painel Medições (CVC, instrumentos, segurança por pose, fotocélula, mapa de calor, logística) — sob demanda
 const MedicoesPanel = painelSobDemanda(() => import('./components/MedicoesPanel.js'), 'MedicoesPanel', 'medicoes', 'Medições');
+// Onda 2-d: painel Aplicações (física, acessibilidade, Libras, sala, mídia, agro, jogo, obra — CV-80..87) — sob demanda
+const AplicacoesPanel = painelSobDemanda(() => import('./components/livres-u/AplicacoesPanel.js'), 'AplicacoesPanel', 'aplicacoes', 'Aplicações');
 const InspectPanel = painelSobDemanda(() => import('./components/industrial/InspectPanel.js'), 'InspectPanel', 'inspecao', 'Inspeção visual');
 const StudioInspect = telaSobDemanda(() => import('./components/industrial/StudioInspect.js'), 'StudioInspect', 'bsc', 'GPlanSiS|Inspect');
 // Editor de vídeo GPlanSiS|Vídeo (✂ na barra de vídeo): sob demanda; a reserva usa o fundo da .bsc (o CSS do editor vem com ele)
@@ -131,13 +133,13 @@ const ViaPainel = sobDemanda(() => import('./via/ViaPainel.js'), 'ViaPainel', (p
 
 /** Ordem de empilhamento dentro de cada coluna. */
 const RAIL_ORDER = ['modules', 'models', 'coisas', 'esportes', 'bikefit', 'ergonomia', 'academia', 'salto', 'corrida', 'swing', 'vbt', 'quadra',
-                    'industrial', 'beltscan', 'contador', 'takt', 'oee', 'epi', 'fisio', 'onda2c', 'inspecao', 'medicoes', 'projeto', 'config', 'camera', 'auth',
+                    'industrial', 'beltscan', 'contador', 'takt', 'oee', 'epi', 'fisio', 'onda2c', 'inspecao', 'medicoes', 'aplicacoes', 'projeto', 'config', 'camera', 'auth',
                     'context', 'codes', 'captions', 'pipeline', 'stats', 'export'];
 /*
  * Coluna padrão dos painéis que ainda não estão no `dock` do store (os do
  * Industrial): sem isto um painel novo só apareceria no celular.
  */
-const DOCK_EXTRA = { industrial: 'right', beltscan: 'right', contador: 'right', takt: 'right', oee: 'right', epi: 'right', fisio: 'right', onda2c: 'right', inspecao: 'right', medicoes: 'right', projeto: 'right' };
+const DOCK_EXTRA = { industrial: 'right', beltscan: 'right', contador: 'right', takt: 'right', oee: 'right', epi: 'right', fisio: 'right', onda2c: 'right', inspecao: 'right', medicoes: 'right', aplicacoes: 'right', projeto: 'right' };
 
 /*
  * Disposição padrão dos widgets (versão 2): Ferramentas de mouse colada na
@@ -845,6 +847,7 @@ export function App({ sessao = null }) {
       case 'fisio':    return html`<${FisioPanel} ...${common} />`;
       case 'onda2c':   return html`<${SaudeEsportesPanel} ...${common} />`;
       case 'medicoes': return html`<${MedicoesPanel} ...${common} />`;
+      case 'aplicacoes': return html`<${AplicacoesPanel} ...${common} source=${source} />`;
       case 'projeto':  return html`<${ProjetoPanel} ...${common} />`;
       case 'context':  return html`<${ContextPanel} ...${common} getFrame=${getFrame} />`;
       case 'codes':    return html`<${CodePanel} ...${common} />`;

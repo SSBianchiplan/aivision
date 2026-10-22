@@ -41,7 +41,7 @@ import { indexar, indiceSintetico } from './midia.js';
 import {
   Historico, clipeInicial, cortar, cortarEmTodos, apagar, apagarFaixa, fecharLacunas, fimTimeline, fimClipe,
   clipeEm, quadroNoClipe, passoQuadro, ajustarAoQuadro, timecode, chaveMidia, salvarProjeto, carregarProjeto,
-  listarRecentes, clipesValidos, ordenar, durClipe, tempoDoQuadro, porKeyframe, apagarKeyframe, keyframesVisiveis,
+  listarRecentes, clipesValidos, ordenar, durClipe, tempoDoQuadro, porKeyframe, apagarKeyframe, keyframesVisiveis, novoId,
 } from './edl.js';
 import { Timeline, ALTURA_TIMELINE } from './timeline.js';
 import { Reprodutor, ajustarProporcao } from './reprodutor.js';
@@ -653,15 +653,44 @@ export function StudioVideo({ onClose, source, onPickFile }) {
   }, []);
 
   // pedido de abertura vindo da barra de vídeo / evento
+  // (onda 2-d: o pedido pode trazer `depois` — marcadores, trechos, reenquadramento
+  // ou ir a um instante, vindos do painel Aplicações — e chegar com o editor já
+  // aberto, pelo evento aiv:video-pedido; ver ponte.js)
   useEffect(() => {
-    const p = tomarPedido();
-    if (!p) return;
-    (async () => {
-      try {
-        const blob = p.blob || await (await fetch(p.url)).blob();
-        await abrir(blob, p.nome || 'video-da-fonte', p.origem || 'fonte', p.marcadores || null);
-      } catch (err) { setMsg('Não consegui abrir o vídeo pedido: ' + err.message); }
-    })();
+    const atender = () => {
+      const p = tomarPedido();
+      if (!p) return;
+      (async () => {
+        try {
+          const atual = E.current.midia;
+          const mesma = atual && p.blob && (atual.blob === p.blob || (atual.blob.size === p.blob.size && atual.nome === (p.nome || atual.nome)));
+          if (!mesma) {
+            const blob = p.blob || await (await fetch(p.url)).blob();
+            await abrir(blob, p.nome || 'video-da-fonte', p.origem || 'fonte', p.marcadores || null);
+            await new Promise((r) => setTimeout(r, 80));   // deixa o React aplicar o estado da mídia nova
+          } else if (Array.isArray(p.marcadores) && p.marcadores.length) {
+            const mk = [...new Set([...(E.current.marcadores || []), ...p.marcadores.filter(Number.isFinite).map(Math.round)])].sort((a, b) => a - b);
+            aplicarRef.current(null, 'Marcadores adicionados', { marcadores: mk });
+          }
+          if (typeof p.depois === 'function' && E.current.v) {
+            const e = E.current;
+            const r = p.depois({ v: e.v, clipes: e.clipes, marcadores: e.marcadores || [], recorte: e.recorte, novoId });
+            if (r) {
+              const extra = {};
+              if (r.marcadores) extra.marcadores = r.marcadores;
+              if (r.recorte) extra.recorte = r.recorte;
+              if (r.clipes || r.marcadores || r.recorte) aplicarRef.current(r.clipes || null, r.rotulo || null, extra);
+              else if (r.rotulo) setMsg(r.rotulo);
+              if (r.recorte) setRetEdicao(r.recorte);
+              if (Number.isFinite(r.irPara)) setTimeout(() => irPara(r.irPara), 60);
+            }
+          }
+        } catch (err) { setMsg('Não consegui abrir o vídeo pedido: ' + err.message); }
+      })();
+    };
+    atender();
+    window.addEventListener('aiv:video-pedido', atender);
+    return () => window.removeEventListener('aiv:video-pedido', atender);
   }, []);
 
   // salva a edição (debounce)

@@ -30,3 +30,4 @@ Histórico de versões: [../CHANGELOG.md](../CHANGELOG.md). Como contribuir: [..
 - [Segurança, NR-17, varejo, ocupação, medidores (CV-60 a CV-67)](seguranca-varejo-cidade.md)
 - [Indústria e logística (CV-49 a CV-59)](industria-logistica.md)
 - [Saúde e esportes (CV-70 a CV-77)](saude-esportes.md)
+- [Educação, acessibilidade, mídia, agro e construção (CV-80 a CV-87)](educacao-midia-agro.md)

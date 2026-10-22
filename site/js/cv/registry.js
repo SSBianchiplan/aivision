@@ -46,6 +46,7 @@ import livresOA, { MODULES_OA } from './operators/livres-oa.js';   // CV-41..45 
 import livresR, { MODULES_R } from './operators/livres-r.js';   // CV-49..59 onda 2-a (indústria e logística: poka-yoke, cubagem, doca, nível, correia, torque, chama, solda, fumaça, baú, fissuras)
 import livresS, { MODULES_S } from './operators/livres-s.js';   // CV-60..67 onda 2-b (NR-17, predial, varejo, produto, ocupação, medidor, resumo, velocidade)
 import livresT, { MODULES_T } from './operators/livres-t.js';   // CV-70..77 onda 2-c (saúde e esportes: vitais, rosto, clínica, domiciliar, hospital, referência, ciclo, PROESP)
+import livresU, { MODULES_U } from './operators/livres-u.js';   // CV-80..87 onda 2-d (física, acessibilidade, Libras, sala, mídia, agro, jogo, obra)
 
 /**
  * Catálogo de módulos, espelhando o catálogo de capacidades do SPEC §4.2.
@@ -218,6 +219,7 @@ MODULES.push(...MODULES_O, ...MODULES_P, ...MODULES_Q);
 MODULES.push(...MODULES_R);
 MODULES.push(...MODULES_S);
 MODULES.push(...MODULES_T);
+MODULES.push(...MODULES_U);
 
 // -------------------------------------------------------------- operadores
 
@@ -225,7 +227,8 @@ const ALL = [...classical, ...features, ...motion, ...tracking, ...models, ...fa
              ...openvocab, ...sam, ...depth, ...zeroshot, ...code, ...custom,
              ...livresA, ...livresB, ...livresC, ...livresD, ...livresE,
              ...livresF, ...livresG, ...livresH, ...livresI, ...livresJ, ...livresK, ...livresL, ...cena, ...livresM, ...livresN, ...livresOA,
-             ...livresO, ...livresP, ...livresQ, ...livresR, ...livresS, ...livresT];
+             ...livresO, ...livresP, ...livresQ, ...livresR, ...livresS, ...livresT,
+             ...livresU];
 
 /** op name -> definição */
 export const OPERATORS = new Map(ALL.map((o) => [o.op, o]));

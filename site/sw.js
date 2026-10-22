@@ -24,7 +24,7 @@
  * ========================================================================
  */
 
-const VERSION = 'iav-v93-vps';   // 22/10/2026: onda 2-a e 2-c — CV-49..59 indústria/logística e CV-70..77 saúde/esportes
+const VERSION = 'iav-v94-vps';   // 22/10/2026: onda 2-d — CV-80..87: física, acessibilidade, Libras, sala de aula, mídia, agro, câmera de jogo, diário de obra; página 83/150
 const SHELL = `${VERSION}-shell`;
 /*
  * Pesos dos modelos num cache de nome FIXO: sobrevivem às publicações. Antes o

@@ -1,11 +1,11 @@
 <p align="center">
-  <a href="https://aivision.gplansis.com"><img src=".github/capa.png" alt="GPlanSiS|iaVision — Visão computacional em tempo real, na tela e na palma da sua mão. 75 módulos · 136 operadores · roda no dispositivo." width="100%"></a>
+  <a href="https://aivision.gplansis.com"><img src=".github/capa.png" alt="GPlanSiS|iaVision — Visão computacional em tempo real, na tela e na palma da sua mão. 83 módulos · 150 operadores · roda no dispositivo." width="100%"></a>
 </p>
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/licen%C3%A7a-AGPL--3.0-04413C" alt="Licença AGPL-3.0"></a>
   <a href="https://aivision.gplansis.com"><img src="https://img.shields.io/badge/no%20ar-aivision.gplansis.com-2ea44f" alt="No ar em aivision.gplansis.com"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/vers%C3%A3o-v93-FFD84D" alt="Versão v93"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/vers%C3%A3o-v94-FFD84D" alt="Versão v94"></a>
   <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-bem--vindos-brightgreen" alt="PRs bem-vindos"></a>
 </p>
 
@@ -29,7 +29,7 @@
 
 O **GPlanSiS|iaVision** é uma plataforma de **visão computacional em tempo real que roda inteira no navegador**, no computador ou no celular. Uma câmera (ou um arquivo, a tela, uma câmera RTMP/IP ou um vídeo do YouTube) entra num **pipeline de operadores encadeáveis**: do processamento clássico (Canny, limiar, morfologia) aos modelos de deep learning (detecção, segmentação, pose, OCR, vocabulário aberto, profundidade), com **Studios** em tela cheia para a indústria e para o esporte.
 
-- **75 módulos, 136 operadores, 38 modelos**, com o catálogo gerado do código em [docs/modulos.md](docs/modulos.md).
+- **83 módulos, 150 operadores, 38 modelos**, com o catálogo gerado do código em [docs/modulos.md](docs/modulos.md).
 - **Tudo no dispositivo:** os modelos rodam com ONNX Runtime Web, na placa de vídeo (WebGPU) quando o aparelho permite e em WASM com threads nos demais. Nenhum quadro de vídeo vai para o servidor durante a análise.
 - **Sem build:** ES modules servidos como estão, React UMD + htm. Clonou, baixou os `.wasm`, rodou.
 - **Código aberto** sob AGPL-3.0, em português.

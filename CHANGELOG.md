@@ -2,6 +2,13 @@
 
 As versões seguem o `VERSION` do service worker (`site/sw.js`).
 
+## v92–v94 — 2026-10-22 (onda 2)
+- **83 módulos e 150 operadores** (eram 48 e 94), mais de 170 presets.
+- **Segurança, varejo e cidade (CV-60–67):** NR-17/NIOSH, saída obstruída, fogo indicativo, auditoria de preço, planograma, foto de produto, ocupação, medidores, resumo de vídeo, velocidade. Ver [docs/seguranca-varejo-cidade.md](docs/seguranca-varejo-cidade.md).
+- **Indústria e logística (CV-49–59):** poka-yoke, cubagem, doca, nível, gotejamento, alinhamento de correia, torque, chama, solda, Ringelmann, baú, fissuras. Ver [docs/industria-logistica.md](docs/industria-logistica.md).
+- **Saúde e esportes (CV-70–77):** sinais vitais sem contato, rosto e movimento clínico, exercício em casa, hospital, comparação com referência, corda, luta, basquete, natação, PROESP-BR; Studio Vitais. Ver [docs/saude-esportes.md](docs/saude-esportes.md).
+- **Educação, acessibilidade, mídia, agro e construção (CV-80–87):** física por vídeo, descrição falada, mouse por cabeça, alfabeto de Libras, gabarito, mídia (cortes, miniatura, busca semântica, cortes por fala), agro, câmera de jogo, diário de obra. Ver [docs/educacao-midia-agro.md](docs/educacao-midia-agro.md).
+
 ## v87–v91 — 2026-10-22
 - **Página principal no celular:** cartões animam sem mouse, assinatura reage ao toque e passa em onda, mini-animações seguem com "reduzir movimento".
 - **Fonte dentro dos Studios (v88):** botão Fonte nos 6 Studios (câmeras, resolução/fps, Wi-Fi/IP, arquivo, tela, YouTube); troca de câmera a quente, reconexão após desconexão, fim dos vazamentos de MediaStream. Ver [docs/fonte-nos-studios.md](docs/fonte-nos-studios.md).

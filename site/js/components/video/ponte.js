@@ -12,6 +12,13 @@
  *   window.dispatchEvent(new CustomEvent('aiv:editar-video', { detail: { blob, nome } }))
  *                                            o mesmo, sem importar nada
  *
+ * DEPOIS DE ABRIR (onda 2-d, painel Aplicações). O pedido pode trazer
+ *   depois({ v, clipes, marcadores, recorte, novoId }) → { marcadores?, clipes?, recorte?, irPara?, rotulo? }
+ * (tempos em µs da TIMELINE): marcadores de corte de cena/capítulos, clipes dos
+ * melhores trechos, reenquadramento da câmera de jogo, ou ir ao instante de uma
+ * busca. Com o editor já aberto e a MESMA mídia, nada é reaberto: só o `depois`
+ * é aplicado (com desfazer). O evento 'aiv:video-pedido' avisa o editor aberto.
+ *
  * GRAVAÇÕES. A barra de vídeo entrega cada gravação concluída a
  * `guardarGravacao(out)`; o editor oferece "Editar a última gravação".
  *
@@ -34,6 +41,8 @@ let gravacao = null;
 export function abrirEditorVideo(midia) {
   pedido = midia || null;
   store.set({ studioVideo: true });
+  // editor já aberto: ele atende o pedido na hora (onda 2-d)
+  window.dispatchEvent(new CustomEvent('aiv:video-pedido'));
 }
 
 /** O editor pega (uma vez) a mídia pedida na abertura. */

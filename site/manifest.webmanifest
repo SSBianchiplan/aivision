@@ -2,7 +2,7 @@
   "id": "/app.html",
   "name": "GPlanSiS|iaVision",
   "short_name": "iaVision",
-  "description": "Visão computacional em tempo real, na tela e na palma da sua mão. 48 módulos e 94 operadores: industrial (BeltScan, CounterVision, Takt, Inspect, OEE, EPI), esportes e Bike Fit, detecção, OCR, pose, segmentação, assistente Via, editor de vídeo e treino de modelos próprios.",
+  "description": "Visão computacional em tempo real, na tela e na palma da sua mão. 83 módulos e 150 operadores: industrial (BeltScan, CounterVision, Takt, Inspect, OEE, EPI), esportes e Bike Fit, detecção, OCR, pose, segmentação, assistente Via, editor de vídeo e treino de modelos próprios.",
   "start_url": "/app.html",
   "scope": "/",
   "display": "standalone",
