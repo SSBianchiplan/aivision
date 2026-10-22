@@ -24,7 +24,7 @@
  * ========================================================================
  */
 
-const VERSION = 'iav-v97-vps';   // 22/10/2026: Motion 3D Studio: vídeo em resolução cheia (canvas de exibição), redesenho por quadro pintado, sem clone do quadro por pose
+const VERSION = 'iav-v98-vps';   // 22/10/2026: Studios: link do YouTube no botão Fonte (o objeto do extrairId ia inteiro como id)
 const SHELL = `${VERSION}-shell`;
 /*
  * Pesos dos modelos num cache de nome FIXO: sobrevivem às publicações. Antes o

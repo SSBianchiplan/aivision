@@ -214,11 +214,13 @@ function Popover({ ancora, estado: e, s, onFechar, onCheio }) {
     if (store.get().sourceKind === 'screen') onFechar(); else setMsg({ ok: false, t: store.get().notice || 'A captura de tela não começou.' });
   };
   const abrirYt = async () => {
-    const id = extrairId(ytLink);
+    // extrairId devolve { id, shorts, solto } (ou null): o player recebe só o id de 11 caracteres
+    const ref = extrairId(ytLink);
+    const id = ref && ref.id;
     if (!id) { setMsg({ ok: false, t: 'Cole um link do YouTube (youtube.com/watch?v=…, youtu.be/…, Shorts) ou o ID de 11 caracteres.' }); return; }
     setOcupado('yt'); setMsg({ ok: true, t: 'Abrindo o vídeo no player oficial…' });
     try {
-      await yt.carregar(id, { aspecto: /\/shorts\//.test(ytLink) ? '9:16' : undefined });
+      await yt.carregar(id, { aspecto: ref.shorts ? '9:16' : undefined });
       setMsg({ ok: true, t: yt.erro || 'Vídeo aberto. Agora «Analisar» para mandar ao pipeline.' });
     } catch (x) { setMsg({ ok: false, t: x.message }); }
     setOcupado(null);
