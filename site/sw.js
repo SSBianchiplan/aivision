@@ -24,7 +24,7 @@
  * ========================================================================
  */
 
-const VERSION = 'iav-v86-vps';   // 21/10/2026: página principal com as novidades, CTAs e animações por módulo
+const VERSION = 'iav-v87-vps';   // 22/10/2026: animações da página principal no celular (toque, cartões automáticos, assinatura em onda)
 const SHELL = `${VERSION}-shell`;
 /*
  * Pesos dos modelos num cache de nome FIXO: sobrevivem às publicações. Antes o
