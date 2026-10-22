@@ -24,7 +24,7 @@
  * ========================================================================
  */
 
-const VERSION = 'iav-v94-vps';   // 22/10/2026: onda 2-d — CV-80..87: física, acessibilidade, Libras, sala de aula, mídia, agro, câmera de jogo, diário de obra; página 83/150
+const VERSION = 'iav-v95-vps';   // 22/10/2026: trânsito em tempo real (YOLOX WebGPU, ladrilhos, ByteTrack com previsão, sincronia de imagem) + presets de saúde de volta
 const SHELL = `${VERSION}-shell`;
 /*
  * Pesos dos modelos num cache de nome FIXO: sobrevivem às publicações. Antes o

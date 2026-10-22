@@ -17,6 +17,25 @@ import { criar, marcStore, setVisivel } from '../cv/marcacoes.js';
 
 const PESSOAS = { classes: 'pessoa', conf: 0.45, maxDet: 60 };
 const VEICULOS = { classes: 'carro, moto, ônibus, caminhão, bicicleta, pessoa', conf: 0.4, maxDet: 80 };
+
+/*
+ * TRÂNSITO EM TEMPO REAL. O RF-DETR int8 roda em WASM (~300–400 ms: o
+ * quantizado não acelera no WebGPU) — 3 resultados/s, e a caixa ficava
+ * para trás do veículo. Os presets de trânsito usam o YOLOX-S (Apache-2.0)
+ * no WebGPU (~45–55 ms por run). O YOLO26n (AGPL) é mais rápido (~20–35 ms),
+ * mas nos testes de via expressa (carros de 35–75 px num quadro 1920) não
+ * achou quase nenhum carro, e na pista larga achou 72–76% contra 99–100% do
+ * YOLOX — por isso não é o padrão (continua escolhível no nó, com
+ * `reserva` para cair no YOLOX). Entrada 'auto': resolução plena da fonte,
+ * recorte da ROI e 2–3 ladrilhos num quadro largo, com salto adaptativo de
+ * quadros. Limiar 0,25 no detector e 0,4 para nascer trilha (ByteTrack: as
+ * baixas só mantêm trilha); a trilha vale desde a 1ª detecção (`nascer: 1`),
+ * senão, com o detector mais lento, o veículo já saiu da zona de origem
+ * quando é confirmado. O rastreio desenha a posição prevista e, em arquivo
+ * e YouTube, a imagem é atrasada para casar com as caixas.
+ */
+const DET_RT = ['dnn.detect', { classes: VEICULOS.classes, conf: 0.25, iou: 0.45, maxDet: 100, entrada: 'auto' }];
+const TRACK_RT = { rastro: 15, perder: 30, altaConf: 0.4, nascer: 1 };
 const ret = (nome, funcao, a, b) => ({ ferramenta: 'retangulo', funcao, nome, pts: [a, b] });
 const lin = (nome, funcao, a, b) => ({ ferramenta: 'linha', funcao, nome, pts: [a, b] });
 
@@ -52,17 +71,18 @@ export const PRESETS_ONDA1A = [
 
   // ------------------------------------------------------------------ Trânsito
   { grupo: 'Trânsito', nome: 'CVC — contagem classificada e matriz de giro', painel: 'medicoes',
-    desc: 'Contagem volumétrica classificada (Top 1): RF-DETR acha carro, moto, ônibus, caminhão, bicicleta e pedestre, o ' +
+    desc: 'Contagem volumétrica classificada (Top 1): YOLOX-S no WebGPU acha carro, moto, ônibus, caminhão, bicicleta e ' +
+          'pedestre em tempo real (resolução plena, ladrilhos em quadro largo), o ' +
           'rastreio dá o ID e cada ZONA é um braço da interseção — origem → destino em blocos de 15 min, matriz de giro e ' +
           'CSV no painel Medições. Arraste as quatro zonas para as entradas da interseção.',
-    specs: [['rfdetr.detect', VEICULOS], ['track.bytetrack', { rastro: 15, perder: 45 }],
+    specs: [DET_RT, ['track.bytetrack', TRACK_RT],
             ['cena.zonas', { fonte: 'detecções', ponto: 'centro', sair: 20, mostrarPontos: false }], ['trafego.cvc', {}]],
     marcacoes: [ret('Norte', 'zona', [0.36, 0.0], [0.64, 0.18]), ret('Sul', 'zona', [0.36, 0.82], [0.64, 1.0]),
                 ret('Leste', 'zona', [0.82, 0.36], [1.0, 0.64]), ret('Oeste', 'zona', [0.0, 0.36], [0.18, 0.64])] },
   { grupo: 'Trânsito', nome: 'CVC — seção (linha por sentido)', painel: 'medicoes',
     desc: 'Contagem classificada numa seção da via: cada veículo que cruza a linha conta por sentido e classe, em blocos ' +
           'de 15 min, com CSV.',
-    specs: [['rfdetr.detect', VEICULOS], ['track.bytetrack', { rastro: 15, perder: 45 }],
+    specs: [DET_RT, ['track.bytetrack', TRACK_RT],
             ['cena.zonas', { fonte: 'detecções', ponto: 'centro', umaVez: true, mostrarPontos: false }], ['trafego.cvc', {}]],
     marcacoes: [lin('Seção', 'cruzamento', [0.04, 0.6], [0.96, 0.6])] },
 

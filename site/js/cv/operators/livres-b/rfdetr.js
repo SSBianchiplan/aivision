@@ -22,6 +22,8 @@ import { MODELS, run, makeTensor } from '../../runtime/onnx.js';
 import { stretch, toTensorData } from '../../runtime/tensor.js';
 import { COCO_CLASSES } from '../../runtime/labels.js';
 import { ensure, schedule, colorFor, nmsBoxes, sigmoid, listaTexto, normalizar } from '../../runtime/opkit.js';
+import { ENTRADAS, preparar, inferir, medir, intervaloAuto } from '../../runtime/tempo-real/entrada.js';
+import { carimbar } from '../../runtime/tempo-real/carimbo.js';
 
 const G = 'CV-23';
 
@@ -92,6 +94,9 @@ export const rfdetrDetect = {
     classes: { type: 'text', default: '', max: 300, label: 'Só estas classes (vírgula; vazio = todas)' },
     everyMs: { type: 'int', min: 0, max: 3000, step: 50, default: 0, label: 'Intervalo mín. (ms)' },
     showScore: { type: 'bool', default: true, label: 'Mostrar score' },
+    // 'quadro' = como sempre; os outros leem a fonte em resolução plena, recortam
+    // a ROI e podem ladrilhar (cv/runtime/tempo-real/entrada.js)
+    entrada: { type: 'enum', options: ENTRADAS, default: 'quadro', label: 'Entrada do modelo' },
   },
   apply(src, p, state, ctx) {
     const id = VARIANTES[p.variante] || 'rfdetr-nano';
@@ -99,7 +104,21 @@ export const rfdetrDetect = {
     // trocar de variante descarta o resultado antigo (caixas de outro modelo)
     if (state.id !== id) { state.id = id; state.results = null; }
 
-    schedule(state, p.everyMs, () => prepRfdetr(src, id), (data) => inferRfdetr(data, id, p.conf, p.maxDet));
+    if (p.entrada === 'quadro' || !p.entrada) {
+      schedule(state, p.everyMs, () => prepRfdetr(src, id), (data) => inferRfdetr(data, id, p.conf, p.maxDet), ctx.tQuadro);
+    } else {
+      const spec = MODELS[id], S = spec.input[2];
+      schedule(state, intervaloAuto(p, state),
+        () => preparar(src, ctx, { modo: p.entrada, S, ajuste: 'esticar', msPorRun: state.msPorRun || 0, prepMs: state.prepMs || 0 }),
+        async (prep) => {
+          const t0 = performance.now();
+          // RF-DETR devolve 0..1 do ladrilho: leva para px do modelo, o desfazer cuida do resto
+          const res = await inferir(prep, async (img) => (await inferRfdetr(toTensorData(img, spec), id, p.conf, p.maxDet))
+            .map((b) => ({ ...b, x1: b.x1 * S, y1: b.y1 * S, x2: b.x2 * S, y2: b.y2 * S })), { iouNms: 0.7, maxDet: p.maxDet });
+          medir(state, prep, t0);
+          return res;
+        }, ctx.tQuadro);
+    }
 
     const filtro = listaTexto(p.classes);
     const res = (state.results || []).filter((b) => !filtro.length || filtro.some((f) => normalizar(b.name).includes(f)));
@@ -108,10 +127,12 @@ export const rfdetrDetect = {
       const bw = (b.x2 - b.x1) * w, bh = (b.y2 - b.y1) * h;
       if (!(bw > 1 && bh > 1)) continue;
       ctx.overlay.push({ type: 'rect', x: b.x1 * w, y: b.y1 * h, w: bw, h: bh, color: colorFor(b.cls),
-                         label: p.showScore ? `${b.name} ${(b.score * 100) | 0}%` : b.name });
+                         label: p.showScore ? `${b.name} ${(b.score * 100) | 0}%` : b.name, det: true });
     }
     // mesmo formato do dnn.detect: normalizadas, com nome — o resto da cadeia consome isto
     ctx.detections = res.map((b) => ({ x1: b.x1, y1: b.y1, x2: b.x2, y2: b.y2, score: b.score, name: b.name, classId: b.cls }));
+    carimbar(ctx, state);
+    if (state.ladrilhos > 1) ctx.metrics['ladrilhos'] = state.ladrilhos;
     ctx.metrics['objetos'] = res.length;
     if (state.inferMs) ctx.metrics['rf-detr ms'] = state.inferMs.toFixed(0);
     if (state.error) ctx.metrics['rf-detr erro'] = state.error;

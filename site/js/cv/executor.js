@@ -52,6 +52,12 @@ export class PipelineExecutor {
        */
       grabFull: (extra && extra.grabFull) || null,
       /*
+       * grabCanvas(maxW) → { canvas, w, h }: o mesmo quadro pleno, mas como
+       * canvas (sem leitura de pixels). null sem hospedeiro ou com ROI ligada
+       * (aí a máscara exige o ImageData do grabFull).
+       */
+      grabCanvas: (extra && extra.grabCanvas) || null,
+      /*
        * O quadro chega espelhado quando "Espelhar" está ligado (o Viewport
        * espelha ANTES de processar, para qualquer fonte). Quem depende de
        * esquerda/direita — lado da mão, lado do ciclista — lê daqui em vez
@@ -71,6 +77,15 @@ export class PipelineExecutor {
        */
       marcacoes: (extra && extra.marcacoes) || null,
       roiAtiva: false,
+      /*
+       * Relógio (ms, performance.now) do quadro: os detectores carimbam o
+       * resultado com ele e o rastreio prevê posições nele
+       * (cv/runtime/tempo-real/). tExibir = instante do quadro que vai para
+       * a tela — o mesmo, ou mais velho quando o Viewport atrasa a imagem
+       * (sincronia). Sem hospedeiro (testes), ficam indefinidos.
+       */
+      tQuadro: extra && Number.isFinite(extra.tQuadro) ? extra.tQuadro : undefined,
+      tExibir: extra && Number.isFinite(extra.tExibir) ? extra.tExibir : undefined,
     };
 
     let current = frame;
@@ -87,6 +102,7 @@ export class PipelineExecutor {
     if (mq && mq.roi) {
       const m = aplicarMascara(frame, mq);
       if (m) { current = m; owned = true; ctx.roiAtiva = true; }
+      ctx.grabCanvas = null;
       if (ctx.grabFull) {
         const grab = ctx.grabFull;
         ctx.grabFull = (maxW) => { const g = grab(maxW); return g ? aplicarMascara(g, mq, true) : g; };
@@ -134,6 +150,8 @@ export class PipelineExecutor {
       overlay: ctx.overlay,
       metrics: ctx.metrics,
       timings,
+      // atraso pedido pelo rastreio para a imagem casar com as caixas (ver Viewport)
+      sincronia: ctx.sincronia || null,
     };
   }
 }

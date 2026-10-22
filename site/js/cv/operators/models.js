@@ -30,6 +30,9 @@ import {
   COCO_CLASSES, CHARSET_EN, POSE_CONNECTIONS, POSE_VISIBLE_LANDMARKS,
   loadImagenetLabels,
 } from '../runtime/labels.js';
+import { ENTRADAS, preparar, inferir, medir, intervaloAuto } from '../runtime/tempo-real/entrada.js';
+import { carimbar } from '../runtime/tempo-real/carimbo.js';
+import { listaTexto, normalizar } from '../runtime/opkit.js';
 
 /**
  * Garante o modelo carregado sem bloquear. Devolve true quando pronto.
@@ -61,8 +64,9 @@ function ensure(id, state, ctx) {
  * Dispara inferência se o modelo estiver livre e já tiver passado o intervalo.
  * `prep` roda SÍNCRONO (pré-processo, barato); `infer` roda async.
  */
-function schedule(state, minIntervalMs, prep, infer) {
+function schedule(state, minIntervalMs, prep, infer, tCaptura) {
   const now = performance.now();
+  const tCap = Number.isFinite(tCaptura) ? tCaptura : now;
   if (state.busy) return;
   if (state.lastStart && now - state.lastStart < minIntervalMs) return;
 
@@ -83,6 +87,9 @@ function schedule(state, minIntervalMs, prep, infer) {
       state.results = res;
       state.inferMs = performance.now() - now;
       state.error = null;
+      // carimbo do quadro inferido (ver opkit.schedule)
+      state.resultsSeq = (state.resultsSeq | 0) + 1;
+      state.resultsT = tCap;
     })
     .catch((err) => {
       state.error = String(err && err.message ? err.message : err);
@@ -163,32 +170,56 @@ export const detect = {
     maxDet: { type: 'int', min: 1, max: 100, step: 1, default: 30, label: 'Máx. detecções' },
     everyMs: { type: 'int', min: 0, max: 2000, step: 50, default: 0, label: 'Intervalo mín. (ms)' },
     showScore: { type: 'bool', default: true, label: 'Mostrar score' },
+    // 'quadro' = como sempre (o quadro de trabalho em procWidth); os outros
+    // leem a fonte em resolução plena, recortam a ROI e podem ladrilhar
+    // (ver cv/runtime/tempo-real/entrada.js) — objetos pequenos em quadro largo
+    entrada: { type: 'enum', options: ENTRADAS, default: 'quadro', label: 'Entrada do modelo' },
+    classes: { type: 'text', default: '', max: 300, label: 'Só estas classes (vírgula; vazio = todas)' },
   },
   apply(src, p, state, ctx) {
     if (!ensure('yolox', state, ctx)) return clone(src);
     const spec = MODELS.yolox;
+    const S = spec.input[2];
+    const decodificar = (out) => {
+      const key = Object.keys(out)[0];
+      return decodeYolox(out[key].data, out[key].dims, spec, p.conf, p.iou, p.maxDet);
+    };
 
-    schedule(state, p.everyMs,
-      () => {
-        const lb = letterbox(src, spec.input[3], spec.input[2]);
-        return { data: toTensorData(lb.data, spec), lb, w: src.width, h: src.height };
-      },
-      async ({ data, lb, w, h }) => {
-        const t = await makeTensor(data, spec.input);
-        const out = await run('yolox', t);
-        const key = Object.keys(out)[0];
-        const boxes = decodeYolox(out[key].data, out[key].dims, spec, p.conf, p.iou, p.maxDet);
-        // normaliza para 0..1 para sobreviver a mudança de resolução
-        return boxes.map((b) => {
-          const u = unletterbox(b, lb);
-          return {
-            x1: u.x1 / w, y1: u.y1 / h, x2: u.x2 / w, y2: u.y2 / h,
-            score: b.score, classId: b.classId,
-          };
-        });
-      });
+    if (p.entrada === 'quadro') {
+      schedule(state, p.everyMs,
+        () => {
+          const lb = letterbox(src, spec.input[3], spec.input[2]);
+          return { data: toTensorData(lb.data, spec), lb, w: src.width, h: src.height };
+        },
+        async ({ data, lb, w, h }) => {
+          const t = await makeTensor(data, spec.input);
+          const boxes = decodificar(await run('yolox', t));
+          // normaliza para 0..1 para sobreviver a mudança de resolução
+          return boxes.map((b) => {
+            const u = unletterbox(b, lb);
+            return {
+              x1: u.x1 / w, y1: u.y1 / h, x2: u.x2 / w, y2: u.y2 / h,
+              score: b.score, classId: b.classId,
+            };
+          });
+        }, ctx.tQuadro);
+    } else {
+      schedule(state, intervaloAuto(p, state),
+        () => preparar(src, ctx, { modo: p.entrada, S, ajuste: 'letterbox', msPorRun: state.msPorRun || 0, prepMs: state.prepMs || 0 }),
+        async (prep) => {
+          const t0 = performance.now();
+          const res = await inferir(prep, async (img) => {
+            const t = await makeTensor(toTensorData(img, spec), spec.input);
+            return decodificar(await run('yolox', t)).map((b) => ({ ...b, cls: b.classId }));
+          }, { iouNms: p.iou, maxDet: p.maxDet });
+          medir(state, prep, t0);
+          return res.map(({ cls, ...b }) => ({ ...b, classId: cls }));
+        }, ctx.tQuadro);
+    }
 
-    const res = state.results || [];
+    const filtro = listaTexto(p.classes);
+    const res = (state.results || []).filter((b) => !filtro.length
+      || filtro.some((f) => normalizar(COCO_CLASSES[b.classId] || '').includes(f)));
     for (const b of res) {
       const x = b.x1 * ctx.w, y = b.y1 * ctx.h;
       const w = (b.x2 - b.x1) * ctx.w, h = (b.y2 - b.y1) * ctx.h;
@@ -199,6 +230,7 @@ export const detect = {
         x: nz(x), y: nz(y), w: nz(w), h: nz(h),
         color: colorFor(b.classId),
         label: p.showScore ? `${name} ${(b.score * 100) | 0}%` : name,
+        det: true,       // caixa crua do detector: o rastreio pode escondê-la (ver tracking.js)
       });
     }
     // As caixas ficam no contexto do frame para quem vem depois na cadeia
@@ -207,8 +239,11 @@ export const detect = {
       x1: b.x1, y1: b.y1, x2: b.x2, y2: b.y2, score: b.score,
       name: COCO_CLASSES[b.classId] || `#${b.classId}`,
     }));
+    // carimbo: de qual inferência e de que instante são estas caixas
+    carimbar(ctx, state);
     ctx.metrics['objetos'] = res.length;
     if (state.inferMs) ctx.metrics['detect ms'] = state.inferMs.toFixed(0);
+    if (state.ladrilhos > 1) ctx.metrics['ladrilhos'] = state.ladrilhos;
     if (state.error) ctx.metrics['detect erro'] = state.error;
     return clone(src);
   },

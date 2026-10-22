@@ -31,3 +31,4 @@ Histórico de versões: [../CHANGELOG.md](../CHANGELOG.md). Como contribuir: [..
 - [Indústria e logística (CV-49 a CV-59)](industria-logistica.md)
 - [Saúde e esportes (CV-70 a CV-77)](saude-esportes.md)
 - [Educação, acessibilidade, mídia, agro e construção (CV-80 a CV-87)](educacao-midia-agro.md)
+- [Detecção em tempo real: previsão, ladrilhos e sincronia](tempo-real.md)

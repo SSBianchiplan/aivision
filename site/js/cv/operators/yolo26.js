@@ -23,6 +23,10 @@ import {
 } from '../runtime/onnx.js';
 import { letterbox, stretch, toTensorData, softmax, topK } from '../runtime/tensor.js';
 import { COCO_CLASSES, loadImagenetLabels } from '../runtime/labels.js';
+import { ENTRADAS, preparar, inferir, medir, intervaloAuto } from '../runtime/tempo-real/entrada.js';
+import { carimbar } from '../runtime/tempo-real/carimbo.js';
+import { listaTexto, normalizar } from '../runtime/opkit.js';
+import { detect as detectYolox } from './models.js';
 
 const G = 'CV-09';
 
@@ -74,8 +78,9 @@ function ensure(id, state, ctx) {
   return false;
 }
 
-function schedule(state, minMs, prep, infer) {
+function schedule(state, minMs, prep, infer, tCaptura) {
   const now = performance.now();
+  const tCap = Number.isFinite(tCaptura) ? tCaptura : now;
   if (state.busy) return;
   if (state.lastStart && now - state.lastStart < minMs) return;
   let input;
@@ -84,7 +89,10 @@ function schedule(state, minMs, prep, infer) {
   state.busy = true;
   state.lastStart = now;
   Promise.resolve().then(() => infer(input))
-    .then((r) => { state.results = r; state.inferMs = performance.now() - now; state.error = null; })
+    .then((r) => {
+      state.results = r; state.inferMs = performance.now() - now; state.error = null;
+      state.resultsSeq = (state.resultsSeq | 0) + 1; state.resultsT = tCap;   // carimbo (ver opkit.schedule)
+    })
     .catch((e) => { state.error = String(e && e.message ? e.message : e); })
     .finally(() => { state.busy = false; });
 }
@@ -130,31 +138,66 @@ export const y26detect = {
     maxDet: { type: 'int', min: 1, max: 300, step: 1, default: 50, label: 'Máx. detecções' },
     everyMs: { type: 'int', min: 0, max: 2000, step: 50, default: 0, label: 'Intervalo mín. (ms)' },
     showScore: { type: 'bool', default: true, label: 'Mostrar score' },
+    // 'quadro' = como sempre; os outros leem a fonte em resolução plena, recortam
+    // a ROI e podem ladrilhar (cv/runtime/tempo-real/entrada.js)
+    entrada: { type: 'enum', options: ENTRADAS, default: 'quadro', label: 'Entrada do modelo' },
+    classes: { type: 'text', default: '', max: 300, label: 'Só estas classes (vírgula; vazio = todas)' },
+    // sem a licença aceita, ou se o YOLO26n falhar, cai no YOLOX-S (Apache-2.0)
+    reserva: { type: 'bool', default: false, label: 'Cair no YOLOX se o YOLO26 não rodar' },
   },
   apply(src, p, state, ctx) {
+    const falhou = !agplAccepted() || state.err_yolo26n || (modelStates()['yolo26n'] || {}).status === 'error'
+      || (state.error && !state.results);
+    if (p.reserva && falhou) {
+      // queda automática: o mesmo contrato de saída, pelo YOLOX
+      const r = state.reservaSt || (state.reservaSt = {});
+      const out = detectYolox.apply(src, { conf: p.conf, iou: 0.45, maxDet: p.maxDet, everyMs: p.everyMs, showScore: p.showScore,
+                                           entrada: p.entrada, classes: p.classes }, r, ctx);
+      ctx.metrics['yolo26'] = 'indisponível — usando YOLOX-S';
+      return out;
+    }
     if (!ensure('yolo26n', state, ctx)) return clone(src);
     const spec = AGPL_MODELS['yolo26n'];
     const S = spec.input[2];
+    const linhas = (d, conv) => decodeRows(d, 300, spec.stride, p.conf).slice(0, p.maxDet).map((r) => conv(r, d));
 
-    schedule(state, p.everyMs,
-      () => {
-        const lb = letterbox(src, S, S);
-        return { data: toTensorData(lb.data, spec), lb, w: src.width, h: src.height };
-      },
-      async ({ data, lb, w, h }) => {
-        const t = await makeTensor(data, spec.input);
-        const out = await run('yolo26n', t);
-        const d = out[Object.keys(out)[0]].data;
-        return decodeRows(d, 300, spec.stride, p.conf).slice(0, p.maxDet).map((r) => ({
-          x1: ((d[r.o] - lb.dx) / lb.scale) / w,
-          y1: ((d[r.o + 1] - lb.dy) / lb.scale) / h,
-          x2: ((d[r.o + 2] - lb.dx) / lb.scale) / w,
-          y2: ((d[r.o + 3] - lb.dy) / lb.scale) / h,
-          score: r.score, cls: r.cls,
-        }));
-      });
+    if (p.entrada === 'quadro' || !p.entrada) {
+      schedule(state, p.everyMs,
+        () => {
+          const lb = letterbox(src, S, S);
+          return { data: toTensorData(lb.data, spec), lb, w: src.width, h: src.height };
+        },
+        async ({ data, lb, w, h }) => {
+          const t = await makeTensor(data, spec.input);
+          const out = await run('yolo26n', t);
+          const d = out[Object.keys(out)[0]].data;
+          return linhas(d, (r) => ({
+            x1: ((d[r.o] - lb.dx) / lb.scale) / w,
+            y1: ((d[r.o + 1] - lb.dy) / lb.scale) / h,
+            x2: ((d[r.o + 2] - lb.dx) / lb.scale) / w,
+            y2: ((d[r.o + 3] - lb.dy) / lb.scale) / h,
+            score: r.score, cls: r.cls,
+          }));
+        }, ctx.tQuadro);
+    } else {
+      schedule(state, intervaloAuto(p, state),
+        () => preparar(src, ctx, { modo: p.entrada, S, ajuste: 'letterbox', msPorRun: state.msPorRun || 0, prepMs: state.prepMs || 0 }),
+        async (prep) => {
+          const t0 = performance.now();
+          const res = await inferir(prep, async (img) => {
+            const t = await makeTensor(toTensorData(img, spec), spec.input);
+            const out = await run('yolo26n', t);
+            const d = out[Object.keys(out)[0]].data;
+            return linhas(d, (r) => ({ x1: d[r.o], y1: d[r.o + 1], x2: d[r.o + 2], y2: d[r.o + 3], score: r.score, cls: r.cls }));
+          }, { iouNms: 0.5, maxDet: p.maxDet });
+          medir(state, prep, t0);
+          return res;
+        }, ctx.tQuadro);
+    }
 
-    const res = state.results || [];
+    const filtro = listaTexto(p.classes);
+    const res = (state.results || []).filter((b) => !filtro.length
+      || filtro.some((f) => normalizar(COCO_CLASSES[b.cls] || '').includes(f)));
     for (const b of res) {
       const name = COCO_CLASSES[b.cls] || `#${b.cls}`;
       ctx.overlay.push({
@@ -163,14 +206,17 @@ export const y26detect = {
         w: (b.x2 - b.x1) * ctx.w, h: (b.y2 - b.y1) * ctx.h,
         color: colorFor(b.cls),
         label: p.showScore ? `${name} ${(b.score * 100) | 0}%` : name,
+        det: true,       // caixa crua do detector: o rastreio pode escondê-la
       });
     }
     ctx.detections = res.map((b) => ({
       x1: b.x1, y1: b.y1, x2: b.x2, y2: b.y2, score: b.score,
       name: COCO_CLASSES[b.cls] || `#${b.cls}`,
     }));
+    carimbar(ctx, state);
     ctx.metrics['objetos'] = res.length;
     if (state.inferMs) ctx.metrics['y26 ms'] = state.inferMs.toFixed(0);
+    if (state.ladrilhos > 1) ctx.metrics['ladrilhos'] = state.ladrilhos;
     if (state.error) ctx.metrics['y26 erro'] = state.error;
     return clone(src);
   },

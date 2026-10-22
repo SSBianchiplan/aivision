@@ -25,8 +25,17 @@ export function ensure(id, state, ctx) {
   return false;
 }
 
-/** Roda `infer` fora do loop de frames, no máximo a cada `minIntervalMs`. */
-export function schedule(state, minIntervalMs, prep, infer) {
+/**
+ * Roda `infer` fora do loop de frames, no máximo a cada `minIntervalMs`.
+ *
+ * Carimbo: cada resultado novo ganha `state.resultsSeq` (+1) e
+ * `state.resultsT` = instante do quadro que foi inferido (`tCaptura`, o
+ * ctx.tQuadro do hospedeiro, ou o relógio no prep). O resultado é desenhado
+ * nos quadros SEGUINTES, até o próximo chegar; quem rastreia (track.bytetrack)
+ * usa o carimbo para não tratar a mesma detecção como nova a cada quadro e
+ * para prever onde o objeto está agora. Ver cv/runtime/tempo-real/.
+ */
+export function schedule(state, minIntervalMs, prep, infer, tCaptura) {
   const now = performance.now();
   if (state.busy) return;
   if (state.lastStart && now - state.lastStart < minIntervalMs) return;
@@ -34,8 +43,12 @@ export function schedule(state, minIntervalMs, prep, infer) {
   try { input = prep(); } catch (err) { state.error = String(err.message || err); return; }
   if (!input) return;
   state.busy = true; state.lastStart = now;
+  const tCap = Number.isFinite(tCaptura) ? tCaptura : now;
   Promise.resolve().then(() => infer(input))
-    .then((res) => { state.results = res; state.inferMs = performance.now() - now; state.error = null; })
+    .then((res) => {
+      state.results = res; state.inferMs = performance.now() - now; state.error = null;
+      state.resultsSeq = (state.resultsSeq | 0) + 1; state.resultsT = tCap;
+    })
     .catch((err) => { state.error = String(err && err.message ? err.message : err); })
     .finally(() => { state.busy = false; });
 }

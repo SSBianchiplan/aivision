@@ -357,7 +357,7 @@ Object.assign(PAINEL_DO_PRESET, { 'Inspeção — presença e contagem': 'inspec
  * marcações-modelo. Grupo existente ganha os itens; grupo novo entra no fim.
  */
 const DESC_PRESET = {};
-for (const pr of [...PRESETS_ONDA1A, ...PRESETS_ONDA2B, ...PRESETS_ONDA2A, ...PRESETS_ONDA2D]) {   // + onda 2-c (CV-70..77) no mesmo formato
+for (const pr of [...PRESETS_ONDA1A, ...PRESETS_ONDA2B, ...PRESETS_ONDA2A, ...PRESETS_ONDA2C, ...PRESETS_ONDA2D]) {
   let g = PRESET_GROUPS.find(([nome]) => nome === pr.grupo);
   if (!g) PRESET_GROUPS.push((g = [pr.grupo, {}]));
   g[1][pr.nome] = pr.specs;

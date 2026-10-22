@@ -5,7 +5,7 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/licen%C3%A7a-AGPL--3.0-04413C" alt="Licença AGPL-3.0"></a>
   <a href="https://aivision.gplansis.com"><img src="https://img.shields.io/badge/no%20ar-aivision.gplansis.com-2ea44f" alt="No ar em aivision.gplansis.com"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/vers%C3%A3o-v94-FFD84D" alt="Versão v94"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/vers%C3%A3o-v95-FFD84D" alt="Versão v95"></a>
   <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-bem--vindos-brightgreen" alt="PRs bem-vindos"></a>
 </p>
 

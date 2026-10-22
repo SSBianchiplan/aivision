@@ -2,6 +2,10 @@
 
 As versões seguem o `VERSION` do service worker (`site/sw.js`).
 
+## v95 — 2026-10-22
+- **Trânsito em tempo real:** presets com YOLOX no WebGPU (no lugar do RF-DETR int8 em WASM), entrada em resolução plena com ladrilhos para carros pequenos, ByteTrack reescrito com Kalman em tempo real que desenha a posição prevista no quadro exibido, trilhas perdidas não aparecem, sincronia de imagem para arquivo e YouTube. Erro caixa↔veículo 70 px → 2,5 px; latência percebida 725 ms → ~5 ms. Ver [docs/tempo-real.md](docs/tempo-real.md).
+- Correção: os 18 presets de saúde e esportes (CV-70–77) voltaram à lista (sumiram num merge da v94).
+
 ## v92–v94 — 2026-10-22 (onda 2)
 - **83 módulos e 150 operadores** (eram 48 e 94), mais de 170 presets.
 - **Segurança, varejo e cidade (CV-60–67):** NR-17/NIOSH, saída obstruída, fogo indicativo, auditoria de preço, planograma, foto de produto, ocupação, medidores, resumo de vídeo, velocidade. Ver [docs/seguranca-varejo-cidade.md](docs/seguranca-varejo-cidade.md).

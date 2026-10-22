@@ -30,6 +30,7 @@ import { marcStore, vista, rt, paraQuadro } from '../cv/marcacoes.js';
 import {
   desenharMarcacoes, ponteiroDown, ponteiroMove, ponteiroUp, duploClique, saiu as ponteiroSaiu,
 } from './marcacoes-vista.js';
+import { AtrasoQuadros, sincroniaLigada } from './video/sincronia.js';
 
 /** YT.PlayerState em que o quadro capturado não anda: terminado, pausado, carregando, carregado sem tocar. */
 const YT_PARADO = new Set([0, 2, 3, 5]);
@@ -142,6 +143,15 @@ export function Viewport({ source, executor, snapshotRef, hideIdle, ring, canvas
   const grabRef = useRef(null);
   const grabW = useRef(0);               // último maxW pedido ao grabFull (quadro pleno primeiro)
   const heldAnt = useRef(null);          // quadro do histórico do último processamento (repetido = parado)
+  /*
+   * SINCRONIA (components/video/sincronia.js): com rastreio na cadeia e a
+   * fonte num arquivo ou no YouTube, a imagem é exibida com o atraso da
+   * detecção (cópias curtas do quadro na resolução de exibição) e as caixas
+   * são as do instante daquele quadro. `atrasoMs` vem do rastreio
+   * (ctx.sincronia) do quadro anterior.
+   */
+  const sincRef = useRef(null);
+  if (!sincRef.current) sincRef.current = { buf: new AtrasoQuadros(), atrasoMs: 0 };
 
   if (!workRef.current) {
     workRef.current = document.createElement('canvas');
@@ -194,6 +204,8 @@ export function Viewport({ source, executor, snapshotRef, hideIdle, ring, canvas
       const src = source.current;
       const display = displayRef.current;
       if (!display) return;
+      // instante do quadro (relógio da página): carimbo das detecções e alvo da previsão
+      const tQ = performance.now();
 
       const st = store.get();
       const r = ring && ring.current;
@@ -428,11 +440,37 @@ export function Viewport({ source, executor, snapshotRef, hideIdle, ring, canvas
         ? held === heldAnt.current
         : Boolean(src && src.kind === 'youtube' && YT_PARADO.has(src.estado));
       heldAnt.current = held;
+
+      // sincronia: só no caminho overlay, ao vivo (não no histórico), com rastreio na cadeia
+      const sc = sincRef.current;
+      const noTrack = mode === 'overlay' && !held ? active.find((n) => n.op === 'track.bytetrack') : null;
+      const sincOn = Boolean(noTrack) && sincroniaLigada((noTrack.params && noTrack.params.sincronizar) || 'auto', st.sourceKind);
+      let quadroExib = null;
+      if (sincOn) {
+        sc.buf.guardar(el, c, mirror, tQ, dw, dh, sc.atrasoMs);
+        if (sc.atrasoMs > 0) quadroExib = sc.buf.escolher(tQ - sc.atrasoMs);
+      } else if (sc.buf.tamanho || sc.atrasoMs) {
+        sc.buf.limpar(); sc.atrasoMs = 0;
+      }
+
       const result = executor.current.run(frame, st.nodes, frameIdx.current++, {
         grabFull, fonteParada,
+        /*
+         * O mesmo quadro pleno como CANVAS, sem ler os pixels para a CPU: o
+         * detector em alta resolução (cv/runtime/tempo-real/entrada.js) recorta
+         * os ladrilhos direto dele — uma leitura grande a menos por inferência.
+         */
+        grabCanvas: (maxW) => {
+          const pronto = plenoPronto && plenoPronto.gw === Math.max(64, Math.round(Math.min(maxW || 1280, vs.width))) ? plenoPronto : desenharGrab(maxW);
+          return pronto ? { canvas: grabRef.current, w: pronto.gw, h: pronto.gh } : null;
+        },
         // marcações no espaço deste quadro (ROI/exclusão, zonas, linhas, escala) — null sem marcações
         marcacoes: paraQuadro(procW, procH),
+        tQuadro: tQ,
+        // instante do quadro que vai para a tela (sincronia); sem ela, o próprio quadro
+        tExibir: quadroExib ? quadroExib.t : tQ,
       });
+      sc.atrasoMs = sincOn && result.sincronia ? Math.max(0, result.sincronia.atrasoMs || 0) : 0;
       overlay = result.overlay;
       metrics = result.metrics;
       timings = result.timings;
@@ -442,8 +480,9 @@ export function Viewport({ source, executor, snapshotRef, hideIdle, ring, canvas
       const ovScale = dw / procW;
 
       if (mode === 'overlay') {
-        // ---- caminho 2: vídeo nítido + overlay
-        drawSource(dctx, el, mirror, dx, dy, dw, dh, c);
+        // ---- caminho 2: vídeo nítido + overlay (com sincronia: o quadro de L ms atrás)
+        if (quadroExib) dctx.drawImage(quadroExib.canvas, dx, dy, dw, dh);
+        else drawSource(dctx, el, mirror, dx, dy, dw, dh, c);
         free(result.image);
       } else {
         // ---- caminho 3: pixels processados
@@ -481,6 +520,7 @@ export function Viewport({ source, executor, snapshotRef, hideIdle, ring, canvas
 
       drawOverlay(dctx, overlay, dx, dy, ovScale, dpr);
       if (held) label(dctx, `HISTÓRICO −${r.behindSeconds.toFixed(1)}s`, dx + 10 * dpr, dy + dh - 12 * dpr, dpr);
+      else if (quadroExib && tQ - quadroExib.t > 1) label(dctx, `SINCRONIA −${Math.round(tQ - quadroExib.t)} ms`, dx + 10 * dpr, dy + dh - 12 * dpr, dpr);
       lastOverlay.current = overlay;
       commit(procMs, metrics, timings, st);
       autoQuality(procMs, st);
@@ -997,9 +1037,14 @@ function drawOverlay(ctx, shapes, dx, dy, scale, dpr) {
     } else if (sh.type === 'rect') {
       const x = dx + sh.x * scale, y = dy + sh.y * scale;
       const w = sh.w * scale, h = sh.h * scale;
+      // esmaecida/tracejada: trilha perdida mostrada só pela previsão (tracking.js)
+      const esm = sh.alpha > 0 && sh.alpha < 1;
+      if (esm) ctx.globalAlpha = sh.alpha;
+      if (sh.dash) ctx.setLineDash([5 * dpr, 4 * dpr]);
       ctx.strokeStyle = sh.color || '#FFD84D';
       ctx.lineWidth = Math.max(1, 1.8 * dpr);
       ctx.strokeRect(x, y, w, h);
+      if (sh.dash) ctx.setLineDash([]);
       if (sh.label) {
         const tw = ctx.measureText(sh.label).width + 9 * dpr;
         const th = 16 * dpr;
@@ -1009,6 +1054,7 @@ function drawOverlay(ctx, shapes, dx, dy, scale, dpr) {
         ctx.fillStyle = '#02302C';
         ctx.fillText(sh.label, x + 4.5 * dpr, ly + 11.5 * dpr);
       }
+      if (esm) ctx.globalAlpha = 1;
     } else if (sh.type === 'line') {
       ctx.strokeStyle = sh.color || '#FFD84D';
       ctx.lineWidth = Math.max(1, (sh.width || 1.6) * dpr);
