@@ -1,4 +1,4 @@
-# Fonte dos Studios ()
+# Fonte dentro dos Studios
 
 ## O que é
 Um botão **Fonte** na barra de cada Studio (BikeFit, BeltScan, CounterVision, Takt, Inspect e o editor GPlanSiS|Vídeo). Ele abre um popover para trocar a fonte **sem fechar o Studio**:

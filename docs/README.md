@@ -5,7 +5,7 @@
 | [arquitetura.md](arquitetura.md) | como o sistema é montado: página, núcleo de visão, regras do runtime, serviços |
 | [interface.md](interface.md) | barra, painéis, barra de vídeo, atalhos, celular |
 | [fontes.md](fontes.md) | câmera, arquivo, tela, RTMP, **YouTube** (captura, quadros, controles e teclas de mídia) |
-| [modulos.md](modulos.md) | catálogo gerado do código: 40 módulos, 80 operadores com parâmetros, 38 modelos com licença |
+| [modulos.md](modulos.md) | catálogo gerado do código: 48 módulos, 94 operadores com parâmetros, 38 modelos com licença |
 | [industrial.md](industrial.md) | módulo Industrial: BeltScan (volumetria de correia), CounterVision (contagem em esteira), Takt (tempo de posto), Inspect (inspeção OK/NOK) |
 | [esportes.md](esportes.md) | hub Esportes, Studio Bike Fit (perfil do atleta e alvos), Corrida com várias pessoas, VBT sem marcador |
 | [bike-fit.md](bike-fit.md) | Bike Fit: como filmar, medidas, faixas por perfil, ciclo, validação |

@@ -1,29 +1,29 @@
 # Catálogo de módulos, operadores e modelos
 
-> Gerado a partir do código (`site/js/cv/registry.js`, `site/js/cv/runtime/onnx.js` e `models-livres-*.js`) — não editar à mão.
+> Gerado a partir do código (`site/js/cv/registry.js`) por `ferramentas/gerar-modulos.mjs` — não editar à mão.
 
-**40 módulos · 80 operadores · 38 modelos.**
+**48 módulos · 94 operadores · 38 modelos.**
 
 ## Módulos
 
 | ID | Módulo | Operadores | Execução | Licença |
 |---|---|---|---|---|
 | CV-01 | Classical CV | 18 | client | livre |
+| CV-04 | Motion & Tracking | 4 | client | livre |
 | CV-02 | Image Classification | 1 | onnx | livre |
 | CV-03 | Object Detection | 1 | onnx | livre |
-| CV-04 | Motion & Tracking | 4 | client | livre |
 | CV-05 | Segmentation | 1 | onnx | livre |
 | CV-06 | Keypoint / Pose | 1 | onnx | livre |
 | CV-07 | OCR | 1 | onnx | livre |
-| CV-08 | Face Recognition | 2 | onnx | livre |
-| CV-09 | Ultralytics YOLO26 | 8 | onnx | AGPL-3.0 (com aceite) |
 | CV-10 | Códigos (QR e barras) | 1 | client | livre |
+| CV-09 | Ultralytics YOLO26 | 8 | onnx | AGPL-3.0 (com aceite) |
 | CV-11 | Relações entre objetos | 1 | onnx | livre |
 | CV-12 | Detecção de vocabulário aberto | 2 | onnx | AGPL-3.0 (com aceite) |
 | CV-13 | Segmentação por prompt (SAM) | 1 | onnx | livre |
 | CV-14 | Profundidade | 1 | onnx | livre |
-| CV-15 | Zero-shot por texto (CLIP) | 1 | onnx | livre |
 | CV-16 | Modelos treinados | 1 | onnx | AGPL-3.0 (com aceite) |
+| CV-15 | Zero-shot por texto (CLIP) | 1 | onnx | livre |
+| CV-08 | Face Recognition | 2 | onnx | livre |
 | CV-17 | OCR PT-BR | 1 | onnx | livre |
 | CV-18 | Pose multi-pessoa (RTMO) | 1 | onnx | livre |
 | CV-19 | Re-identificação de pessoas | 1 | onnx | livre |
@@ -44,10 +44,18 @@
 | CV-34 | VBT (velocidade da barra) | 1 | client | livre |
 | CV-35 | Esportes coletivos e de quadra | 1 | onnx | livre |
 | CV-36 | Industrial — volumetria de correia (BeltScan) | 1 | client | livre |
-| CV-37 | Ferramentas de cena | 1 | client | livre |
+| CV-40 | Inspeção visual (Inspect) | 7 | client | livre |
+| CV-37 | Ferramentas de cena | 2 | client | livre |
 | CV-38 | Contagem em esteira (CounterVision) | 4 | client | livre |
 | CV-39 | Industrial — tempo de posto (Takt) | 2 | client | livre |
-| CV-40 | Inspeção visual (Inspect) | 7 | client | livre |
+| CV-41 | Tráfego — contagem classificada (CVC) | 1 | client | livre |
+| CV-42 | Instrumentos — mostrador e display | 2 | client | livre |
+| CV-43 | Segurança por pose (indicador de gestão) | 3 | client | livre |
+| CV-44 | Fotocélula virtual (sprint) | 1 | client | livre |
+| CV-45 | Leituras de logística e mídia | 3 | client | livre |
+| CV-46 | Industrial — OEE pela câmera | 1 | client | livre |
+| CV-47 | Fisio — goniometria e testes funcionais | 1 | onnx | livre |
+| CV-48 | Industrial — monitor de EPI (sem treino) | 1 | onnx | livre |
 
 ## Operadores por módulo
 
@@ -77,8 +85,8 @@ Suavização gaussiana separável. sigma=0 deriva do ksize (fórmula OpenCV).
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Kernel (`ksize`) | int | 5 | 1 – 31 |
-| Sigma (`sigma`) | float | 0 | 0 – 10 |
+| Kernel (`ksize`) | int | 5 | 1–31 |
+| Sigma (`sigma`) | float | 0 | 0–10 |
 
 #### Box Blur — `imgproc.blur`
 
@@ -86,7 +94,7 @@ Média simples — mais rápido que o gaussiano, borda mais dura.
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Kernel (`ksize`) | int | 5 | 1 – 31 |
+| Kernel (`ksize`) | int | 5 | 1–31 |
 
 #### Median Blur — `imgproc.median_blur`
 
@@ -102,7 +110,7 @@ Magnitude do gradiente 3x3.
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Escala (`scale`) | float | 1 | 0.1 – 4 |
+| Escala (`scale`) | float | 1 | 0.1–4 |
 
 #### Laplacian — `imgproc.laplacian`
 
@@ -110,7 +118,7 @@ Segunda derivada — realça detalhe fino e ruído.
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Escala (`scale`) | float | 1 | 0.1 – 4 |
+| Escala (`scale`) | float | 1 | 0.1–4 |
 
 #### Canny — `imgproc.canny`
 
@@ -118,9 +126,9 @@ Canny completo: gradiente → supressão não-máxima → histerese. Não borra 
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Thresh baixo (`low`) | int | 50 | 0 – 255 |
-| Thresh alto (`high`) | int | 150 | 0 – 255 |
-| L2 gradient (`l2`) | bool | False |  |
+| Thresh baixo (`low`) | int | 50 | 0–255 |
+| Thresh alto (`high`) | int | 150 | 0–255 |
+| L2 gradient (`l2`) | bool | false |  |
 
 #### Threshold — `imgproc.threshold`
 
@@ -128,9 +136,9 @@ Binarização global. Otsu escolhe o limiar automaticamente por frame.
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Limiar (`thresh`) | int | 127 | 0 – 255 |
-| Otsu (auto) (`otsu`) | bool | False |  |
-| Inverter (`inv`) | bool | False |  |
+| Limiar (`thresh`) | int | 127 | 0–255 |
+| Otsu (auto) (`otsu`) | bool | false |  |
+| Inverter (`inv`) | bool | false |  |
 
 #### Adaptive Threshold — `imgproc.adaptive_threshold`
 
@@ -138,9 +146,9 @@ Limiar por vizinhança — aguenta iluminação desigual, útil antes de OCR.
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Bloco (`block`) | int | 11 | 3 – 51 |
-| C (`C`) | int | 5 | -30 – 30 |
-| Inverter (`inv`) | bool | False |  |
+| Bloco (`block`) | int | 11 | 3–51 |
+| C (`C`) | int | 5 | -30–30 |
+| Inverter (`inv`) | bool | false |  |
 
 #### Morphology — `imgproc.morphology_ex`
 
@@ -149,7 +157,7 @@ Erode/dilate e as composições open/close, com kernel retangular.
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
 | Operação (`mode`) | enum | dilate | erode, dilate, open, close |
-| Kernel (`ksize`) | int | 3 | 1 – 21 |
+| Kernel (`ksize`) | int | 3 | 1–21 |
 
 #### Equalize Hist — `imgproc.equalize_hist`
 
@@ -161,8 +169,8 @@ Equalização adaptativa com limite de contraste, por tiles com interpolação b
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Grade (`tiles`) | int | 8 | 2 – 16 |
-| Clip limit (`clip`) | float | 2 | 1 – 8 |
+| Grade (`tiles`) | int | 8 | 2–16 |
+| Clip limit (`clip`) | float | 2 | 1–8 |
 
 #### Brightness / Contrast — `photo.convert_scale_abs`
 
@@ -170,8 +178,8 @@ Ajuste linear: out = alpha·in + beta.
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Contraste (`alpha`) | float | 1 | 0.1 – 3 |
-| Brilho (`beta`) | int | 0 | -100 – 100 |
+| Contraste (`alpha`) | float | 1 | 0.1–3 |
+| Brilho (`beta`) | int | 0 | -100–100 |
 
 #### Flip — `core.flip`
 
@@ -179,8 +187,8 @@ Espelha horizontal e/ou vertical.
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Horizontal (`h`) | bool | True |  |
-| Vertical (`v`) | bool | False |  |
+| Horizontal (`h`) | bool | true |  |
+| Vertical (`v`) | bool | false |  |
 
 #### Corner Detection — `features.good_features_to_track`
 
@@ -188,9 +196,9 @@ Cantos de Harris (R = det − k·tr²) com supressão não-máxima. Saída vai n
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Qualidade (`quality`) | float | 0.08 | 0.01 – 0.5 |
-| Máx. cantos (`maxCorners`) | int | 120 | 10 – 500 |
-| Dist. mín. (`minDist`) | int | 10 | 3 – 40 |
+| Qualidade (`quality`) | float | 0.08 | 0.01–0.5 |
+| Máx. cantos (`maxCorners`) | int | 120 | 10–500 |
+| Dist. mín. (`minDist`) | int | 10 | 3–40 |
 
 #### Contours / Blobs — `imgproc.find_contours`
 
@@ -198,43 +206,9 @@ Rotula componentes conexos de uma imagem binária e desenha a caixa de cada blob
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Área mín. (px) (`minArea`) | int | 300 | 10 – 20000 |
-| Máx. blobs (`maxBlobs`) | int | 40 | 1 – 200 |
-| Mostrar área (`showArea`) | bool | False |  |
-
-### CV-02 · Image Classification
-
-MobileNetV2 no ImageNet, 1000 classes, top-k com score.
-
-Modelos: `mobilenetv2`
-
-#### Image Classification — `dnn.classify`
-
-MobileNetV2 no ImageNet (1000 classes). Mostra o top-k com score. Roda fora do loop de render — o vídeo não trava esperando.
-
-| Parâmetro | Tipo | Padrão | Faixa / opções |
-|---|---|---|---|
-| Top-k (`topk`) | int | 3 | 1 – 5 |
-| Intervalo (ms) (`everyMs`) | int | 400 | 100 – 3000 |
-| Score mínimo (`minScore`) | float | 0.1 | 0 – 0.9 |
-
-### CV-03 · Object Detection
-
-YOLOX-S no COCO, 80 classes. Apache-2.0 — sem a contaminação AGPL que o YOLO da Ultralytics traria (RSK-03 do SPEC).
-
-Modelos: `yolox`
-
-#### Object Detection — `dnn.detect`
-
-YOLOX-S no COCO (80 classes), Apache-2.0. Decodifica as 8400 âncoras das strides 8/16/32 e aplica NMS. Caixas vão no overlay, em coordenadas normalizadas.
-
-| Parâmetro | Tipo | Padrão | Faixa / opções |
-|---|---|---|---|
-| Confiança (`conf`) | float | 0.35 | 0.05 – 0.9 |
-| IoU (NMS) (`iou`) | float | 0.45 | 0.1 – 0.9 |
-| Máx. detecções (`maxDet`) | int | 30 | 1 – 100 |
-| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0 – 2000 |
-| Mostrar score (`showScore`) | bool | True |  |
+| Área mín. (px) (`minArea`) | int | 300 | 10–20000 |
+| Máx. blobs (`maxBlobs`) | int | 40 | 1–200 |
+| Mostrar área (`showArea`) | bool | false |  |
 
 ### CV-04 · Motion & Tracking
 
@@ -246,8 +220,8 @@ absdiff contra o frame anterior. O jeito mais barato de detectar movimento — e
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Limiar (`thresh`) | int | 18 | 0 – 120 |
-| Ganho (`amplify`) | float | 3 | 1 – 10 |
+| Limiar (`thresh`) | int | 18 | 0–120 |
+| Ganho (`amplify`) | float | 3 | 1–10 |
 
 #### Background Subtract — `video.background_subtractor`
 
@@ -255,9 +229,9 @@ Modelo de fundo por média corrente (aproximação leve do MOG2). Aprende a cena
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Taxa de aprendizado (`rate`) | float | 0.04 | 0.005 – 0.3 |
-| Limiar (`thresh`) | int | 28 | 5 – 120 |
-| Só a máscara (`mask`) | bool | False |  |
+| Taxa de aprendizado (`rate`) | float | 0.04 | 0.005–0.3 |
+| Limiar (`thresh`) | int | 28 | 5–120 |
+| Só a máscara (`mask`) | bool | false |  |
 
 #### Motion Trails — `video.motion_trails`
 
@@ -265,7 +239,7 @@ Decaimento temporal — o movimento deixa rastro. Bom para visualizar trajetóri
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Persistência (`decay`) | float | 0.88 | 0.5 – 0.98 |
+| Persistência (`decay`) | float | 0.88 | 0.5–0.98 |
 
 #### Tracking com IDs (ByteTrack) — `track.bytetrack`
 
@@ -273,20 +247,48 @@ IDs estáveis para os objetos do detector anterior na cadeia, rastro e contagem 
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Confiança alta (`altaConf`) | float | 0.5 | 0.2 – 0.9 |
-| IoU mínimo para casar (`iouMin`) | float | 0.3 | 0.1 – 0.8 |
-| Frames para confirmar (`nascer`) | int | 2 | 1 – 10 |
-| Frames até esquecer (`perder`) | int | 30 | 1 – 120 |
-| Rastro (pontos) (`rastro`) | int | 30 | 0 – 90 |
+| Confiança alta (`altaConf`) | float | 0.5 | 0.2–0.9 |
+| IoU mínimo para casar (`iouMin`) | float | 0.3 | 0.1–0.8 |
+| Frames para confirmar (`nascer`) | int | 2 | 1–10 |
+| Frames até esquecer (`perder`) | int | 30 | 1–120 |
+| Rastro (pontos) (`rastro`) | int | 30 | 0–90 |
 | Linha de contagem (`linha`) | enum | nenhuma | nenhuma, horizontal, vertical |
-| Posição da linha (`posicao`) | float | 0.5 | 0.1 – 0.9 |
-| Mostrar classe (`mostrarNome`) | bool | True |  |
+| Posição da linha (`posicao`) | float | 0.5 | 0.1–0.9 |
+| Mostrar classe (`mostrarNome`) | bool | true |  |
+
+### CV-02 · Image Classification
+
+MobileNetV2 no ImageNet, 1000 classes, top-k com score.
+
+#### Image Classification — `dnn.classify`
+
+MobileNetV2 no ImageNet (1000 classes). Mostra o top-k com score. Roda fora do loop de render — o vídeo não trava esperando.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Top-k (`topk`) | int | 3 | 1–5 |
+| Intervalo (ms) (`everyMs`) | int | 400 | 100–3000 |
+| Score mínimo (`minScore`) | float | 0.1 | 0–0.9 |
+
+### CV-03 · Object Detection
+
+YOLOX-S no COCO, 80 classes. Apache-2.0 — sem a contaminação AGPL que o YOLO da Ultralytics traria (RSK-03 do SPEC).
+
+#### Object Detection — `dnn.detect`
+
+YOLOX-S no COCO (80 classes), Apache-2.0. Decodifica as 8400 âncoras das strides 8/16/32 e aplica NMS. Caixas vão no overlay, em coordenadas normalizadas.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Confiança (`conf`) | float | 0.35 | 0.05–0.9 |
+| IoU (NMS) (`iou`) | float | 0.45 | 0.1–0.9 |
+| Máx. detecções (`maxDet`) | int | 30 | 1–100 |
+| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0–2000 |
+| Mostrar score (`showScore`) | bool | true |  |
 
 ### CV-05 · Segmentation
 
 PP-HumanSeg: máscara pessoa/fundo, com modos de composição.
-
-Modelos: `pphumanseg`
 
 #### Person Segmentation — `dnn.segment_person`
 
@@ -295,14 +297,12 @@ PP-HumanSeg: máscara pessoa/fundo em 192×192, reescalada e composta sobre o fr
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
 | Modo (`mode`) | enum | destaque | destaque, fundo escuro, só máscara, croma |
-| Limiar (`thresh`) | float | 0.5 | 0.1 – 0.9 |
-| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0 – 1000 |
+| Limiar (`thresh`) | float | 0.5 | 0.1–0.9 |
+| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0–1000 |
 
 ### CV-06 · Keypoint / Pose
 
 BlazePose com 33 landmarks, em dois estágios sobre o recorte do YOLOX.
-
-Modelos: `yolox`, `pose`
 
 #### Keypoint / Pose — `dnn.pose`
 
@@ -310,16 +310,14 @@ Dois estágios: o YOLOX acha a pessoa, o BlazePose estima 33 landmarks no recort
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Visibilidade mín. (`minVis`) | float | 0.5 | 0 – 1 |
-| Margem do recorte (`margin`) | float | 0.15 | 0 – 0.5 |
-| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0 – 1000 |
-| Mostrar recorte (`showBox`) | bool | False |  |
+| Visibilidade mín. (`minVis`) | float | 0.5 | 0–1 |
+| Margem do recorte (`margin`) | float | 0.15 | 0–0.5 |
+| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0–1000 |
+| Mostrar recorte (`showBox`) | bool | false |  |
 
 ### CV-07 · OCR
 
 PP-OCRv3 detecta as regiões, CRNN lê com decode CTC.
-
-Modelos: `ppocr_det`, `crnn`
 
 #### OCR — Texto — `dnn.ocr`
 
@@ -327,127 +325,11 @@ PP-OCRv3 gera o mapa de probabilidade de texto; a binarização vira caixas por 
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Limiar do mapa (`thresh`) | float | 0.3 | 0.1 – 0.9 |
-| Área mín. (px) (`minArea`) | int | 120 | 20 – 5000 |
-| Máx. caixas (`maxBoxes`) | int | 8 | 1 – 30 |
-| Reconhecer texto (CRNN) (`recognize`) | bool | True |  |
-| Intervalo (ms) (`everyMs`) | int | 700 | 100 – 4000 |
-
-### CV-08 · Face Recognition
-
-YuNet + SFace: detecção, alinhamento e embedding de 128-d. Biometria facial é dado pessoal SENSÍVEL (LGPD art. 5º, II) — o cofre implementa consentimento, retenção com expurgo, eliminação e portabilidade. Ainda falta a base legal formal e a DPIA.
-
-Modelos: `yunet`, `sface`
-
-#### Face Detection — `objdetect.face_detect`
-
-YuNet (MIT, 230 KB): caixa da face + 5 landmarks (olhos, nariz, cantos da boca). É o estágio que alimenta o reconhecimento e o login.
-
-| Parâmetro | Tipo | Padrão | Faixa / opções |
-|---|---|---|---|
-| Confiança (`conf`) | float | 0.8 | 0.3 – 0.99 |
-| Mostrar landmarks (`landmarks`) | bool | True |  |
-| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0 – 1000 |
-
-#### Face Recognition — `objdetect.face_recognize`
-
-YuNet + SFace: alinha a face pelo template de 5 pontos e extrai o embedding de 128-d. A COMPARAÇÃO é feita no servidor — o template de ninguém é enviado ao navegador. Confere contra o seu próprio cadastro, e exige sessão ativa.
-
-| Parâmetro | Tipo | Padrão | Faixa / opções |
-|---|---|---|---|
-| Confiança da face (`conf`) | float | 0.8 | 0.3 – 0.99 |
-| Ajuste do limiar (`margin`) | float | 0 | -0.2 – 0.3 |
-| Indicar vivacidade (`liveness`) | bool | True |  |
-| Intervalo (ms) (`everyMs`) | int | 1500 | 500 – 5000 |
-
-### CV-09 · Ultralytics YOLO26
-
-Suíte completa: detecção, instâncias, pose multi-pessoa, caixas orientadas, classificação, semântica, profundidade e tracking por re-ID. ⚠ AGPL-3.0 — desligado por padrão; o detector default é o YOLOX-S (Apache-2.0).
-
-Modelos: `yolo26n`, `yolo26n-seg`, `yolo26n-pose`, `yolo26n-obb`, `yolo26n-cls`, `yolo26n-sem`, `yolo26n-depth`, `yolo26n-reid`
-
-#### YOLO26 — Detecção — `yolo26.detect` · AGPL
-
-Detecção end-to-end nas 80 classes COCO. Saída já decodificada e ordenada, sem NMS. AGPL-3.0.
-
-| Parâmetro | Tipo | Padrão | Faixa / opções |
-|---|---|---|---|
-| Confiança (`conf`) | float | 0.35 | 0.05 – 0.9 |
-| Máx. detecções (`maxDet`) | int | 50 | 1 – 300 |
-| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0 – 2000 |
-| Mostrar score (`showScore`) | bool | True |  |
-
-#### YOLO26 — Instâncias — `yolo26.segment` · AGPL
-
-Segmentação de INSTÂNCIAS nas 80 classes: cada objeto ganha máscara própria. A máscara sai do produto dos 32 coeficientes pelos protótipos 32×160×160. É o que o PP-HumanSeg não faz (ele só separa pessoa/fundo).
-
-| Parâmetro | Tipo | Padrão | Faixa / opções |
-|---|---|---|---|
-| Confiança (`conf`) | float | 0.4 | 0.05 – 0.9 |
-| Máx. instâncias (`maxDet`) | int | 10 | 1 – 30 |
-| Opacidade (`alpha`) | float | 0.5 | 0.1 – 1 |
-| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0 – 2000 |
-
-#### YOLO26 — Pose — `yolo26.pose` · AGPL
-
-Pose COCO de 17 keypoints, MULTI-PESSOA e em um estágio só — diferente do BlazePose, que precisa do recorte de uma pessoa.
-
-| Parâmetro | Tipo | Padrão | Faixa / opções |
-|---|---|---|---|
-| Confiança (`conf`) | float | 0.4 | 0.05 – 0.9 |
-| Confiança do ponto (`kptConf`) | float | 0.3 | 0.05 – 0.9 |
-| Máx. pessoas (`maxDet`) | int | 6 | 1 – 20 |
-| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0 – 2000 |
-
-#### YOLO26 — Caixas orientadas — `yolo26.obb` · AGPL
-
-Caixas com ÂNGULO (15 classes DOTA, imagens aéreas). Entrada 1024² — o operador mais pesado do conjunto.
-
-| Parâmetro | Tipo | Padrão | Faixa / opções |
-|---|---|---|---|
-| Confiança (`conf`) | float | 0.35 | 0.05 – 0.9 |
-| Máx. objetos (`maxDet`) | int | 20 | 1 – 50 |
-| Intervalo (ms) (`everyMs`) | int | 1000 | 200 – 5000 |
-
-#### YOLO26 — Classificação — `yolo26.classify` · AGPL
-
-Classificação ImageNet (1000 classes), entrada 224².
-
-| Parâmetro | Tipo | Padrão | Faixa / opções |
-|---|---|---|---|
-| Top-k (`topk`) | int | 3 | 1 – 5 |
-| Intervalo (ms) (`everyMs`) | int | 400 | 100 – 3000 |
-
-#### YOLO26 — Semântica — `yolo26.semantic` · AGPL
-
-Segmentação semântica Cityscapes (19 classes: estrada, prédio, pessoa, carro…). Cada pixel recebe uma classe. Entrada 1024².
-
-| Parâmetro | Tipo | Padrão | Faixa / opções |
-|---|---|---|---|
-| Opacidade (`alpha`) | float | 0.55 | 0.1 – 1 |
-| Intervalo (ms) (`everyMs`) | int | 900 | 200 – 5000 |
-
-#### YOLO26 — Profundidade — `yolo26.depth` · AGPL
-
-Profundidade monocular: estima distância a partir de UMA câmera, sem estéreo. Saída em mapa de cor, normalizada por frame.
-
-| Parâmetro | Tipo | Padrão | Faixa / opções |
-|---|---|---|---|
-| Mapa (`map`) | enum | turbo | turbo, cinza, inferno |
-| Inverter (`invert`) | bool | False |  |
-| Intervalo (ms) (`everyMs`) | int | 700 | 200 – 5000 |
-
-#### YOLO26 — Tracking (re-ID) — `yolo26.track` · AGPL
-
-Detecção + re-identificação por aparência: cada objeto recebe um ID que PERSISTE entre frames, e sobrevive a oclusão curta — o embedding de 512-d reencontra o objeto quando ele reaparece, coisa que associação só por posição não faz.
-
-| Parâmetro | Tipo | Padrão | Faixa / opções |
-|---|---|---|---|
-| Confiança (`conf`) | float | 0.45 | 0.1 – 0.9 |
-| Máx. rastreados (`maxTrack`) | int | 4 | 1 – 8 |
-| Similaridade mín. (`simMin`) | float | 0.72 | 0.3 – 0.98 |
-| Sobrevida (frames) (`ttl`) | int | 30 | 1 – 90 |
-| Intervalo mín. (ms) (`everyMs`) | int | 120 | 0 – 2000 |
+| Limiar do mapa (`thresh`) | float | 0.3 | 0.1–0.9 |
+| Área mín. (px) (`minArea`) | int | 120 | 20–5000 |
+| Máx. caixas (`maxBoxes`) | int | 8 | 1–30 |
+| Reconhecer texto (CRNN) (`recognize`) | bool | true |  |
+| Intervalo (ms) (`everyMs`) | int | 700 | 100–4000 |
 
 ### CV-10 · Códigos (QR e barras)
 
@@ -459,17 +341,102 @@ Lê QR Code, EAN, Code 128, Data Matrix, PDF417 e mais 7 formatos. Usa o decodif
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Intervalo (ms) (`everyMs`) | int | 150 | 0 – 2000 |
-| Repetir o mesmo após (ms) (`repeatMs`) | int | 4000 | 500 – 30000 |
-| Mostrar o conteúdo (`showText`) | bool | True |  |
-| Bipe na leitura (`beep`) | bool | True |  |
+| Intervalo (ms) (`everyMs`) | int | 150 | 0–2000 |
+| Repetir o mesmo após (ms) (`repeatMs`) | int | 4000 | 500–30000 |
+| Mostrar o conteúdo (`showText`) | bool | true |  |
+| Bipe na leitura (`beep`) | bool | true |  |
 | Resolução da leitura (`scanWidth`) | enum | 960 | 480, 720, 960, 1280, 1600 |
+
+### CV-09 · Ultralytics YOLO26
+
+Suíte completa: detecção, instâncias, pose multi-pessoa, caixas orientadas, classificação, semântica, profundidade e tracking por re-ID. ⚠ AGPL-3.0 — desligado por padrão; o detector default é o YOLOX-S (Apache-2.0).
+
+#### YOLO26 — Detecção — `yolo26.detect` · AGPL
+
+Detecção end-to-end nas 80 classes COCO. Saída já decodificada e ordenada, sem NMS. AGPL-3.0.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Confiança (`conf`) | float | 0.35 | 0.05–0.9 |
+| Máx. detecções (`maxDet`) | int | 50 | 1–300 |
+| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0–2000 |
+| Mostrar score (`showScore`) | bool | true |  |
+
+#### YOLO26 — Instâncias — `yolo26.segment` · AGPL
+
+Segmentação de INSTÂNCIAS nas 80 classes: cada objeto ganha máscara própria. A máscara sai do produto dos 32 coeficientes pelos protótipos 32×160×160. É o que o PP-HumanSeg não faz (ele só separa pessoa/fundo).
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Confiança (`conf`) | float | 0.4 | 0.05–0.9 |
+| Máx. instâncias (`maxDet`) | int | 10 | 1–30 |
+| Opacidade (`alpha`) | float | 0.5 | 0.1–1 |
+| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0–2000 |
+
+#### YOLO26 — Pose — `yolo26.pose` · AGPL
+
+Pose COCO de 17 keypoints, MULTI-PESSOA e em um estágio só — diferente do BlazePose, que precisa do recorte de uma pessoa.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Confiança (`conf`) | float | 0.4 | 0.05–0.9 |
+| Confiança do ponto (`kptConf`) | float | 0.3 | 0.05–0.9 |
+| Máx. pessoas (`maxDet`) | int | 6 | 1–20 |
+| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0–2000 |
+
+#### YOLO26 — Caixas orientadas — `yolo26.obb` · AGPL
+
+Caixas com ÂNGULO (15 classes DOTA, imagens aéreas). Entrada 1024² — o operador mais pesado do conjunto.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Confiança (`conf`) | float | 0.35 | 0.05–0.9 |
+| Máx. objetos (`maxDet`) | int | 20 | 1–50 |
+| Intervalo (ms) (`everyMs`) | int | 1000 | 200–5000 |
+
+#### YOLO26 — Classificação — `yolo26.classify` · AGPL
+
+Classificação ImageNet (1000 classes), entrada 224².
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Top-k (`topk`) | int | 3 | 1–5 |
+| Intervalo (ms) (`everyMs`) | int | 400 | 100–3000 |
+
+#### YOLO26 — Semântica — `yolo26.semantic` · AGPL
+
+Segmentação semântica Cityscapes (19 classes: estrada, prédio, pessoa, carro…). Cada pixel recebe uma classe. Entrada 1024².
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Opacidade (`alpha`) | float | 0.55 | 0.1–1 |
+| Intervalo (ms) (`everyMs`) | int | 900 | 200–5000 |
+
+#### YOLO26 — Profundidade — `yolo26.depth` · AGPL
+
+Profundidade monocular: estima distância a partir de UMA câmera, sem estéreo. Saída em mapa de cor, normalizada por frame.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Mapa (`map`) | enum | turbo | turbo, cinza, inferno |
+| Inverter (`invert`) | bool | false |  |
+| Intervalo (ms) (`everyMs`) | int | 700 | 200–5000 |
+
+#### YOLO26 — Tracking (re-ID) — `yolo26.track` · AGPL
+
+Detecção + re-identificação por aparência: cada objeto recebe um ID que PERSISTE entre frames, e sobrevive a oclusão curta — o embedding de 512-d reencontra o objeto quando ele reaparece, coisa que associação só por posição não faz.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Confiança (`conf`) | float | 0.45 | 0.1–0.9 |
+| Máx. rastreados (`maxTrack`) | int | 4 | 1–8 |
+| Similaridade mín. (`simMin`) | float | 0.72 | 0.3–0.98 |
+| Sobrevida (frames) (`ttl`) | int | 30 | 1–90 |
+| Intervalo mín. (ms) (`everyMs`) | int | 120 | 0–2000 |
 
 ### CV-11 · Relações entre objetos
 
 RelateAnything (DINOv3 ViT-S/16+, 53M): recebe as caixas do detector da cadeia (YOLOX ou YOLO26 antes dele — ou roda o YOLOX sozinho) e diz como os objetos se relacionam: pessoa VESTINDO luva, xícara SOBRE mesa. 35 predicados de vocabulário aberto, grafo espacial e semântico. Apache-2.0; pesos derivados de DINOv3 (licença Meta).
-
-Modelos: `relate`
 
 #### Relações entre objetos — `relate.graph`
 
@@ -477,22 +444,20 @@ Grafo de cena: para cada par de objetos detectados, a relação mais provável e
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Score mínimo (`limiar`) | float | 0.45 | 0.05 – 0.95 |
-| Máx. relações (`topK`) | int | 12 | 1 – 40 |
-| Máx. objetos (`maxObj`) | int | 16 | 2 – 32 |
-| Peso "existe relação" (`pesoPar`) | float | 1 | 0 – 2 |
-| Confiança do YOLOX (sem detector) (`confDet`) | float | 0.35 | 0.05 – 0.9 |
-| Intervalo mín. (ms) (`everyMs`) | int | 250 | 0 – 3000 |
-| Limiar calibrado por predicado (`usarLimiarDoBanco`) | bool | False |  |
-| Desenhar caixas (`mostrarCaixas`) | bool | True |  |
-| Listar relações no canto (`mostrarLista`) | bool | True |  |
-| Só relações semânticas (ações) (`soSemantica`) | bool | False |  |
+| Score mínimo (`limiar`) | float | 0.45 | 0.05–0.95 |
+| Máx. relações (`topK`) | int | 12 | 1–40 |
+| Máx. objetos (`maxObj`) | int | 16 | 2–32 |
+| Peso "existe relação" (`pesoPar`) | float | 1 | 0–2 |
+| Confiança do YOLOX (sem detector) (`confDet`) | float | 0.35 | 0.05–0.9 |
+| Intervalo mín. (ms) (`everyMs`) | int | 250 | 0–3000 |
+| Limiar calibrado por predicado (`usarLimiarDoBanco`) | bool | false |  |
+| Desenhar caixas (`mostrarCaixas`) | bool | true |  |
+| Listar relações no canto (`mostrarLista`) | bool | true |  |
+| Só relações semânticas (ações) (`soSemantica`) | bool | false |  |
 
 ### CV-12 · Detecção de vocabulário aberto
 
 YOLOE-11s: 4.585 classes sem lista (prompt-free) ou as classes que você digitar (text-prompt, re-parametrizado ao vivo via MobileCLIP). Substitui as 80 classes fixas do COCO. ⚠ AGPL-3.0, atrás do mesmo aceite do YOLO26.
-
-Modelos: `yoloe-pf`, `yoloe-text`, `clip-blt-text`
 
 #### YOLOE — Detecta qualquer coisa — `yoloe.detect` · AGPL
 
@@ -500,11 +465,11 @@ Modelos: `yoloe-pf`, `yoloe-text`, `clip-blt-text`
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Confiança (`conf`) | float | 0.25 | 0.05 – 0.9 |
+| Confiança (`conf`) | float | 0.25 | 0.05–0.9 |
 | Só estas classes (`filtro`) | text |  |  |
-| Máx. detecções (`maxDet`) | int | 30 | 1 – 100 |
-| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0 – 2000 |
-| Mostrar score (`showScore`) | bool | True |  |
+| Máx. detecções (`maxDet`) | int | 30 | 1–100 |
+| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0–2000 |
+| Mostrar score (`showScore`) | bool | true |  |
 
 #### YOLOE — Classes por texto — `yoloe.prompt` · AGPL
 
@@ -513,16 +478,14 @@ Digite as classes e o detector é re-parametrizado ao vivo: os vetores de texto 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
 | Classes (`classes`) | text | person, forklift, helmet, box, pallet |  |
-| Confiança (`conf`) | float | 0.15 | 0.05 – 0.9 |
-| Máx. detecções (`maxDet`) | int | 30 | 1 – 100 |
-| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0 – 2000 |
-| Mostrar score (`showScore`) | bool | True |  |
+| Confiança (`conf`) | float | 0.15 | 0.05–0.9 |
+| Máx. detecções (`maxDet`) | int | 30 | 1–100 |
+| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0–2000 |
+| Mostrar score (`showScore`) | bool | true |  |
 
 ### CV-13 · Segmentação por prompt (SAM)
 
 MobileSAM: máscara de alta resolução para cada objeto detectado (prompt = caixa) ou para o centro da imagem. Codificador TinyViT uma vez por frame, decodificador leve por objeto. Apache-2.0.
-
-Modelos: `mobilesam-enc`, `mobilesam-dec`
 
 #### SAM — Máscaras finas — `sam.mascaras`
 
@@ -531,18 +494,16 @@ MobileSAM: máscara de alta resolução para cada objeto detectado (prompt = cai
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
 | Prompt (`alvo`) | enum | objetos detectados | objetos detectados, centro da imagem |
-| Máx. objetos (`maxObj`) | int | 6 | 1 – 12 |
-| Opacidade (`alpha`) | float | 0.55 | 0.1 – 1 |
-| Confiança do YOLOX (sem detector) (`confDet`) | float | 0.35 | 0.05 – 0.9 |
-| Intervalo mín. (ms) (`everyMs`) | int | 800 | 100 – 5000 |
-| Desenhar caixas e nomes (`caixas`) | bool | True |  |
-| Só a máscara (fundo escuro) (`soMascara`) | bool | False |  |
+| Máx. objetos (`maxObj`) | int | 6 | 1–12 |
+| Opacidade (`alpha`) | float | 0.55 | 0.1–1 |
+| Confiança do YOLOX (sem detector) (`confDet`) | float | 0.35 | 0.05–0.9 |
+| Intervalo mín. (ms) (`everyMs`) | int | 800 | 100–5000 |
+| Desenhar caixas e nomes (`caixas`) | bool | true |  |
+| Só a máscara (fundo escuro) (`soMascara`) | bool | false |  |
 
 ### CV-14 · Profundidade
 
 Depth Anything V2 small (24,8M, int8): mapa de profundidade relativa de um só frame — perto/longe por objeto, mapa de cor, cinza ou mistura. Apache-2.0.
-
-Modelos: `depth-anything`
 
 #### Profundidade (Depth Anything V2) — `depth.map`
 
@@ -551,29 +512,10 @@ Mapa de profundidade relativa de um só frame, 24,8M parâmetros, int8. Modos: m
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
 | Modo (`modo`) | enum | misturar | mapa de cor, cinza, misturar, só objetos |
-| Opacidade (misturar) (`alpha`) | float | 0.6 | 0.1 – 1 |
-| Inverter (longe quente) (`inverter`) | bool | False |  |
-| Estabilidade dos extremos (`suavizar`) | float | 0.7 | 0 – 0.95 |
-| Intervalo mín. (ms) (`everyMs`) | int | 300 | 0 – 3000 |
-
-### CV-15 · Zero-shot por texto (CLIP)
-
-MobileCLIP2-S0: classifica a cena ou cada objeto contra frases que você escreve ("caixa amassada", "EPI correto"), sem treinar. Licença Apple MobileCLIP.
-
-Modelos: `mclip2-visual`, `mclip2-text`
-
-#### Zero-shot por texto (MobileCLIP2) — `clip.classify`
-
-Classifica a cena — ou cada objeto detectado — contra frases que você escreve, sem treinar nada. Softmax sobre o cosseno imagem×texto.
-
-| Parâmetro | Tipo | Padrão | Faixa / opções |
-|---|---|---|---|
-| Classes (frases) (`classes`) | text | a person, a dog, a cat, a car, a cardboard box, a tool, an empty room |  |
-| Molde da frase ({} = classe) (`modelo`) | text | a photo of {} |  |
-| Classificar cada objeto detectado (`porObjeto`) | bool | False |  |
-| Mostrar top-k (`topK`) | int | 3 | 1 – 6 |
-| Probabilidade mínima (`minimo`) | float | 0.2 | 0 – 0.95 |
-| Intervalo mín. (ms) (`everyMs`) | int | 400 | 0 – 3000 |
+| Opacidade (misturar) (`alpha`) | float | 0.6 | 0.1–1 |
+| Inverter (longe quente) (`inverter`) | bool | false |  |
+| Estabilidade dos extremos (`suavizar`) | float | 0.7 | 0–0.95 |
+| Intervalo mín. (ms) (`everyMs`) | int | 300 | 0–3000 |
 
 ### CV-16 · Modelos treinados
 
@@ -586,16 +528,56 @@ Roda um detector que você treinou em “Treinar modelos” (menu). Campo Modelo
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
 | Modelo (identificador) (`modelo`) | text |  |  |
-| Confiança (`conf`) | float | 0.4 | 0.05 – 0.95 |
-| Máx. detecções (`maxDet`) | int | 50 | 1 – 300 |
-| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0 – 2000 |
-| Mostrar score (`showScore`) | bool | True |  |
+| Confiança (`conf`) | float | 0.4 | 0.05–0.95 |
+| Máx. detecções (`maxDet`) | int | 50 | 1–300 |
+| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0–2000 |
+| Mostrar score (`showScore`) | bool | true |  |
+
+### CV-15 · Zero-shot por texto (CLIP)
+
+MobileCLIP2-S0: classifica a cena ou cada objeto contra frases que você escreve ("caixa amassada", "EPI correto"), sem treinar. Licença Apple MobileCLIP.
+
+#### Zero-shot por texto (MobileCLIP2) — `clip.classify`
+
+Classifica a cena — ou cada objeto detectado — contra frases que você escreve, sem treinar nada. Softmax sobre o cosseno imagem×texto.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Classes (frases) (`classes`) | text | a person, a dog, a cat, a car, a cardboard box, a tool, an empty room |  |
+| Molde da frase ({} = classe) (`modelo`) | text | a photo of {} |  |
+| Classificar cada objeto detectado (`porObjeto`) | bool | false |  |
+| Mostrar top-k (`topK`) | int | 3 | 1–6 |
+| Probabilidade mínima (`minimo`) | float | 0.2 | 0–0.95 |
+| Intervalo mín. (ms) (`everyMs`) | int | 400 | 0–3000 |
+
+### CV-08 · Face Recognition
+
+YuNet + SFace: detecção, alinhamento e embedding de 128-d. Biometria facial é dado pessoal SENSÍVEL (LGPD art. 5º, II) — o cofre implementa consentimento, retenção com expurgo, eliminação e portabilidade. Ainda falta a base legal formal e a DPIA.
+
+#### Face Detection — `objdetect.face_detect`
+
+YuNet (MIT, 230 KB): caixa da face + 5 landmarks (olhos, nariz, cantos da boca). É o estágio que alimenta o reconhecimento e o login.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Confiança (`conf`) | float | 0.8 | 0.3–0.99 |
+| Mostrar landmarks (`landmarks`) | bool | true |  |
+| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0–1000 |
+
+#### Face Recognition — `objdetect.face_recognize`
+
+YuNet + SFace: alinha a face pelo template de 5 pontos e extrai o embedding de 128-d. A COMPARAÇÃO é feita no servidor — o template de ninguém é enviado ao navegador. Confere contra o seu próprio cadastro, e exige sessão ativa.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Confiança da face (`conf`) | float | 0.8 | 0.3–0.99 |
+| Ajuste do limiar (`margin`) | float | 0 | -0.2–0.3 |
+| Indicar vivacidade (`liveness`) | bool | true |  |
+| Intervalo (ms) (`everyMs`) | int | 1500 | 500–5000 |
 
 ### CV-17 · OCR PT-BR
 
 PP-OCRv5 mobile: detector DB + reconhecedor latino de 836 caracteres — lê português com acentos, cedilha e pontuação ("AÇÚCAR", "R$ 4,99", "até 31/12"). Apache-2.0.
-
-Modelos: `ocr5-det`, `ocr5-latin`
 
 #### OCR PT-BR (PP-OCRv5) — `ocr.ptbr`
 
@@ -603,20 +585,18 @@ Lê texto em português com acentos e pontuação (ç, ã, õ, é, R$, º…): d
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Lado maior na detecção (px) (`lado`) | int | 960 | 320 – 1600 |
-| Limiar do mapa (`thresh`) | float | 0.3 | 0.1 – 0.9 |
-| Score mín. da caixa (`boxThresh`) | float | 0.6 | 0.1 – 0.95 |
-| Expansão da caixa (unclip) (`unclip`) | float | 1.5 | 1 – 3 |
-| Confiança mín. da leitura (`minConf`) | float | 0.5 | 0 – 1 |
-| Máx. linhas (`maxBoxes`) | int | 24 | 1 – 60 |
-| Listar textos no canto (`mostrarLista`) | bool | True |  |
-| Intervalo (ms) (`everyMs`) | int | 800 | 100 – 5000 |
+| Lado maior na detecção (px) (`lado`) | int | 960 | 320–1600 |
+| Limiar do mapa (`thresh`) | float | 0.3 | 0.1–0.9 |
+| Score mín. da caixa (`boxThresh`) | float | 0.6 | 0.1–0.95 |
+| Expansão da caixa (unclip) (`unclip`) | float | 1.5 | 1–3 |
+| Confiança mín. da leitura (`minConf`) | float | 0.5 | 0–1 |
+| Máx. linhas (`maxBoxes`) | int | 24 | 1–60 |
+| Listar textos no canto (`mostrarLista`) | bool | true |  |
+| Intervalo (ms) (`everyMs`) | int | 800 | 100–5000 |
 
 ### CV-18 · Pose multi-pessoa (RTMO)
 
 RTMO-s (MMPose): todas as pessoas da cena num único passe, 17 pontos COCO cada, sem detector separado. Publica as caixas para Re-ID e tracking. Apache-2.0.
-
-Modelos: `rtmo-s`
 
 #### Pose multi-pessoa (RTMO) — `pose.rtmo`
 
@@ -624,18 +604,16 @@ Todas as pessoas da cena num único passe, cada uma com caixa e 17 pontos (COCO)
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Score mín. da pessoa (`conf`) | float | 0.3 | 0.05 – 0.95 |
-| Score mín. do ponto (`kpConf`) | float | 0.3 | 0 – 1 |
-| Máx. pessoas (`maxPessoas`) | int | 20 | 1 – 50 |
-| Mostrar caixa (`caixa`) | bool | True |  |
-| Uma cor por pessoa (`corPorPessoa`) | bool | True |  |
-| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0 – 2000 |
+| Score mín. da pessoa (`conf`) | float | 0.3 | 0.05–0.95 |
+| Score mín. do ponto (`kpConf`) | float | 0.3 | 0–1 |
+| Máx. pessoas (`maxPessoas`) | int | 20 | 1–50 |
+| Mostrar caixa (`caixa`) | bool | true |  |
+| Uma cor por pessoa (`corPorPessoa`) | bool | true |  |
+| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0–2000 |
 
 ### CV-19 · Re-identificação de pessoas
 
 Youtu ReID (OpenCV Zoo): IDs persistentes por aparência — a pessoa mantém o número depois de oclusão ou de sair e voltar. Galeria com média móvel e cosseno sobre as caixas do detector anterior. Apache-2.0; substitui o re-ID do YOLO26.
-
-Modelos: `reid-youtu`
 
 #### Re-ID de pessoas (aparência) — `reid.pessoas`
 
@@ -643,22 +621,20 @@ IDs persistentes por aparência: a mesma pessoa mantém o número depois de oclu
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Similaridade mín. (cosseno) (`limiar`) | float | 0.55 | 0.3 – 0.9 |
-| Inércia da galeria (média móvel) (`momento`) | float | 0.9 | 0 – 0.98 |
-| Score mín. da pessoa (`minScore`) | float | 0.4 | 0.1 – 0.95 |
-| Altura mín. (fração do frame) (`minAltura`) | float | 0.08 | 0 – 0.5 |
-| Máx. pessoas por frame (`maxPessoas`) | int | 12 | 1 – 32 |
-| Esquecer ID após (s, 0 = nunca) (`esquecerS`) | int | 600 | 0 – 3600 |
-| Tamanho máx. da galeria (`maxGaleria`) | int | 100 | 4 – 500 |
-| Só pessoas (ignora outras classes) (`soPessoas`) | bool | True |  |
-| Limpar galeria (ligue e desligue) (`limpar`) | bool | False |  |
-| Intervalo mín. (ms) (`everyMs`) | int | 150 | 0 – 3000 |
+| Similaridade mín. (cosseno) (`limiar`) | float | 0.55 | 0.3–0.9 |
+| Inércia da galeria (média móvel) (`momento`) | float | 0.9 | 0–0.98 |
+| Score mín. da pessoa (`minScore`) | float | 0.4 | 0.1–0.95 |
+| Altura mín. (fração do frame) (`minAltura`) | float | 0.08 | 0–0.5 |
+| Máx. pessoas por frame (`maxPessoas`) | int | 12 | 1–32 |
+| Esquecer ID após (s, 0 = nunca) (`esquecerS`) | int | 600 | 0–3600 |
+| Tamanho máx. da galeria (`maxGaleria`) | int | 100 | 4–500 |
+| Só pessoas (ignora outras classes) (`soPessoas`) | bool | true |  |
+| Limpar galeria (ligue e desligue) (`limpar`) | bool | false |  |
+| Intervalo mín. (ms) (`everyMs`) | int | 150 | 0–3000 |
 
 ### CV-20 · Recorte de fundo
 
 BiRefNet lite: separa o objeto principal do fundo com borda fina, para qualquer objeto. Remover fundo (xadrez/alfa), fundo escuro, desfoque, croma ou só máscara. MIT.
-
-Modelos: `birefnet-lite`
 
 #### Recorte de fundo (BiRefNet) — `seg.birefnet`
 
@@ -667,17 +643,15 @@ Separa o objeto principal do fundo com borda fina (cabelo, fios, alças), para q
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
 | Modo (`modo`) | enum | remover fundo (xadrez) | remover fundo (xadrez), transparente (alfa), fundo escuro, desfocar fundo, croma, só máscara |
-| Dureza da borda (`dureza`) | float | 0.3 | 0 – 1 |
-| Limiar (borda dura) (`limiar`) | float | 0.5 | 0.05 – 0.95 |
-| Raio do desfoque (px) (`raio`) | int | 16 | 4 – 60 |
-| Brilho do fundo escuro (`escuro`) | float | 0.15 | 0 – 1 |
-| Intervalo mín. (ms) (`everyMs`) | int | 1500 | 0 – 10000 |
+| Dureza da borda (`dureza`) | float | 0.3 | 0–1 |
+| Limiar (borda dura) (`limiar`) | float | 0.5 | 0.05–0.95 |
+| Raio do desfoque (px) (`raio`) | int | 16 | 4–60 |
+| Brilho do fundo escuro (`escuro`) | float | 0.15 | 0–1 |
+| Intervalo mín. (ms) (`everyMs`) | int | 1500 | 0–10000 |
 
 ### CV-21 · Florence-2 (descrever, detectar, ler)
 
 Florence-2 base (Microsoft, 230M): um só modelo de visão-linguagem que descreve a cena, detecta objetos de vocabulário livre, lê texto e acha o que você escrever. Roda num worker a cada poucos segundos; responde em inglês. MIT.
-
-Modelos: `florence2`
 
 #### Florence-2 — descrever, detectar e ler — `florence2.tarefa`
 
@@ -686,17 +660,15 @@ Florence-2 base (Microsoft, MIT), 230 MB, no navegador: descreve a cena (curto o
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
 | Tarefa (`tarefa`) | enum | descrever (curto) | descrever (curto), descrever (detalhado), detectar objetos, ler texto (OCR), achar o que eu escrever |
-| O que achar (de preferência em inglês) (`texto`) | text | a person |  |
-| Intervalo mín. (ms) (`everyMs`) | int | 4000 | 1000 – 60000 |
-| Traduzir nomes de objeto (`traduzir`) | bool | True |  |
-| Desenhar caixas (`caixas`) | bool | True |  |
-| Caracteres por linha do texto (`largura`) | int | 70 | 30 – 140 |
+| O que achar (de preferência em inglês) (`texto`) | text | a person | –120 |
+| Intervalo mín. (ms) (`everyMs`) | int | 4000 | 1000–60000 |
+| Traduzir nomes de objeto (`traduzir`) | bool | true |  |
+| Desenhar caixas (`caixas`) | bool | true |  |
+| Caracteres por linha do texto (`largura`) | int | 70 | 30–140 |
 
 ### CV-22 · SAM 2 (seguir objeto)
 
 SAM 2.1 tiny (Meta): marque um objeto — por classe de uma detecção ou por um ponto — e ele é seguido com máscara e contorno, re-promptando com a caixa da máscara anterior. Ou uma máscara por detecção. Apache-2.0.
-
-Modelos: `sam2-enc`, `sam2-dec`, `rfdetr-nano`
 
 #### SAM 2 — seguir objeto — `sam2.seguir`
 
@@ -706,26 +678,24 @@ SAM 2.1 tiny (Apache-2.0): marque um objeto — pela classe de uma detecção an
 |---|---|---|---|
 | Modo (`modo`) | enum | seguir objeto | seguir objeto, todas as detecções |
 | Como marcar o objeto (`alvo`) | enum | detecção por classe | detecção por classe, ponto na imagem |
-| Classe (vazio = qualquer) (`classe`) | text |  |  |
-| Qual delas (0 = maior score) (`indice`) | int | 0 | 0 – 20 |
-| Ponto X (0–1) (`pontoX`) | float | 0.5 | 0 – 1 |
-| Ponto Y (0–1) (`pontoY`) | float | 0.5 | 0 – 1 |
-| Folga da caixa no re-prompt (`margem`) | float | 0.1 | 0 – 0.5 |
-| Limiar de presença (logit) (`minObj`) | float | 0 | -5 – 10 |
-| Área mínima (fração do quadro) (`minArea`) | float | 0.0005 | 0 – 0.05 |
-| Máx. objetos (todas) (`maxObj`) | int | 6 | 1 – 12 |
-| Confiança do RF-DETR (sem detector) (`confDet`) | float | 0.45 | 0.1 – 0.9 |
-| Opacidade (`alpha`) | float | 0.5 | 0.1 – 1 |
-| Semelhança de cor mínima (perda) (`minCor`) | float | 0.45 | 0 – 1 |
-| Desenhar contorno (`contorno`) | bool | True |  |
-| Reiniciar alvo (alternar) (`reiniciar`) | bool | False |  |
-| Intervalo mín. (ms) (`everyMs`) | int | 200 | 0 – 5000 |
+| Classe (vazio = qualquer) (`classe`) | text |  | –60 |
+| Qual delas (0 = maior score) (`indice`) | int | 0 | 0–20 |
+| Ponto X (0–1) (`pontoX`) | float | 0.5 | 0–1 |
+| Ponto Y (0–1) (`pontoY`) | float | 0.5 | 0–1 |
+| Folga da caixa no re-prompt (`margem`) | float | 0.1 | 0–0.5 |
+| Limiar de presença (logit) (`minObj`) | float | 0 | -5–10 |
+| Área mínima (fração do quadro) (`minArea`) | float | 0.0005 | 0–0.05 |
+| Máx. objetos (todas) (`maxObj`) | int | 6 | 1–12 |
+| Confiança do RF-DETR (sem detector) (`confDet`) | float | 0.45 | 0.1–0.9 |
+| Opacidade (`alpha`) | float | 0.5 | 0.1–1 |
+| Semelhança de cor mínima (perda) (`minCor`) | float | 0.45 | 0–1 |
+| Desenhar contorno (`contorno`) | bool | true |  |
+| Reiniciar alvo (alternar) (`reiniciar`) | bool | false |  |
+| Intervalo mín. (ms) (`everyMs`) | int | 200 | 0–5000 |
 
 ### CV-23 · RF-DETR (detecção livre)
 
 RF-DETR nano/small (Roboflow) no COCO, 80 classes: transformer de detecção sem NMS, a alternativa Apache-2.0 ao YOLO26 (AGPL). Publica as caixas para o resto da cadeia.
-
-Modelos: `rfdetr-nano`, `rfdetr-small`
 
 #### RF-DETR — Detecção (Apache-2.0) — `rfdetr.detect`
 
@@ -734,11 +704,11 @@ RF-DETR no COCO (80 classes), Apache-2.0 — a alternativa livre ao YOLO26. Tran
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
 | Variante (`variante`) | enum | nano (384²) | nano (384²), small (512²) |
-| Confiança (`conf`) | float | 0.5 | 0.05 – 0.95 |
-| Máx. detecções (`maxDet`) | int | 30 | 1 – 100 |
-| Só estas classes (vírgula; vazio = todas) (`classes`) | text |  |  |
-| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0 – 3000 |
-| Mostrar score (`showScore`) | bool | True |  |
+| Confiança (`conf`) | float | 0.5 | 0.05–0.95 |
+| Máx. detecções (`maxDet`) | int | 30 | 1–100 |
+| Só estas classes (vírgula; vazio = todas) (`classes`) | text |  | –300 |
+| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0–3000 |
+| Mostrar score (`showScore`) | bool | true |  |
 
 ### CV-24 · Modelos treinados livres
 
@@ -751,10 +721,10 @@ Roda um detector RF-DETR que você treinou em “Treinar modelos” (Apache-2.0,
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
 | Modelo (identificador) (`modelo`) | text |  |  |
-| Confiança (`conf`) | float | 0.5 | 0.05 – 0.95 |
-| Máx. detecções (`maxDet`) | int | 50 | 1 – 300 |
-| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0 – 2000 |
-| Mostrar score (`showScore`) | bool | True |  |
+| Confiança (`conf`) | float | 0.5 | 0.05–0.95 |
+| Máx. detecções (`maxDet`) | int | 50 | 1–300 |
+| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0–2000 |
+| Mostrar score (`showScore`) | bool | true |  |
 
 #### Inspeção de anomalia (PatchCore) — `livres.patchcore`
 
@@ -763,16 +733,14 @@ Compara a imagem com o “banco” de peças boas aprendido em “Treinar modelo
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
 | Modelo (identificador) (`modelo`) | text |  |  |
-| Limiar (× calibrado) (`fator`) | float | 1 | 0.5 – 2 |
+| Limiar (× calibrado) (`fator`) | float | 1 | 0.5–2 |
 | Mostrar (`modo`) | enum | mapa de calor | mapa de calor, só onde passa do limiar, só nota |
-| Opacidade do mapa (`alpha`) | float | 0.55 | 0.1 – 1 |
-| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0 – 3000 |
+| Opacidade do mapa (`alpha`) | float | 0.55 | 0.1–1 |
+| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0–3000 |
 
 ### CV-25 · Mãos e gestos
 
 MediaPipe Hands (OpenCV Zoo, 8 MB): detector de palma + 21 pontos por mão, até 4 mãos, lado direita/esquerda e gestos por regras — mão aberta, punho, polegar para cima/baixo, apontando, V, OK e contagem de dedos. Apache-2.0.
-
-Modelos: `mp-palma`, `mp-mao`
 
 #### Mãos e gestos — `maos.gestos`
 
@@ -780,20 +748,18 @@ MediaPipe Hands (Apache-2.0): acha a palma, estima 21 pontos por mão e diz o la
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Confiança da palma (`conf`) | float | 0.5 | 0.2 – 0.95 |
-| Confiança da mão (`minHand`) | float | 0.6 | 0.2 – 0.99 |
-| Máximo de mãos (`max`) | int | 2 | 1 – 4 |
+| Confiança da palma (`conf`) | float | 0.5 | 0.2–0.95 |
+| Confiança da mão (`minHand`) | float | 0.6 | 0.2–0.99 |
+| Máximo de mãos (`max`) | int | 2 | 1–4 |
 | Imagem espelhada (selfie) (`espelhado`) | enum | automático | automático, sim, não |
 | Desenhar (`desenho`) | enum | esqueleto | esqueleto, pontos, só caixa |
-| Reconhecer gestos (`gestos`) | bool | True |  |
-| Publicar mãos como detecções (`deteccoes`) | bool | False |  |
-| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0 – 1000 |
+| Reconhecer gestos (`gestos`) | bool | true |  |
+| Publicar mãos como detecções (`deteccoes`) | bool | false |  |
+| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0–1000 |
 
 ### CV-26 · Malha do rosto
 
 MediaPipe Face Landmarker (4,9 MB) sobre o YuNet: 468 pontos do rosto + íris, malha completa ou contornos, e orientação da cabeça (yaw, pitch, roll). Segue o rosto entre quadros pela própria malha. Apache-2.0.
-
-Modelos: `yunet`, `mp-malha`
 
 #### Malha do rosto — `rosto.malha`
 
@@ -801,18 +767,16 @@ MediaPipe Face Landmarker (Apache-2.0): 468 pontos do rosto + 10 da íris sobre 
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Confiança do rosto (`conf`) | float | 0.7 | 0.3 – 0.99 |
-| Máximo de rostos (`max`) | int | 1 | 1 – 4 |
+| Confiança do rosto (`conf`) | float | 0.7 | 0.3–0.99 |
+| Máximo de rostos (`max`) | int | 1 | 1–4 |
 | Desenhar (`desenho`) | enum | contornos | contornos, malha, pontos, nenhum |
-| Orientação da cabeça (`pose`) | bool | True |  |
-| Seguir entre quadros (`seguir`) | bool | True |  |
-| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0 – 1000 |
+| Orientação da cabeça (`pose`) | bool | true |  |
+| Seguir entre quadros (`seguir`) | bool | true |  |
+| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0–1000 |
 
 ### CV-27 · Olhos (íris, piscadas, sonolência)
 
 Íris e direção aproximada do olhar, olho aberto/fechado pelo EAR, piscadas por minuto, PERCLOS e alerta de sonolência configurável. Reusa a malha do CV-26 quando ele vem antes na cadeia. Apache-2.0.
-
-Modelos: `yunet`, `mp-malha`
 
 #### Olhos: íris, piscadas e sonolência — `olhos.iris`
 
@@ -820,19 +784,17 @@ Modelos: `yunet`, `mp-malha`
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| EAR de olho fechado (`limEar`) | float | 0.15 | 0.08 – 0.35 |
-| Sonolência após (s) (`sonoSeg`) | float | 2 | 0.5 – 10 |
-| Limiar olhar lateral (`limH`) | float | 0.08 | 0.02 – 0.3 |
-| Limiar olhar vertical (`limV`) | float | 0.06 | 0.02 – 0.3 |
-| Desenhar íris e pálpebras (`iris`) | bool | True |  |
-| Confiança do rosto (`conf`) | float | 0.7 | 0.3 – 0.99 |
-| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0 – 1000 |
+| EAR de olho fechado (`limEar`) | float | 0.15 | 0.08–0.35 |
+| Sonolência após (s) (`sonoSeg`) | float | 2 | 0.5–10 |
+| Limiar olhar lateral (`limH`) | float | 0.08 | 0.02–0.3 |
+| Limiar olhar vertical (`limV`) | float | 0.06 | 0.02–0.3 |
+| Desenhar íris e pálpebras (`iris`) | bool | true |  |
+| Confiança do rosto (`conf`) | float | 0.7 | 0.3–0.99 |
+| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0–1000 |
 
 ### CV-28 · Bike Fit (biomecânica)
 
 Ajuste biomecânico do ciclista pela câmera, no navegador: ângulos de joelho (PMI/PMS), quadril, tronco, ombro, cotovelo e tornozelo na vista lateral; cadência e pedaladas pela trajetória do pé; KOPS aproximado; alinhamento e simetria dos joelhos na vista frontal; faixas por perfil (estrada, MTB, contrarrelógio, urbano) e recomendações de selim e guidão. Painel Bike Fit com relatório CSV/JSON/PDF. Usa a pose do CV-06 (Apache-2.0).
-
-Modelos: `yolox`, `pose`
 
 #### Bike Fit — análise do ciclista — `bikefit.analise`
 
@@ -844,20 +806,18 @@ Biomecânica do ciclista com a pose BlazePose: ângulos de joelho, quadril, tron
 | Perfil (`perfil`) | enum | Estrada | Estrada, Mountain bike, Contrarrelógio/Triathlon, Urbano/Conforto |
 | Lado analisado (`lado`) | enum | automático | automático, esquerdo, direito |
 | Imagem espelhada (automático = segue a Fonte) (`espelhada`) | enum | automático | automático, sim, não |
-| Visibilidade mín. (`minVis`) | float | 0.5 | 0.1 – 0.95 |
-| Pedaladas na estatística (`nCiclos`) | int | 10 | 3 – 50 |
-| Rastro do joelho e tornozelo (`rastro`) | bool | True |  |
-| Altura do ciclista (cm; vale a do perfil do atleta, se houver; 0 = sem escala) (`alturaCm`) | int | 0 | 0 – 230 |
-| Perna trocânter–tornozelo (cm, opcional) (`pernaCm`) | int | 0 | 0 – 130 |
-| Fundir as duas orientações (estável, 2× custo) (`passadaDupla`) | bool | False |  |
-| Re-detectar ciclista (ms, rede de segurança) (`detectarMs`) | int | 8000 | 1000 – 30000 |
-| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0 – 1000 |
+| Visibilidade mín. (`minVis`) | float | 0.5 | 0.1–0.95 |
+| Pedaladas na estatística (`nCiclos`) | int | 10 | 3–50 |
+| Rastro do joelho e tornozelo (`rastro`) | bool | true |  |
+| Altura do ciclista (cm; vale a do perfil do atleta, se houver; 0 = sem escala) (`alturaCm`) | int | 0 | 0–230 |
+| Perna trocânter–tornozelo (cm, opcional) (`pernaCm`) | int | 0 | 0–130 |
+| Fundir as duas orientações (estável, 2× custo) (`passadaDupla`) | bool | false |  |
+| Re-detectar ciclista (ms, rede de segurança) (`detectarMs`) | int | 8000 | 1000–30000 |
+| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0–1000 |
 
 ### CV-29 · Ergonomia (RULA/REBA)
 
 Avaliação postural do trabalho pela câmera, no navegador: RULA (membros superiores) e REBA (corpo inteiro) com as tabelas oficiais, uma nota por pessoa (várias pessoas, ID estável), ângulos de braço, antebraço, punho (com as mãos do CV-25), pescoço, tronco e pernas, nível de ação, % do tempo em cada nível, pior postura congelada e alertas. Painel Ergonomia com recomendações e relatório CSV/JSON/PDF. Estimativa sem marcadores. Usa a pose do CV-18 (Apache-2.0).
-
-Modelos: `rtmo-s`
 
 #### Ergonomia (RULA/REBA) — `ergonomia.avaliar`
 
@@ -869,37 +829,35 @@ Avaliação postural RULA (membros superiores) e REBA (corpo inteiro) pela pose,
 | Lado avaliado (`lado`) | enum | pior lado | pior lado, esquerdo, direito |
 | Vista da câmera (`vista`) | enum | automática | automática, lateral, frontal |
 | Trabalho sentado (`sentado`) | enum | automático | automático, sim, não |
-| RULA: carga/força (0 <2 kg … 3 >10 kg) (`cargaRula`) | int | 0 | 0 – 3 |
-| RULA: uso muscular (estática ou >4×/min) (`musculoRula`) | bool | False |  |
-| Torção do punho (1 meio, 2 fim do curso) (`punhoTorcao`) | int | 1 | 1 – 2 |
-| Punho sem mãos (1 neutro, 2 ≤15°, 3 >15°) (`punhoSemMaos`) | int | 2 | 1 – 3 |
-| REBA: carga (0 <5 kg, 1 5–10, 2 >10) (`cargaReba`) | int | 0 | 0 – 2 |
-| REBA: choque ou força brusca (`choque`) | bool | False |  |
-| REBA: pega (0 boa … 3 inaceitável) (`pega`) | int | 0 | 0 – 3 |
-| REBA: parte do corpo parada >1 min (`estatica`) | bool | False |  |
-| Ações repetidas >4×/min (`repetitiva`) | bool | False |  |
-| REBA: mudanças bruscas / base instável (`instavel`) | bool | False |  |
-| Detectar postura estática (>1 min) (`estaticaAuto`) | bool | True |  |
-| Ombro elevado (`ombroElevado`) | bool | False |  |
-| Braço apoiado (`bracoApoiado`) | bool | False |  |
-| Tronco torcido (`troncoTorcido`) | bool | False |  |
-| Pescoço torcido (`pescocoTorcido`) | bool | False |  |
+| RULA: carga/força (0 <2 kg … 3 >10 kg) (`cargaRula`) | int | 0 | 0–3 |
+| RULA: uso muscular (estática ou >4×/min) (`musculoRula`) | bool | false |  |
+| Torção do punho (1 meio, 2 fim do curso) (`punhoTorcao`) | int | 1 | 1–2 |
+| Punho sem mãos (1 neutro, 2 ≤15°, 3 >15°) (`punhoSemMaos`) | int | 2 | 1–3 |
+| REBA: carga (0 <5 kg, 1 5–10, 2 >10) (`cargaReba`) | int | 0 | 0–2 |
+| REBA: choque ou força brusca (`choque`) | bool | false |  |
+| REBA: pega (0 boa … 3 inaceitável) (`pega`) | int | 0 | 0–3 |
+| REBA: parte do corpo parada >1 min (`estatica`) | bool | false |  |
+| Ações repetidas >4×/min (`repetitiva`) | bool | false |  |
+| REBA: mudanças bruscas / base instável (`instavel`) | bool | false |  |
+| Detectar postura estática (>1 min) (`estaticaAuto`) | bool | true |  |
+| Ombro elevado (`ombroElevado`) | bool | false |  |
+| Braço apoiado (`bracoApoiado`) | bool | false |  |
+| Tronco torcido (`troncoTorcido`) | bool | false |  |
+| Pescoço torcido (`pescocoTorcido`) | bool | false |  |
 | Mãos (punho) (`maos`) | enum | da cadeia | da cadeia, rodar aqui, não usar |
 | Imagem espelhada (`espelhada`) | enum | automático | automático, sim, não |
-| Alertar a partir da faixa (2 médio, 3 alto, 4 muito alto) (`alertaFaixa`) | int | 3 | 2 – 4 |
-| Alertar após (s) (`alertaSeg`) | int | 10 | 1 – 300 |
-| Score mín. da pessoa (`conf`) | float | 0.3 | 0.05 – 0.95 |
-| Score mín. do ponto (`kpConf`) | float | 0.3 | 0 – 1 |
-| Máx. pessoas (`maxPessoas`) | int | 10 | 1 – 20 |
-| Suavização (s) (`suavizar`) | float | 0.3 | 0 – 2 |
-| Desenhar esqueleto (`esqueleto`) | bool | True |  |
-| Intervalo mín. da pose (ms) (`everyMs`) | int | 0 | 0 – 2000 |
+| Alertar a partir da faixa (2 médio, 3 alto, 4 muito alto) (`alertaFaixa`) | int | 3 | 2–4 |
+| Alertar após (s) (`alertaSeg`) | int | 10 | 1–300 |
+| Score mín. da pessoa (`conf`) | float | 0.3 | 0.05–0.95 |
+| Score mín. do ponto (`kpConf`) | float | 0.3 | 0–1 |
+| Máx. pessoas (`maxPessoas`) | int | 10 | 1–20 |
+| Suavização (s) (`suavizar`) | float | 0.3 | 0–2 |
+| Desenhar esqueleto (`esqueleto`) | bool | true |  |
+| Intervalo mín. da pose (ms) (`everyMs`) | int | 0 | 0–2000 |
 
 ### CV-30 · Academia (repetições e forma)
 
 Contador de repetições e treinador de forma pela câmera, no navegador: agachamento, flexão de braço, rosca bíceps, desenvolvimento de ombro, levantamento terra, afundo, polichinelo, abdominal e prancha (tempo e alinhamento), com o exercício escolhido ou reconhecido automaticamente. Séries pela pausa, amplitude, profundidade, tempos excêntrico/concêntrico e sob tensão, ritmo e checagens de forma (tronco, joelho × ponta do pé, valgo, quadril caindo, cotovelo abrindo, costas, assimetria) com repetição boa × com alerta, placar grande no vídeo e bipe. Painel Academia com metas, lista de repetições e relatório CSV/JSON/HTML. Usa a pose do CV-06 (Apache-2.0).
-
-Modelos: `yolox`, `pose`
 
 #### Academia — repetições e forma — `academia.treino`
 
@@ -908,25 +866,23 @@ Conta repetições e séries de agachamento, flexão, rosca, desenvolvimento, te
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
 | Exercício (`exercicio`) | enum | automático | automático, Agachamento, Flexão de braço, Rosca bíceps, Desenvolvimento de ombro, Levantamento terra, Afundo (lunge), Polichinelo, Abdominal, Prancha |
-| Meta: séries (`metaSeries`) | int | 3 | 1 – 20 |
-| Meta: repetições por série (`metaReps`) | int | 10 | 1 – 100 |
-| Meta: segundos de prancha (`metaSegundos`) | int | 30 | 5 – 600 |
-| Descanso entre séries (s) (`descansoS`) | int | 60 | 0 – 600 |
-| Pausa que fecha a série (s) (`pausaSerieS`) | int | 10 | 2 – 60 |
+| Meta: séries (`metaSeries`) | int | 3 | 1–20 |
+| Meta: repetições por série (`metaReps`) | int | 10 | 1–100 |
+| Meta: segundos de prancha (`metaSegundos`) | int | 30 | 5–600 |
+| Descanso entre séries (s) (`descansoS`) | int | 60 | 0–600 |
+| Pausa que fecha a série (s) (`pausaSerieS`) | int | 10 | 2–60 |
 | Tolerância das checagens (`tolerancia`) | enum | normal | normal, rigorosa, tolerante |
-| Bipe a cada repetição (`bipe`) | bool | False |  |
-| Placar e feedback grandes no vídeo (`textoGrande`) | bool | True |  |
-| Desenhar o esqueleto (`esqueleto`) | bool | True |  |
+| Bipe a cada repetição (`bipe`) | bool | false |  |
+| Placar e feedback grandes no vídeo (`textoGrande`) | bool | true |  |
+| Desenhar o esqueleto (`esqueleto`) | bool | true |  |
 | Imagem espelhada (automático = segue a Fonte) (`espelhada`) | enum | automático | automático, sim, não |
-| Visibilidade mín. (`minVis`) | float | 0.5 | 0.1 – 0.95 |
-| Re-detectar a pessoa (ms, rede de segurança) (`detectarMs`) | int | 12000 | 2000 – 60000 |
-| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0 – 1000 |
+| Visibilidade mín. (`minVis`) | float | 0.5 | 0.1–0.95 |
+| Re-detectar a pessoa (ms, rede de segurança) (`detectarMs`) | int | 12000 | 2000–60000 |
+| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0–1000 |
 
 ### CV-31 · Salto e testes físicos
 
 Testes de salto pela câmera, no navegador: salto com contramovimento (CMJ), squat jump, drop jump (tempo de contato e RSI), saltos contínuos (média e fadiga) e salto horizontal. Altura pelo tempo de voo (h = g·t²/8) e pela subida do centro de massa com escala pela altura da pessoa, profundidade do contramovimento, tempo de carga, ângulos de joelho e quadril na decolagem e na aterrissagem, aterrissagem assimétrica e valgo (vista frontal), sempre com a incerteza da taxa de quadros. Análise quadro a quadro de vídeo (inclusive câmera lenta). Painel Salto com tentativas, comparação e relatório CSV/JSON/PDF. Usa a pose do CV-06 (Apache-2.0).
-
-Modelos: `yolox`, `pose`
 
 #### Salto — testes físicos — `salto.teste`
 
@@ -936,18 +892,16 @@ Salto vertical (CMJ, squat jump), drop jump com tempo de contato e RSI, saltos c
 |---|---|---|---|
 | Teste (`teste`) | enum | CMJ | CMJ, squat jump, drop jump, contínuos, horizontal |
 | Vista da câmera (`vista`) | enum | lateral | lateral, frontal |
-| Altura da pessoa (cm, 0 = sem escala) (`alturaCm`) | int | 0 | 0 – 230 |
-| Câmera lenta (fator: 240 fps exibido a 30 = 8) (`lenta`) | int | 1 | 1 – 16 |
+| Altura da pessoa (cm, 0 = sem escala) (`alturaCm`) | int | 0 | 0–230 |
+| Câmera lenta (fator: 240 fps exibido a 30 = 8) (`lenta`) | int | 1 | 1–16 |
 | Imagem espelhada (automático = segue a Fonte) (`espelhada`) | enum | automático | automático, sim, não |
-| Visibilidade mín. (`minVis`) | float | 0.4 | 0.1 – 0.95 |
-| Re-detectar pessoa (ms) (`detectarMs`) | int | 6000 | 1000 – 30000 |
-| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0 – 1000 |
+| Visibilidade mín. (`minVis`) | float | 0.4 | 0.1–0.95 |
+| Re-detectar pessoa (ms) (`detectarMs`) | int | 6000 | 1000–30000 |
+| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0–1000 |
 
 ### CV-32 · Corrida (marcha)
 
 Análise da corrida em esteira ou pista, câmera de lado: cadência, tempo de contato e de voo, fases de apoio e balanço, oscilação vertical do quadril, joelho no contato e flexão máxima, tornozelo, padrão de pisada (retropé, médio-pé, antepé), overstriding, inclinação do tronco e simetria esquerda/direita; de trás ou de frente, queda da pelve e cruzamento. Comprimento da passada com a velocidade da esteira. Painel Corrida com resumo por lado, alertas e relatório. Usa a pose do CV-06 (Apache-2.0).
-
-Modelos: `yolox`, `pose`
 
 #### Corrida — análise da marcha — `corrida.marcha`
 
@@ -957,21 +911,19 @@ Corrida vista de lado (esteira ou pista): cadência, tempo de contato e de voo, 
 |---|---|---|---|
 | Vista da câmera (`vista`) | enum | lateral | lateral, trás/frente |
 | Pessoas (`pessoas`) | enum | uma (completo) | uma (completo), várias |
-| Várias: até N corredores (`maxPessoas`) | int | 6 | 1 – 20 |
+| Várias: até N corredores (`maxPessoas`) | int | 6 | 1–20 |
 | Várias: pose (RTMO 17 pontos \| BlazePose por recorte, 33) (`fonteMulti`) | enum | RTMO (todas) | RTMO (todas), BlazePose por recorte |
-| Altura do corredor (cm, 0 = sem escala) (`alturaCm`) | int | 0 | 0 – 230 |
-| Velocidade da esteira (km/h, opcional) (`velocidadeKmh`) | float | 0 | 0 – 30 |
-| Câmera lenta (fator) (`lenta`) | int | 1 | 1 – 16 |
+| Altura do corredor (cm, 0 = sem escala) (`alturaCm`) | int | 0 | 0–230 |
+| Velocidade da esteira (km/h, opcional) (`velocidadeKmh`) | float | 0 | 0–30 |
+| Câmera lenta (fator) (`lenta`) | int | 1 | 1–16 |
 | Imagem espelhada (automático = segue a Fonte) (`espelhada`) | enum | automático | automático, sim, não |
-| Visibilidade mín. (`minVis`) | float | 0.3 | 0.1 – 0.95 |
-| Re-detectar corredor (ms) (`detectarMs`) | int | 6000 | 1000 – 30000 |
-| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0 – 1000 |
+| Visibilidade mín. (`minVis`) | float | 0.3 | 0.1–0.95 |
+| Re-detectar corredor (ms) (`detectarMs`) | int | 6000 | 1000–30000 |
+| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0–1000 |
 
 ### CV-33 · Swing (golfe e raquete)
 
 Análise do swing pela câmera ou por vídeo, no navegador: fases detectadas pela velocidade das mãos (preparação, backswing, topo, downswing, impacto, follow-through) com quadros-chave congelados; tempo de backswing/downswing e razão (≈3:1 no golfe), rotação de ombros e quadril, X-factor, inclinação da coluna, braço líder, estabilidade da cabeça, velocidade das mãos e angular do punho, trajetória das mãos (e da raquete/taco, se o detector achar) e transferência de peso. Golfe, tênis, padel, beach tennis e beisebol. Painel Swing: lista, comparação lado a lado, CSV/JSON/relatório. Usa a pose do CV-06 (Apache-2.0).
-
-Modelos: `yolox`, `pose`
 
 #### Swing — golfe e raquete — `swing.analise`
 
@@ -982,20 +934,18 @@ Análise do swing pela pose BlazePose: fases (preparação, backswing, topo, dow
 | Esporte e golpe (`perfil`) | enum | Golfe · Drive | Golfe · Drive, Golfe · Ferro, Tênis · Saque, Tênis · Forehand, Tênis · Backhand, Padel · Forehand, Padel · Backhand, Padel · Smash, Padel · Bandeja, Beach tennis · Forehand, Beach tennis · Backhand, Beach tennis · Smash, Beach tennis · Saque, Beisebol · Rebatida |
 | Mão dominante (`dominante`) | enum | destro | destro, canhoto |
 | Vista da câmera (`vista`) | enum | frente | frente, linha do alvo |
-| Altura do atleta (cm, 0 = sem escala) (`alturaCm`) | int | 0 | 0 – 230 |
+| Altura do atleta (cm, 0 = sem escala) (`alturaCm`) | int | 0 | 0–230 |
 | Imagem espelhada (automático = segue a Fonte) (`espelhada`) | enum | automático | automático, sim, não |
-| Seguir raquete/taco (YOLOX, mais lento) (`implemento`) | bool | False |  |
-| Intervalo do detector de implemento (ms) (`implementoMs`) | int | 400 | 150 – 3000 |
-| Vídeo em câmera lenta (×) (`lento`) | float | 1 | 1 – 16 |
-| Pico mín. das mãos (troncos/s, 0 = do esporte) (`vMin`) | float | 0 | 0 – 30 |
-| Rastro das mãos (`rastro`) | bool | True |  |
-| Re-detectar pessoa (ms) (`detectarMs`) | int | 6000 | 1000 – 30000 |
+| Seguir raquete/taco (YOLOX, mais lento) (`implemento`) | bool | false |  |
+| Intervalo do detector de implemento (ms) (`implementoMs`) | int | 400 | 150–3000 |
+| Vídeo em câmera lenta (×) (`lento`) | float | 1 | 1–16 |
+| Pico mín. das mãos (troncos/s, 0 = do esporte) (`vMin`) | float | 0 | 0–30 |
+| Rastro das mãos (`rastro`) | bool | true |  |
+| Re-detectar pessoa (ms) (`detectarMs`) | int | 6000 | 1000–30000 |
 
 ### CV-34 · VBT (velocidade da barra)
 
 Treino baseado em velocidade com um marcador ArUco impresso na ponta da barra (vista lateral): trajetória, deslocamento, velocidade média, propulsiva e de pico da fase concêntrica, potência com a carga, repetições, perda de velocidade da série com alerta e zonas de velocidade. Calibra pelo tamanho real do marcador. Sem marcador, modo aproximado pelos punhos (BlazePose). Painel VBT com tabela, CSV/JSON/relatório e a página para imprimir o marcador.
-
-Modelos: `yolox`, `pose`
 
 #### VBT — velocidade da barra — `vbt.barra`
 
@@ -1005,33 +955,31 @@ Velocidade da barra pelo marcador ArUco impresso na ponta (vista lateral): traje
 |---|---|---|---|
 | Fonte da posição (punho (aproximado) = sem marcador, pela pose) (`modo`) | enum | marcador | marcador, punho (aproximado) |
 | Exercício (`exercicio`) | enum | Agachamento | Agachamento, Supino, Levantamento terra, Desenvolvimento, Remada curvada, Remada (horizontal), Power clean, Hip thrust, Glute bridge (ponte), Outro |
-| Carga (kg) (`cargaKg`) | float | 60 | 0 – 500 |
-| Lado do marcador impresso (cm) (`marcadorCm`) | float | 5 | 1 – 30 |
-| Id do marcador (−1 = qualquer) (`marcadorId`) | int | -1 | -1 – 49 |
-| Alerta de perda de velocidade (%) (`limitePerda`) | int | 20 | 5 – 60 |
-| Deslocamento mín. da repetição (cm, 0 = do exercício) (`deslMinCm`) | int | 0 | 0 – 80 |
-| Pausa que abre nova série (s, 0 = manual) (`pausaSerieS`) | int | 30 | 0 – 600 |
-| Largura para achar o marcador (px) (`resolucao`) | int | 960 | 320 – 1920 |
-| Vídeo em câmera lenta (×) (`lento`) | float | 1 | 1 – 16 |
+| Carga (kg) (`cargaKg`) | float | 60 | 0–500 |
+| Lado do marcador impresso (cm) (`marcadorCm`) | float | 5 | 1–30 |
+| Id do marcador (−1 = qualquer) (`marcadorId`) | int | -1 | -1–49 |
+| Alerta de perda de velocidade (%) (`limitePerda`) | int | 20 | 5–60 |
+| Deslocamento mín. da repetição (cm, 0 = do exercício) (`deslMinCm`) | int | 0 | 0–80 |
+| Pausa que abre nova série (s, 0 = manual) (`pausaSerieS`) | int | 30 | 0–600 |
+| Largura para achar o marcador (px) (`resolucao`) | int | 960 | 320–1920 |
+| Vídeo em câmera lenta (×) (`lento`) | float | 1 | 1–16 |
 | Ponto seguido sem marcador (automático = pelo exercício) (`ponto`) | enum | automático | automático, punhos (barra), quadril, ombros |
 | Escala sem marcador (`escala`) | enum | altura | altura, segmento, 2 cliques |
-| Altura do atleta (cm) (`alturaCm`) | int | 175 | 100 – 230 |
+| Altura do atleta (cm) (`alturaCm`) | int | 175 | 100–230 |
 | Segmento da escala (`segmento`) | enum | coxa | coxa, canela |
-| Comprimento do segmento (cm, 0 = estimado da altura) (`segmentoCm`) | float | 0 | 0 – 80 |
+| Comprimento do segmento (cm, 0 = estimado da altura) (`segmentoCm`) | float | 0 | 0–80 |
 | 2 cliques: pontos (x1,y1,x2,y2 em milésimos da largura) (`calib2p`) | text |  |  |
-| 2 cliques: distância real (cm) (`calibCm`) | float | 45 | 1 – 500 |
+| 2 cliques: distância real (cm) (`calibCm`) | float | 45 | 1–500 |
 | Referência de inclinação (x1,y1,x2,y2; vazio = vertical da imagem) (`vertical`) | text |  |  |
 | A referência é uma linha vertical ou horizontal (chão/banco) (`verticalTipo`) | enum | vertical | vertical, horizontal |
 | Exercício horizontal: sentido da concêntrica (`sentidoH`) | enum | automático | automático, para a esquerda, para a direita |
-| Visibilidade mínima do ponto (pose) (`minVis`) | float | 0.5 | 0.3 – 0.9 |
+| Visibilidade mínima do ponto (pose) (`minVis`) | float | 0.5 | 0.3–0.9 |
 | Imagem espelhada (pose) (`espelhada`) | enum | automático | automático, sim, não |
-| Desenhar a trajetória (`rastro`) | bool | True |  |
+| Desenhar a trajetória (`rastro`) | bool | true |  |
 
 ### CV-35 · Esportes coletivos e de quadra
 
 Futebol, futsal, basquete, vôlei, tênis e padel com uma câmera: jogadores e bola, IDs, times pela cor do uniforme, calibração da quadra por 4+ pontos (homografia) com as medidas oficiais, radar 2D, mapa de calor, distância e velocidade por jogador, tempo por zona; posse e passes, quique dentro/fora, rally e arremessos. Painel Quadra com exportação CSV/JSON e relatório. Usa o RF-DETR (Apache-2.0) ou o detector da cadeia.
-
-Modelos: `rfdetr-small`, `rfdetr-nano`
 
 #### Quadra — esportes coletivos e de quadra — `quadra.analise`
 
@@ -1040,39 +988,151 @@ Jogadores e bola (do detector anterior na cadeia ou RF-DETR próprio), IDs, time
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
 | Esporte (`esporte`) | enum | futebol | futebol, futsal, basquete, vôlei, tênis, padel |
-| Comprimento do campo (m, 0 = oficial) (`comprimento`) | float | 0 | 0 – 120 |
-| Largura do campo (m, 0 = oficial) (`largura`) | float | 0 | 0 – 90 |
+| Comprimento do campo (m, 0 = oficial) (`comprimento`) | float | 0 | 0–120 |
+| Largura do campo (m, 0 = oficial) (`largura`) | float | 0 | 0–90 |
 | Detector (automático = o da cadeia, senão RF-DETR small) (`detector`) | enum | automático | automático, cadeia, RF-DETR small, RF-DETR nano, YOLOX |
-| Confiança (jogadores) (`conf`) | float | 0.35 | 0.1 – 0.9 |
-| Confiança (bola) (`confBola`) | float | 0.15 | 0.05 – 0.9 |
+| Confiança (jogadores) (`conf`) | float | 0.35 | 0.1–0.9 |
+| Confiança (bola) (`confBola`) | float | 0.15 | 0.05–0.9 |
 | Bola: 2ª passada ampliada (2× custo) (`bolaZoom`) | enum | desligado | desligado, perto da última bola, perto da bola + varredura |
-| Classes de jogador (`classesJogador`) | text | pessoa, person, player, jogador, goalkeeper, goleiro, referee, árbitro |  |
-| Classes de bola (`classesBola`) | text | bola, sports ball, ball |  |
+| Classes de jogador (`classesJogador`) | text | pessoa, person, player, jogador, goalkeeper, goleiro, referee, árbitro | –200 |
+| Classes de bola (`classesBola`) | text | bola, sports ball, ball | –120 |
 | Times por (`times`) | enum | automático | automático, cor do uniforme, lado da quadra, não separar |
-| Só quem está na quadra (com calibração) (`soQuadra`) | bool | True |  |
-| Margem além das linhas (m) (`margem`) | float | 2 | 0 – 10 |
-| Tênis: dentro/fora pelas linhas de duplas (`duplas`) | bool | False |  |
-| Fim do rally sem bola (s) (`fimRallyS`) | float | 2.5 | 1 – 8 |
-| Calibração (preenchida pelo painel Quadra) (`calibracao`) | text |  |  |
-| Desenhar as linhas da quadra calibrada (`mostrarLinhas`) | bool | True |  |
+| Só quem está na quadra (com calibração) (`soQuadra`) | bool | true |  |
+| Margem além das linhas (m) (`margem`) | float | 2 | 0–10 |
+| Tênis: dentro/fora pelas linhas de duplas (`duplas`) | bool | false |  |
+| Fim do rally sem bola (s) (`fimRallyS`) | float | 2.5 | 1–8 |
+| Calibração (preenchida pelo painel Quadra) (`calibracao`) | text |  | –2400 |
+| Desenhar as linhas da quadra calibrada (`mostrarLinhas`) | bool | true |  |
 | Radar no vídeo (`radar`) | enum | canto inferior direito | nenhum, canto inferior direito, canto inferior esquerdo, canto superior direito |
 | Rótulos (`rotulos`) | enum | id e velocidade | id e velocidade, id, nenhum |
-| Rastro da bola (`rastroBola`) | bool | True |  |
-| Intervalo mín. do detector próprio (ms) (`everyMs`) | int | 0 | 0 – 2000 |
+| Rastro da bola (`rastroBola`) | bool | true |  |
+| Intervalo mín. do detector próprio (ms) (`everyMs`) | int | 0 | 0–2000 |
 
 ### CV-36 · Industrial — volumetria de correia (BeltScan)
 
-Volumetria de correia transportadora pela câmera e uma linha laser, no navegador: linha subpixel, altura por triangulação com o ângulo da câmera, seção na calha (DIN 22101), vazão m³/h, massa seca t/h, nível representativo com altura limite e alarmes ISA-18.2 (banda morta, retardos, prioridade, supressão, reconhecimento, histórico CSV). Na bancada, seção em mm² × velocidade por correlação de fase = cm³/s e volume. Configuração "beltscan/4" compatível com o GPlanSiS\|BELTSCAN (HTML e Python). Tela cheia GPlanSiS\|BeltScan com ensaios de feijão.
+Volumetria de correia transportadora pela câmera e uma linha laser, no navegador: linha subpixel, altura por triangulação com o ângulo da câmera, seção na calha (DIN 22101), vazão m³/h, massa seca t/h, nível representativo com altura limite e alarmes ISA-18.2 (banda morta, retardos, prioridade, supressão, reconhecimento, histórico CSV). Na bancada, seção em mm² × velocidade por correlação de fase = cm³/s e volume. Configuração "beltscan/4" compatível com o GPlanSiS|BELTSCAN (HTML e Python). Tela cheia GPlanSiS|BeltScan com ensaios de feijão.
 
 #### BeltScan — volumetria de correia — `beltscan.volumetria`
 
-Volumetria de correia transportadora por triangulação laser–câmera (porte do GPlanSiS\|BELTSCAN): linha laser subpixel, altura pela geometria da câmera, seção DIN 22101, vazão, massa seca, nível representativo com altura limite e alarmes ISA-18.2; na bancada, seção × velocidade por correlação de fase. Configuração "beltscan/4" (a mesma do HTML e do Python). Abra a tela GPlanSiS\|BeltScan para configurar, calibrar e acompanhar.
+Volumetria de correia transportadora por triangulação laser–câmera (porte do GPlanSiS|BELTSCAN): linha laser subpixel, altura pela geometria da câmera, seção DIN 22101, vazão, massa seca, nível representativo com altura limite e alarmes ISA-18.2; na bancada, seção × velocidade por correlação de fase. Configuração "beltscan/4" (a mesma do HTML e do Python). Abra a tela GPlanSiS|BeltScan para configurar, calibrar e acompanhar.
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Largura de análise (px; a configuração se reescala) (`largura`) | int | 1280 | 320 – 1920 |
-| Desenhar no vídeo (linha, referência, limite) (`desenhar`) | bool | True |  |
-| Faixa com seção, vazão e volume (`faixa`) | bool | True |  |
+| Largura de análise (px; a configuração se reescala) (`largura`) | int | 1280 | 320–1920 |
+| Desenhar no vídeo (linha, referência, limite) (`desenhar`) | bool | true |  |
+| Faixa com seção, vazão e volume (`faixa`) | bool | true |  |
+
+### CV-40 · Inspeção visual (Inspect)
+
+Inspeção de qualidade pela câmera, no navegador (porte do GPlanSiS|Inspect): presença por molde (NCC), contagem de manchas/furos (Otsu, adaptativo), paquímetro em mm com sub-pixel, cor por ΔE2000, forma (Ø equivalente, circularidade, solidez, alongamento), área de defeito por HSV, OCR de lote e validade (PP-OCRv5, {LOT}/{TODAY}, validade mínima), códigos QR/DataMatrix/EAN com GS1 e GTIN, número de série com sequência, detector (YOLOX/RF-DETR/treinado), classificação conformal e anomalia PatchCore com mapa de calor, cada uma lendo a ROI das marcações "Inspect · …". Programa (receita) versionado com gatilho de presença, linha, intervalo ou manual, alinhamento à peça de referência, veredito OK / NOK / INCERTO, histórico, fila de revisão humana, CSV, alarmes de sequência e Cpk. Tela cheia GPlanSiS|Inspect.
+
+#### Inspeção visual — programa com gatilho — `inspect.programa`
+
+Roda o PROGRAMA de inspeção ativo (receita versionada: ferramentas, ROIs, limites, gatilho) quando o gatilho dispara — presença (fundo aprendido + histerese), linha, intervalo ou manual. Congela o quadro em resolução plena, alinha à peça de referência (opcional), roda presença, contagem, paquímetro, cor, forma, área de defeito, OCR de lote/validade, código, serial, detector, classificação e anomalia (as com modelo fora do laço de quadros; o veredito espera por elas) e dá o veredito OK / NOK / INCERTO, com histórico, fila de revisão humana e CSV. Abra a tela GPlanSiS|Inspect para montar o programa e acompanhar.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Largura da inspeção (px do quadro congelado) (`largura`) | int | 1280 | 320–1920 |
+| Desenhar gatilho e resultados no vídeo (`desenhar`) | bool | true |  |
+| Modelo de programa (presets) (`modelo`) | enum | — | —, presenca, dimensional, cor_defeito, rotulo, extrusao |
+
+#### Inspeção — presença (molde NCC) — `inspect.presenca`
+
+Presença de peça/componente por correlação normalizada (NCC, como o matchTemplate do OpenCV): o molde é a caixa da marcação "Inspect · presença" na primeira passada (peça boa na frente); a busca vai até a folga em volta. OK com NCC ≥ mínimo, INCERTO perto do limite, NOK abaixo.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| NCC mínimo (`min_score`) | float | 0.8 | 0.3–1 |
+| Folga da busca (fração da caixa) (`folga`) | float | 0.25 | 0–1 |
+| Recapturar o molde (alterne) (`recapturar`) | bool | false |  |
+| Rodar a cada (ms) (`intervalo`) | int | 300 | 50–5000 |
+| Largura de análise (px) (`largura`) | int | 1280 | 320–1920 |
+| Faixa de incerteza (fração do limite) (`faixa`) | float | 0.05 | 0–0.5 |
+| Desenhar no vídeo (`desenhar`) | bool | true |  |
+
+#### Inspeção — contagem (blobs) — `inspect.blobs`
+
+Conta manchas/furos/componentes na área "Inspect · contagem": desfoque 5×5, limiar Otsu, fixo ou adaptativo (luz irregular), componentes conexos 8, faixa de área. OK com a contagem dentro da faixa.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Contar o que é (`polaridade`) | enum | escuro | escuro, claro |
+| Limiar (`limiar`) | enum | Otsu | Otsu, fixo, adaptativo |
+| Limiar fixo (0–255) (`valor`) | int | 128 | 0–255 |
+| Bloco do adaptativo (px) (`bloco`) | int | 31 | 3–151 |
+| Área mínima (px) (`area_min`) | int | 30 | 1–1000000 |
+| Área máxima (px) (`area_max`) | int | 100000 | 1–10000000 |
+| Contagem mínima (`cont_min`) | int | 1 | 0–10000 |
+| Contagem máxima (`cont_max`) | int | 10 | 0–10000 |
+| Rodar a cada (ms) (`intervalo`) | int | 300 | 50–5000 |
+| Largura de análise (px) (`largura`) | int | 1280 | 320–1920 |
+| Faixa de incerteza (fração do limite) (`faixa`) | float | 0.05 | 0–0.5 |
+| Desenhar no vídeo (`desenhar`) | bool | true |  |
+
+#### Inspeção — paquímetro (mm) — `inspect.paquimetro`
+
+Mede a distância entre a primeira e a última borda ao longo de uma linha/régua "Inspect · paquímetro": perfil médio numa faixa de largura, gradiente, refino sub-pixel no pico; mm pela calibração da régua. OK dentro de nominal ± tolerância.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Nominal (mm) (`nominal`) | float | 50 | 0.01–10000 |
+| Tolerância ± (mm) (`tol`) | float | 0.5 | 0.001–1000 |
+| Largura do perfil (px) (`largura_perfil`) | int | 9 | 1–101 |
+| Contraste mínimo da borda (`contraste`) | float | 20 | 1–255 |
+| Rodar a cada (ms) (`intervalo`) | int | 300 | 50–5000 |
+| Largura de análise (px) (`largura`) | int | 1280 | 320–1920 |
+| Faixa de incerteza (fração do limite) (`faixa`) | float | 0.05 | 0–0.5 |
+| Desenhar no vídeo (`desenhar`) | bool | true |  |
+
+#### Inspeção — cor (ΔE2000) — `inspect.cor`
+
+Compara a cor mediana (Lab) da área "Inspect · cor" com a referência pela fórmula CIEDE2000. Sem referência digitada, aprende a primeira leitura (peça boa na frente). OK com ΔE00 ≤ máximo.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Referência "L a b" (vazio = aprender) (`ref`) | text |  | –40 |
+| ΔE00 máximo (`max_de`) | float | 3 | 0.1–50 |
+| Reaprender a referência (alterne) (`reaprender`) | bool | false |  |
+| Rodar a cada (ms) (`intervalo`) | int | 300 | 50–5000 |
+| Largura de análise (px) (`largura`) | int | 1280 | 320–1920 |
+| Faixa de incerteza (fração do limite) (`faixa`) | float | 0.05 | 0–0.5 |
+| Desenhar no vídeo (`desenhar`) | bool | true |  |
+
+#### Inspeção — forma do objeto — `inspect.forma`
+
+Segmenta o objeto da área "Inspect · forma" (Otsu, polaridade pela borda, abertura/fechamento, furos tapados) e mede o maior contorno: Ø equivalente e área em mm (com a régua), circularidade 4πA/P², solidez A/A_casco (mordida, trinca, falta de material) e alongamento (menor retângulo girado). Zero = critério desligado.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Objeto (`polaridade`) | enum | auto | auto, escuro, claro |
+| Área mínima (px) (`area_min_px`) | int | 500 | 1–10000000 |
+| Ø equivalente nominal (mm; 0 = não) (`diam_nom`) | float | 0 | 0–10000 |
+| Ø tolerância ± (mm) (`diam_tol`) | float | 1 | 0–1000 |
+| Circularidade mínima (0 = não) (`circ_min`) | float | 0 | 0–1 |
+| Solidez mínima (0 = não) (`solidez_min`) | float | 0.95 | 0–1 |
+| Alongamento mínimo (0 = não) (`aspecto_min`) | float | 0 | 0–100 |
+| Alongamento máximo (0 = não) (`aspecto_max`) | float | 0 | 0–100 |
+| Rodar a cada (ms) (`intervalo`) | int | 300 | 50–5000 |
+| Largura de análise (px) (`largura`) | int | 1280 | 320–1920 |
+| Faixa de incerteza (fração do limite) (`faixa`) | float | 0.05 | 0–0.5 |
+| Desenhar no vídeo (`desenhar`) | bool | true |  |
+
+#### Inspeção — área de defeito (HSV) — `inspect.defeito_area`
+
+Mede a área de defeito por cor (faixas HSV do OpenCV) DENTRO do objeto da área "Inspect · área de defeito": queimado, ferrugem, mofo, corpo estranho azul ou metálico, ou uma faixa sua. % da área do objeto e número de manchas; OK abaixo dos limites.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Defeito (`defeito`) | enum | queimado | queimado, ferrugem, mofo, corpo estranho azul, metal, personalizada |
+| Faixa personalizada "h0-h1, s0-s1, v0-v1" (`hsv`) | text | 0-179, 0-255, 0-55 | –60 |
+| Só dentro do objeto (`dentro_objeto`) | bool | true |  |
+| Área máxima (%) (`max_pct`) | float | 2 | 0–100 |
+| Mancha mínima (px) (`mancha_min`) | int | 20 | 1–100000 |
+| Máximo de manchas (−1 = sem limite) (`max_manchas`) | int | -1 | -1–1000 |
+| Rodar a cada (ms) (`intervalo`) | int | 300 | 50–5000 |
+| Largura de análise (px) (`largura`) | int | 1280 | 320–1920 |
+| Faixa de incerteza (fração do limite) (`faixa`) | float | 0.05 | 0–0.5 |
+| Desenhar no vídeo (`desenhar`) | bool | true |  |
 
 ### CV-37 · Ferramentas de cena
 
@@ -1086,15 +1146,31 @@ Conta por ZONA (ocupação, máxima, entradas, permanência) e por LINHA (cruzam
 |---|---|---|---|
 | Objetos de (`fonte`) | enum | automático | automático, detecções, poses, mãos, rostos, caixas desenhadas |
 | Ponto de referência (`ponto`) | enum | base (pés) | base (pés), centro |
-| Só estas classes (vírgula; vazio = todas) (`classes`) | text |  |  |
-| Confiança mínima (`confMin`) | float | 0 | 0 – 0.95 |
-| Quadros fora até contar saída (`sair`) | int | 8 | 1 – 90 |
-| Mostrar pontos de referência (`mostrarPontos`) | bool | True |  |
-| Linha: cada ID conta uma vez (`umaVez`) | bool | False |  |
+| Só estas classes (vírgula; vazio = todas) (`classes`) | text |  | –200 |
+| Confiança mínima (`confMin`) | float | 0 | 0–0.95 |
+| Quadros fora até contar saída (`sair`) | int | 8 | 1–90 |
+| Mostrar pontos de referência (`mostrarPontos`) | bool | true |  |
+| Linha: cada ID conta uma vez (`umaVez`) | bool | false |  |
+
+#### Mapa de calor (permanência) — `cena.mapa_calor`
+
+Acumula onde os objetos da cadeia (pessoas do detector, poses…) passam o tempo, numa grade sobre a imagem, e pinta o calor por cima do vídeo — o mapa de calor da Quadra fora da quadra (loja, fila, corredor, galpão). Segundos de presença por célula, meia-vida opcional, PNG e CSV no painel Medições.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Objetos de (`fonte`) | enum | automático | automático, detecções, poses, rostos |
+| Ponto de referência (`ponto`) | enum | base (pés) | base (pés), centro |
+| Só estas classes (vírgula; vazio = todas) (`classes`) | text |  | –200 |
+| Células na largura (`grade`) | int | 40 | 8–96 |
+| Espalhar (células vizinhas) (`raio`) | int | 1 | 0–4 |
+| Meia-vida do calor (s; 0 = acumula tudo) (`meiaVidaS`) | int | 0 | 0–86400 |
+| Só dentro das zonas desenhadas (`soZonas`) | bool | false |  |
+| Opacidade (`opacidade`) | float | 0.55 | 0–1 |
+| Pintar o calor no vídeo (`mostrar`) | bool | true |  |
 
 ### CV-38 · Contagem em esteira (CounterVision)
 
-Contagem de peças em esteira, no navegador (porte do GPlanSiS\|CounterVision): motor COR sem modelo (amostra por clique, tolerância, máscara, separação de peças encostadas, rastreio com ID) ou detector (YOLOX, RF-DETR, o seu .onnx) + rastreio; conta pelas linhas (com sentido) e zonas das Ferramentas de mouse; peças/min e /h, turnos e metas, alarmes de parada e de taxa, eventos e CSV, fila guardada neste navegador e captura de quadros com caixas YOLO para o Treinar. Tela GPlanSiS\|CounterVision.
+Contagem de peças em esteira, no navegador (porte do GPlanSiS|CounterVision): motor COR sem modelo (amostra por clique, tolerância, máscara, separação de peças encostadas, rastreio com ID) ou detector (YOLOX, RF-DETR, o seu .onnx) + rastreio; conta pelas linhas (com sentido) e zonas das Ferramentas de mouse; peças/min e /h, turnos e metas, alarmes de parada e de taxa, eventos e CSV, fila guardada neste navegador e captura de quadros com caixas YOLO para o Treinar. Tela GPlanSiS|CounterVision.
 
 #### Contagem — motor COR (sem modelo) — `contagem.cor`
 
@@ -1102,18 +1178,18 @@ Detecta peças pela COR, sem modelo: amostre clicando numa peça (Studio Counter
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Resolução de análise (px) (`work`) | int | 320 | 160 – 640 |
-| Tolerância de cor (+° de matiz) (`tol`) | int | 6 | 0 – 40 |
-| Tamanho típico (×) (`tamMul`) | float | 1 | 0.4 – 2.5 |
-| Área mínima (fração do típico) (`minFrac`) | float | 0.35 | 0.05 – 0.9 |
-| Área mínima sem tamanho típico (px) (`minPx`) | int | 12 | 4 – 400 |
-| Remover ruído (abertura) (`abertura`) | bool | True |  |
-| Separar peças encostadas (k-means) (`separar`) | bool | True |  |
-| Quadros para confirmar a peça (`minHits`) | int | 3 | 1 – 10 |
-| Quadros tolerados sem ver (`maxMiss`) | int | 6 | 1 – 30 |
-| Raio de associação (× tamanho) (`gate`) | float | 1.5 | 0.4 – 4 |
-| Suavização da posição (`ema`) | float | 0.5 | 0.05 – 1 |
-| Desenhar peças e IDs (`desenhar`) | bool | True |  |
+| Resolução de análise (px) (`work`) | int | 320 | 160–640 |
+| Tolerância de cor (+° de matiz) (`tol`) | int | 6 | 0–40 |
+| Tamanho típico (×) (`tamMul`) | float | 1 | 0.4–2.5 |
+| Área mínima (fração do típico) (`minFrac`) | float | 0.35 | 0.05–0.9 |
+| Área mínima sem tamanho típico (px) (`minPx`) | int | 12 | 4–400 |
+| Remover ruído (abertura) (`abertura`) | bool | true |  |
+| Separar peças encostadas (k-means) (`separar`) | bool | true |  |
+| Quadros para confirmar a peça (`minHits`) | int | 3 | 1–10 |
+| Quadros tolerados sem ver (`maxMiss`) | int | 6 | 1–30 |
+| Raio de associação (× tamanho) (`gate`) | float | 1.5 | 0.4–4 |
+| Suavização da posição (`ema`) | float | 0.5 | 0.05–1 |
+| Desenhar peças e IDs (`desenhar`) | bool | true |  |
 
 #### Contagem — detector ONNX do usuário — `contagem.onnx`
 
@@ -1121,10 +1197,10 @@ Roda o .onnx de detector escolhido no painel Contagem em esteira (fica neste nav
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Confiança mínima (`conf`) | float | 0.35 | 0.05 – 0.95 |
-| IoU do NMS (`iou`) | float | 0.5 | 0.2 – 0.9 |
-| Máximo de detecções (`maxDet`) | int | 300 | 1 – 600 |
-| Intervalo mínimo (ms) (`everyMs`) | int | 0 | 0 – 2000 |
+| Confiança mínima (`conf`) | float | 0.35 | 0.05–0.95 |
+| IoU do NMS (`iou`) | float | 0.5 | 0.2–0.9 |
+| Máximo de detecções (`maxDet`) | int | 300 | 1–600 |
+| Intervalo mínimo (ms) (`everyMs`) | int | 0 | 0–2000 |
 
 #### Contagem — rastreio por centroide (esteira) — `contagem.rastreio`
 
@@ -1132,170 +1208,265 @@ O rastreador do CounterVision para as caixas de um detector (YOLOX, RF-DETR, o s
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Confiança mínima (`confMin`) | float | 0.3 | 0 – 0.95 |
-| Inferências para confirmar (`minHits`) | int | 2 | 1 – 10 |
-| Inferências toleradas sem ver (`maxMiss`) | int | 5 | 1 – 30 |
-| Raio de associação (× tamanho) (`gate`) | float | 1.5 | 0.4 – 4 |
-| Suavização da posição (`ema`) | float | 0.6 | 0.05 – 1 |
-| Desenhar IDs (`desenhar`) | bool | True |  |
+| Confiança mínima (`confMin`) | float | 0.3 | 0–0.95 |
+| Inferências para confirmar (`minHits`) | int | 2 | 1–10 |
+| Inferências toleradas sem ver (`maxMiss`) | int | 5 | 1–30 |
+| Raio de associação (× tamanho) (`gate`) | float | 1.5 | 0.4–4 |
+| Suavização da posição (`ema`) | float | 0.6 | 0.05–1 |
+| Desenhar IDs (`desenhar`) | bool | true |  |
 
 #### Contagem em esteira (CounterVision) — `contagem.esteira`
 
-Produção a partir das linhas e zonas (coloque depois de Zonas e linhas): total por sentido e classe, peças/min e /h, gráfico por minuto, turnos com meta e projeção, alarmes de parada e de taxa baixa/alta, eventos com hora, ID, sentido, classe e confiança, fila guardada neste navegador e CSV. Tela GPlanSiS\|CounterVision.
+Produção a partir das linhas e zonas (coloque depois de Zonas e linhas): total por sentido e classe, peças/min e /h, gráfico por minuto, turnos com meta e projeção, alarmes de parada e de taxa baixa/alta, eventos com hora, ID, sentido, classe e confiança, fila guardada neste navegador e CSV. Tela GPlanSiS|CounterVision.
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
 | Contar por (`base`) | enum | automático | automático, linhas, zonas, linhas e zonas |
 | Sentido que conta (linhas) (`sentido`) | enum | ambos (soma) | ambos (soma), ida, volta, líquido (ida − volta) |
-| Confiança mínima do evento (`confMin`) | float | 0 | 0 – 0.95 |
-| Janela da taxa (s) (`janelaS`) | int | 60 | 10 – 600 |
-| Meta por turno (peças; 0 = sem) (`meta`) | int | 0 | 0 – 1000000 |
-| Turnos (nome hh:mm-hh:mm; …) (`turnos`) | text | T1 06:00-14:00; T2 14:00-22:00; T3 22:00-06:00 |  |
-| Alarme de parada após (s sem peça; 0 = desligado) (`paradaS`) | int | 30 | 0 – 3600 |
-| Alarme taxa baixa (peças/min; 0 = desligado) (`taxaMin`) | float | 0 | 0 – 100000 |
-| Alarme taxa alta (peças/min; 0 = desligado) (`taxaMax`) | float | 0 | 0 – 100000 |
-| Faixa com total e taxa no vídeo (`faixa`) | bool | True |  |
+| Confiança mínima do evento (`confMin`) | float | 0 | 0–0.95 |
+| Janela da taxa (s) (`janelaS`) | int | 60 | 10–600 |
+| Meta por turno (peças; 0 = sem) (`meta`) | int | 0 | 0–1000000 |
+| Turnos (nome hh:mm-hh:mm; …) (`turnos`) | text | T1 06:00-14:00; T2 14:00-22:00; T3 22:00-06:00 | –200 |
+| Alarme de parada após (s sem peça; 0 = desligado) (`paradaS`) | int | 30 | 0–3600 |
+| Alarme taxa baixa (peças/min; 0 = desligado) (`taxaMin`) | float | 0 | 0–100000 |
+| Alarme taxa alta (peças/min; 0 = desligado) (`taxaMax`) | float | 0 | 0–100000 |
+| Faixa com total e taxa no vídeo (`faixa`) | bool | true |  |
 
 ### CV-39 · Industrial — tempo de posto (Takt)
 
-Tempo de posto pela câmera, no navegador (porte do GPlanSiS\|Takt): postos marcados na imagem, pessoas pela pose multi-pessoa com IDs, escore de atividade (mãos no posto, movimento dos punhos, orientação), estados produtivo / ocioso no posto / vago / pausa programada / não observado com histerese e tempos mínimos, agenda de turnos e pausas, KPI por turno, alarmes, homografia do piso em metros (erro de reprojeção) e rostos borrados por padrão (LGPD) também na gravação e no PNG. Tela cheia GPlanSiS\|Takt com Gantt, ranking, planta do piso e CSV.
-
-Modelos: `rtmo-s`
+Tempo de posto pela câmera, no navegador (porte do GPlanSiS|Takt): postos marcados na imagem, pessoas pela pose multi-pessoa com IDs, escore de atividade (mãos no posto, movimento dos punhos, orientação), estados produtivo / ocioso no posto / vago / pausa programada / não observado com histerese e tempos mínimos, agenda de turnos e pausas, KPI por turno, alarmes, homografia do piso em metros (erro de reprojeção) e rostos borrados por padrão (LGPD) também na gravação e no PNG. Tela cheia GPlanSiS|Takt com Gantt, ranking, planta do piso e CSV.
 
 #### Takt — tempo de posto — `takt.posto`
 
-Tempo de posto (porte do GPlanSiS\|Takt): para cada área marcada com a função "Takt · posto", associa as pessoas (pose multi-pessoa + IDs), mede a atividade (mãos na área, movimento dos punhos, orientação) e decide produtivo, ocioso no posto, vago, pausa programada ou não observado, com histerese e tempos mínimos. Turnos e pausas, piso calibrado em metros, rostos borrados (LGPD), KPIs, alarmes e CSV no Studio Takt.
+Tempo de posto (porte do GPlanSiS|Takt): para cada área marcada com a função "Takt · posto", associa as pessoas (pose multi-pessoa + IDs), mede a atividade (mãos na área, movimento dos punhos, orientação) e decide produtivo, ocioso no posto, vago, pausa programada ou não observado, com histerese e tempos mínimos. Turnos e pausas, piso calibrado em metros, rostos borrados (LGPD), KPIs, alarmes e CSV no Studio Takt.
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Borrar rostos (LGPD) (`borrarRostos`) | bool | True |  |
-| Desenhar postos e pessoas no vídeo (`desenhar`) | bool | True |  |
-| Esqueleto (quando a pose é própria) (`esqueleto`) | bool | True |  |
-| Score mín. da pessoa (pose própria) (`conf`) | float | 0.3 | 0.05 – 0.95 |
-| Máx. pessoas (pose própria) (`maxPessoas`) | int | 12 | 1 – 30 |
-| Intervalo mín. da pose própria (ms) (`everyMs`) | int | 0 | 0 – 2000 |
+| Borrar rostos (LGPD) (`borrarRostos`) | bool | true |  |
+| Desenhar postos e pessoas no vídeo (`desenhar`) | bool | true |  |
+| Esqueleto (quando a pose é própria) (`esqueleto`) | bool | true |  |
+| Score mín. da pessoa (pose própria) (`conf`) | float | 0.3 | 0.05–0.95 |
+| Máx. pessoas (pose própria) (`maxPessoas`) | int | 12 | 1–30 |
+| Intervalo mín. da pose própria (ms) (`everyMs`) | int | 0 | 0–2000 |
 
 #### Privacidade — borrar rostos (LGPD) — `privacidade.borrar_rostos`
 
-Borra o rosto de cada pessoa a partir dos pontos da cabeça da pose (nariz, olhos, orelhas), sem detector facial nem reconhecimento — porte do privacy.py do GPlanSiS\|Takt. Muda os pixels: o vídeo, a gravação e o PNG saem borrados. Coloque depois da Pose multi-pessoa (ou ele roda o RTMO sozinho).
+Borra o rosto de cada pessoa a partir dos pontos da cabeça da pose (nariz, olhos, orelhas), sem detector facial nem reconhecimento — porte do privacy.py do GPlanSiS|Takt. Muda os pixels: o vídeo, a gravação e o PNG saem borrados. Coloque depois da Pose multi-pessoa (ou ele roda o RTMO sozinho).
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Confiança mín. do ponto da cabeça (`minConf`) | float | 0.2 | 0.05 – 0.9 |
-| Borrar também o topo da caixa de cada pessoa (conservador) (`caixas`) | bool | True |  |
-| Intervalo mín. da pose própria (ms) (`everyMs`) | int | 0 | 0 – 2000 |
+| Confiança mín. do ponto da cabeça (`minConf`) | float | 0.2 | 0.05–0.9 |
+| Borrar também o topo da caixa de cada pessoa (conservador) (`caixas`) | bool | true |  |
+| Intervalo mín. da pose própria (ms) (`everyMs`) | int | 0 | 0–2000 |
 
-### CV-40 · Inspeção visual (Inspect)
+### CV-41 · Tráfego — contagem classificada (CVC)
 
-Inspeção de qualidade pela câmera, no navegador (porte do GPlanSiS\|Inspect): presença por molde (NCC), contagem de manchas/furos (Otsu, adaptativo), paquímetro em mm com sub-pixel, cor por ΔE2000, forma (Ø equivalente, circularidade, solidez, alongamento), área de defeito por HSV, OCR de lote e validade (PP-OCRv5, {LOT}/{TODAY}, validade mínima), códigos QR/DataMatrix/EAN com GS1 e GTIN, número de série com sequência, detector (YOLOX/RF-DETR/treinado), classificação conformal e anomalia PatchCore com mapa de calor, cada uma lendo a ROI das marcações "Inspect · …". Programa (receita) versionado com gatilho de presença, linha, intervalo ou manual, alinhamento à peça de referência, veredito OK / NOK / INCERTO, histórico, fila de revisão humana, CSV, alarmes de sequência e Cpk. Tela cheia GPlanSiS\|Inspect.
+Contagem volumétrica classificada de veículos e pedestres (carro, moto, ônibus, caminhão, bicicleta, pedestre) por movimento — zona de origem → zona de destino — e por linha, em blocos de 15 min, com matriz de giro e CSV. Sobre detector (RF-DETR/YOLOX) + Tracking com IDs + Zonas e linhas; a classe de cada ID é a mais votada na trajetória.
 
-#### Inspeção visual — programa com gatilho — `inspect.programa`
+#### Contagem classificada (CVC) e matriz de giro — `trafego.cvc`
 
-Roda o PROGRAMA de inspeção ativo (receita versionada: ferramentas, ROIs, limites, gatilho) quando o gatilho dispara — presença (fundo aprendido + histerese), linha, intervalo ou manual. Congela o quadro em resolução plena, alinha à peça de referência (opcional), roda presença, contagem, paquímetro, cor, forma, área de defeito, OCR de lote/validade, código, serial, detector, classificação e anomalia (as com modelo fora do laço de quadros; o veredito espera por elas) e dá o veredito OK / NOK / INCERTO, com histórico, fila de revisão humana e CSV. Abra a tela GPlanSiS\|Inspect para montar o programa e acompanhar.
-
-| Parâmetro | Tipo | Padrão | Faixa / opções |
-|---|---|---|---|
-| Largura da inspeção (px do quadro congelado) (`largura`) | int | 1280 | 320 – 1920 |
-| Desenhar gatilho e resultados no vídeo (`desenhar`) | bool | True |  |
-| Modelo de programa (presets) (`modelo`) | enum | — | —, presenca, dimensional, cor_defeito |
-
-#### Inspeção — presença (molde NCC) — `inspect.presenca`
-
-Presença de peça/componente por correlação normalizada (NCC, como o matchTemplate do OpenCV): o molde é a caixa da marcação "Inspect · presença" na primeira passada (peça boa na frente); a busca vai até a folga em volta. OK com NCC ≥ mínimo, INCERTO perto do limite, NOK abaixo.
+Contagem volumétrica classificada: carro, moto, ônibus, caminhão, bicicleta e pedestre por movimento (zona de origem → zona de destino) e por linha, em blocos de 15 min, com matriz de giro e CSV. Coloque depois de detector → Tracking com IDs → Zonas e linhas; desenhe uma ZONA por braço da interseção.
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| NCC mínimo (`min_score`) | float | 0.8 | 0.3 – 1 |
-| Folga da busca (fração da caixa) (`folga`) | float | 0.25 | 0 – 1 |
-| Recapturar o molde (alterne) (`recapturar`) | bool | False |  |
-| Rodar a cada (ms) (`intervalo`) | int | 300 | 50 – 5000 |
-| Largura de análise (px) (`largura`) | int | 1280 | 320 – 1920 |
-| Faixa de incerteza (fração do limite) (`faixa`) | float | 0.05 | 0 – 0.5 |
-| Desenhar no vídeo (`desenhar`) | bool | True |  |
+| Bloco (min) (`blocoMin`) | int | 15 | 1–60 |
+| Contar também "outros" (classes fora da CVC) (`outros`) | bool | false |  |
+| Esquecer ID sem destino após (s) (`esquecerS`) | int | 30 | 2–600 |
+| Faixa com os totais no vídeo (`faixa`) | bool | true |  |
 
-#### Inspeção — contagem (blobs) — `inspect.blobs`
+### CV-42 · Instrumentos — mostrador e display
 
-Conta manchas/furos/componentes na área "Inspect · contagem": desfoque 5×5, limiar Otsu, fixo ou adaptativo (luz irregular), componentes conexos 8, faixa de área. OK com a contagem dentro da faixa.
+Leitura de manômetros e mostradores de agulha (marque zero, centro e fundo de escala com o mouse; agulha por gradiente + Hough pelo centro) e de displays de 7 segmentos. Valor, histórico e alarmes ISA-18.2 (LL/L/H/HH, banda morta e atrasos), CSV. JS puro.
 
-| Parâmetro | Tipo | Padrão | Faixa / opções |
-|---|---|---|---|
-| Contar o que é (`polaridade`) | enum | escuro | escuro, claro |
-| Limiar (`limiar`) | enum | Otsu | Otsu, fixo, adaptativo |
-| Limiar fixo (0–255) (`valor`) | int | 128 | 0 – 255 |
-| Bloco do adaptativo (px) (`bloco`) | int | 31 | 3 – 151 |
-| Área mínima (px) (`area_min`) | int | 30 | 1 – 1000000 |
-| Área máxima (px) (`area_max`) | int | 100000 | 1 – 10000000 |
-| Contagem mínima (`cont_min`) | int | 1 | 0 – 10000 |
-| Contagem máxima (`cont_max`) | int | 10 | 0 – 10000 |
-| Rodar a cada (ms) (`intervalo`) | int | 300 | 50 – 5000 |
-| Largura de análise (px) (`largura`) | int | 1280 | 320 – 1920 |
-| Faixa de incerteza (fração do limite) (`faixa`) | float | 0.05 | 0 – 0.5 |
-| Desenhar no vídeo (`desenhar`) | bool | True |  |
+#### Leitor de mostrador analógico (agulha) — `instrumento.mostrador`
 
-#### Inspeção — paquímetro (mm) — `inspect.paquimetro`
-
-Mede a distância entre a primeira e a última borda ao longo de uma linha/régua "Inspect · paquímetro": perfil médio numa faixa de largura, gradiente, refino sub-pixel no pico; mm pela calibração da régua. OK dentro de nominal ± tolerância.
+Lê a agulha de manômetros e outros mostradores: marque com a ferramenta Ângulo (3 pontos) o ZERO, o CENTRO e o FUNDO DE ESCALA, com a função "Instrumento · mostrador". Valor, histórico e alarmes ISA-18.2 de faixa. A faixa pode vir no nome da marcação ("Pressão 0-10 bar").
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Nominal (mm) (`nominal`) | float | 50 | 0.01 – 10000 |
-| Tolerância ± (mm) (`tol`) | float | 0.5 | 0.001 – 1000 |
-| Largura do perfil (px) (`largura_perfil`) | int | 9 | 1 – 101 |
-| Contraste mínimo da borda (`contraste`) | float | 20 | 1 – 255 |
-| Rodar a cada (ms) (`intervalo`) | int | 300 | 50 – 5000 |
-| Largura de análise (px) (`largura`) | int | 1280 | 320 – 1920 |
-| Faixa de incerteza (fração do limite) (`faixa`) | float | 0.05 | 0 – 0.5 |
-| Desenhar no vídeo (`desenhar`) | bool | True |  |
+| Mínimo da escala (zero) (`min`) | float | 0 | -100000–100000 |
+| Máximo da escala (fundo) (`max`) | float | 10 | -100000–100000 |
+| Unidade (`unidade`) | text | bar | –12 |
+| Sentido do zero ao fundo (`sentido`) | enum | horário | horário, anti-horário |
+| Busca a partir de (fração do raio) (`r0`) | float | 0.15 | 0.05–0.6 |
+| Busca até (fração do raio; antes dos traços) (`r1`) | float | 0.75 | 0.3–0.95 |
+| Nitidez mínima do pico (`confMin`) | float | 2.5 | 1–10 |
+| Ler a cada (ms) (`intervalo`) | int | 200 | 0–5000 |
+| Largura de análise (px) (`largura`) | int | 960 | 320–1920 |
+| Alarmes (ex.: HH 9; H 8; L 1; LL 0,5) (`limites`) | text |  | –120 |
+| Banda morta (% da escala) (`bandaPct`) | float | 1 | 0–20 |
+| Atraso para ativar (s) (`atrasoOn`) | float | 2 | 0–600 |
+| Atraso para normalizar (s) (`atrasoOff`) | float | 2 | 0–600 |
+| Desenhar a agulha lida (`desenhar`) | bool | true |  |
 
-#### Inspeção — cor (ΔE2000) — `inspect.cor`
+#### Leitor de display de 7 segmentos — `instrumento.display7`
 
-Compara a cor mediana (Lab) da área "Inspect · cor" com a referência pela fórmula CIEDE2000. Sem referência digitada, aprende a primeira leitura (peça boa na frente). OK com ΔE00 ≤ máximo.
-
-| Parâmetro | Tipo | Padrão | Faixa / opções |
-|---|---|---|---|
-| Referência "L a b" (vazio = aprender) (`ref`) | text |  |  |
-| ΔE00 máximo (`max_de`) | float | 3 | 0.1 – 50 |
-| Reaprender a referência (alterne) (`reaprender`) | bool | False |  |
-| Rodar a cada (ms) (`intervalo`) | int | 300 | 50 – 5000 |
-| Largura de análise (px) (`largura`) | int | 1280 | 320 – 1920 |
-| Faixa de incerteza (fração do limite) (`faixa`) | float | 0.05 | 0 – 0.5 |
-| Desenhar no vídeo (`desenhar`) | bool | True |  |
-
-#### Inspeção — forma do objeto — `inspect.forma`
-
-Segmenta o objeto da área "Inspect · forma" (Otsu, polaridade pela borda, abertura/fechamento, furos tapados) e mede o maior contorno: Ø equivalente e área em mm (com a régua), circularidade 4πA/P², solidez A/A_casco (mordida, trinca, falta de material) e alongamento (menor retângulo girado). Zero = critério desligado.
+Lê o número de um display de 7 segmentos (balança, controlador, painel) dentro de uma área com a função "Instrumento · display 7 seg.". Otsu, separação por colunas e as 7 janelas de cada dígito; ponto decimal e sinal. Histórico e alarmes ISA-18.2 como o mostrador.
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Objeto (`polaridade`) | enum | auto | auto, escuro, claro |
-| Área mínima (px) (`area_min_px`) | int | 500 | 1 – 10000000 |
-| Ø equivalente nominal (mm; 0 = não) (`diam_nom`) | float | 0 | 0 – 10000 |
-| Ø tolerância ± (mm) (`diam_tol`) | float | 1 | 0 – 1000 |
-| Circularidade mínima (0 = não) (`circ_min`) | float | 0 | 0 – 1 |
-| Solidez mínima (0 = não) (`solidez_min`) | float | 0.95 | 0 – 1 |
-| Alongamento mínimo (0 = não) (`aspecto_min`) | float | 0 | 0 – 100 |
-| Alongamento máximo (0 = não) (`aspecto_max`) | float | 0 | 0 – 100 |
-| Rodar a cada (ms) (`intervalo`) | int | 300 | 50 – 5000 |
-| Largura de análise (px) (`largura`) | int | 1280 | 320 – 1920 |
-| Faixa de incerteza (fração do limite) (`faixa`) | float | 0.05 | 0 – 0.5 |
-| Desenhar no vídeo (`desenhar`) | bool | True |  |
+| Segmento aceso é (`polaridade`) | enum | auto | auto, claro, escuro |
+| Inclinação dos dígitos (°, itálico) (`inclinacao`) | float | 0 | -20–20 |
+| Casas decimais fixas (−1 = pelo ponto) (`casasFixas`) | int | -1 | -1–4 |
+| Unidade (`unidade`) | text |  | –12 |
+| Ler a cada (ms) (`intervalo`) | int | 300 | 0–5000 |
+| Largura de análise (px) (`largura`) | int | 960 | 320–1920 |
+| Alarmes (ex.: HH 9; H 8; L 1; LL 0,5) (`limites`) | text |  | –120 |
+| Banda morta (% da escala) (`bandaPct`) | float | 1 | 0–20 |
+| Atraso para ativar (s) (`atrasoOn`) | float | 2 | 0–600 |
+| Atraso para normalizar (s) (`atrasoOff`) | float | 2 | 0–600 |
+| Desenhar a leitura (`desenhar`) | bool | true |  |
 
-#### Inspeção — área de defeito (HSV) — `inspect.defeito_area`
+### CV-43 · Segurança por pose (indicador de gestão)
 
-Mede a área de defeito por cor (faixas HSV do OpenCV) DENTRO do objeto da área "Inspect · área de defeito": queimado, ferrugem, mofo, corpo estranho azul ou metálico, ou uma faixa sua. % da área do objeto e número de manchas; OK abaixo dos limites.
+Cerca virtual por parte do corpo (mãos, pés, cabeça numa zona proibida, com tempo mínimo e histerese), pessoa caída / no chão / imóvel pela pose e contagem no ponto de encontro. Alarmes ISA-18.2 e eventos no CSV. INDICADOR DE GESTÃO — não é função de segurança (NR-12): não substitui proteção nem intertravamento.
+
+#### Cerca virtual por parte do corpo (indicador de gestão) — `seguranca.cerca_keypoint`
+
+Alerta quando MÃOS, PÉS ou CABEÇA entram numa área "Segurança · zona proibida", com tempo mínimo dentro e histerese para sair. Usa a pose (RTMO) da cadeia. Indicador de gestão — NÃO é função de segurança (NR-12): não substitui proteção, intertravamento nem cortina de luz.
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Defeito (`defeito`) | enum | queimado | queimado, ferrugem, mofo, corpo estranho azul, metal, personalizada |
-| Faixa personalizada "h0-h1, s0-s1, v0-v1" (`hsv`) | text | 0-179, 0-255, 0-55 |  |
-| Só dentro do objeto (`dentro_objeto`) | bool | True |  |
-| Área máxima (%) (`max_pct`) | float | 2 | 0 – 100 |
-| Mancha mínima (px) (`mancha_min`) | int | 20 | 1 – 100000 |
-| Máximo de manchas (−1 = sem limite) (`max_manchas`) | int | -1 | -1 – 1000 |
-| Rodar a cada (ms) (`intervalo`) | int | 300 | 50 – 5000 |
-| Largura de análise (px) (`largura`) | int | 1280 | 320 – 1920 |
-| Faixa de incerteza (fração do limite) (`faixa`) | float | 0.05 | 0 – 0.5 |
-| Desenhar no vídeo (`desenhar`) | bool | True |  |
+| Partes vigiadas (`partes`) | enum | mãos | mãos, pés, cabeça, mãos e pés, mãos, pés e cabeça |
+| Score mínimo do ponto (`kpConf`) | float | 0.3 | 0.05–0.95 |
+| Tempo mínimo dentro (s) (`tempoMin`) | float | 0.5 | 0–30 |
+| Tempo fora para encerrar (s, histerese) (`tempoSair`) | float | 1 | 0–30 |
+| Mão além do punho (× antebraço) (`prolongar`) | float | 0.35 | 0–1 |
+| Prioridade do alarme (1 = alta) (`prio`) | int | 1 | 1–3 |
+| Desenhar pontos vigiados (`desenhar`) | bool | true |  |
+
+#### Pessoa caída e imobilidade (indicador de gestão) — `seguranca.queda`
+
+Detecta QUEDA (quadril descendo rápido + postura deitada), PESSOA NO CHÃO por N s e IMOBILIDADE (pontos parados por N s) pela pose (RTMO). Alarmes ISA-18.2 e eventos no CSV. Indicador de gestão — NÃO é função de segurança (NR-12): não substitui proteção, intertravamento nem cortina de luz.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Queda: quadril desce mais que (troncos/s) (`vQueda`) | float | 1.8 | 0.5–6 |
+| Queda: deitar até (s) depois da descida (`janelaQueda`) | float | 1.5 | 0.3–4 |
+| Deitado: tronco a mais de (° da vertical) (`anguloDeitado`) | int | 60 | 30–85 |
+| Deitado: largura/altura do corpo acima de (`razaoDeitado`) | float | 1.3 | 0.8–3 |
+| Alarme de pessoa no chão após (s) (`noChaoS`) | float | 10 | 1–600 |
+| Imobilidade: parado por (s) (`imovelS`) | float | 15 | 2–600 |
+| Imobilidade: movimento máx. (troncos) (`limiarImovel`) | float | 0.08 | 0.01–0.5 |
+| Imobilidade também em pé/sentado (`imovelQualquer`) | bool | false |  |
+| Score mínimo do ponto (`kpConf`) | float | 0.3 | 0.05–0.95 |
+| Rótulo de estado em cada pessoa (`desenhar`) | bool | true |  |
+
+#### Contagem no ponto de encontro (evacuação) — `seguranca.ponto_encontro`
+
+Na evacuação, conta quem está nas ZONAS desenhadas (ponto de encontro) e compara com a meta (efetivo do turno): "faltam N". Coloque depois de detector de pessoas → Tracking com IDs → Zonas e linhas. Indicador de gestão — NÃO é função de segurança (NR-12): não substitui proteção, intertravamento nem cortina de luz.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Meta (pessoas esperadas) (`meta`) | int | 20 | 0–100000 |
+| Contar (`modo`) | enum | presentes agora | presentes agora, chegadas (IDs distintos) |
+| Só estas zonas (nomes, vírgula; vazio = todas) (`zonas`) | text |  | –200 |
+
+### CV-44 · Fotocélula virtual (sprint)
+
+Cronometragem de sprint por 2 ou mais linhas desenhadas: o tronco/quadril da pose corta cada linha e o instante é interpolado entre quadros. Parciais, tempo total, velocidade por trecho (distâncias ou régua calibrada) e modo agilidade (ida e volta). CSV.
+
+#### Fotocélula virtual (sprint e agilidade) — `esportes.sprint`
+
+Cronometragem por linhas desenhadas ("Esportes · fotocélula", 2 ou mais): o quadril/tronco da pose (RTMO) corta cada linha e o instante é interpolado entre quadros (sub-quadro). Parciais, tempo total e velocidade por trecho (distâncias informadas ou régua calibrada). Modo agilidade (ida e volta).
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Modo (`modo`) | enum | sprint | sprint, agilidade (ida e volta) |
+| Ponto que corta a linha (`ponto`) | enum | tronco | tronco, quadril |
+| Distância de cada linha (m; ex.: 0; 10; 20; 30) (`distancias`) | text |  | –120 |
+| Agilidade: termina após N travessias (0 = ao voltar à 1ª) (`travessias`) | int | 0 | 0–20 |
+| Desistir da tentativa após (s) (`limiteS`) | float | 60 | 1–600 |
+| Score mínimo do ponto (`kpConf`) | float | 0.3 | 0.05–0.95 |
+| Desenhar o ponto e o último resultado (`desenhar`) | bool | true |  |
+
+### CV-45 · Leituras de logística e mídia
+
+Chave de acesso NF-e/CT-e de 44 dígitos (dígito verificador, UF, CNPJ) e rastreio dos Correios a partir dos códigos e do OCR; rastreio de pallets por QR com local por zona; tempo de tela de logo/marca pelas ferramentas do Inspect.
+
+#### Etiqueta de transporte e chave NF-e — `logistica.etiqueta`
+
+Acha a chave de acesso de 44 dígitos (NF-e, NFC-e, CT-e, MDF-e) no código de barras e no texto lido, confere o dígito verificador, a UF e o CNPJ do emitente e mostra série, número e mês; reconhece também o código de rastreio dos Correios. Coloque depois de "QR e códigos" e/ou do OCR PT-BR.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Listar só chaves com dígito válido (`somenteValidas`) | bool | true |  |
+| Mostrar a última leitura no vídeo (`faixa`) | bool | true |  |
+
+#### Rastreio de pallet por QR/código — `logistica.pallet`
+
+Cada código lido (QR, DataMatrix, Code 128/SSCC) é um pallet; a ZONA desenhada onde ele aparece é o local (doca, rua, quarentena). Tabela de onde está cada pallet e desde quando, eventos de movimentação no CSV. Publica os códigos como objetos com ID para Zonas e linhas. Coloque depois de "QR e códigos".
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Só códigos que casam com (regex; vazio = todos) (`filtro`) | text |  | –120 |
+| Sem leitura por (s) = fora de vista (`esquecerS`) | int | 10 | 1–86400 |
+
+#### Tempo de tela (logo, marca, presença) — `midia.tempo_tela`
+
+Soma o tempo em que cada ferramenta de inspeção da cadeia deu OK — por exemplo o molde de um LOGO na área "Inspect · presença" — e conta as exposições (com duração mínima) e a mais longa. Para patrocínio em transmissão, placa de publicidade, vinheta. Coloque depois de "Inspeção — presença".
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Exposição conta a partir de (s) (`minExposicaoS`) | float | 1 | 0–30 |
+| Falha curta tolerada (s) (`toleranciaS`) | float | 0.5 | 0–5 |
+
+### CV-46 · Industrial — OEE pela câmera
+
+OEE de máquina sem CLP, no navegador: área da máquina marcada com o mouse, movimento por diferença de quadros ou fundo adaptativo, estados rodando / parada / setup com histerese e tempos mínimos que retroagem, pausa programada e não observado. Peças do CounterVision, presença do Takt e OK/NOK do Inspect quando estão no Pipeline (ou apontamento manual). Disponibilidade × desempenho × qualidade por turno, linha do tempo, motivos de parada classificados por clique com Pareto, alarme de parada sem motivo, CSV, PNG e relatório. Tela GPlanSiS|OEE.
+
+#### OEE — estado da máquina — `maquina.estado`
+
+OEE pela câmera para máquina sem CLP: movimento na área marcada "OEE · máquina" decide rodando, parada ou setup (área "OEE · setup", ou operador ativo no Takt) com histerese e tempos mínimos. Soma peças do CounterVision, presença do Takt e OK/NOK do Inspect quando estão no Pipeline. Disponibilidade × desempenho × qualidade, motivos de parada, turnos e relatório no Studio OEE.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Movimento por (`metodo`) | enum | diferença de quadros | diferença de quadros, fundo adaptativo |
+| Mudança mín. do pixel (níveis de cinza) (`limiar`) | int | 25 | 4–120 |
+| Amostras por segundo (`amostrasHz`) | float | 5 | 1–15 |
+| Estado e movimento no vídeo (`desenhar`) | bool | true |  |
+
+### CV-47 · Fisio — goniometria e testes funcionais
+
+Fisioterapia pela câmera, no navegador: amplitude de movimento por articulação e lado (joelho, quadril, ombro, cotovelo, tornozelo; máximo, mínimo e % da referência AAOS), Timed Up and Go com as fases (levantar, ida, giro, volta, sentar) e velocidade de marcha, sentar-levantar 5× e 30 s com as normas por idade e sexo — referências sempre com a fonte. Tempo do vídeo exato ao quadro. Studio Fisio com perfil do paciente (só neste aparelho), curvas, tabela, CSV, PNG e relatório para PDF. Não é dispositivo médico.
+
+#### Fisio — goniometria e testes funcionais — `fisio.avaliar`
+
+Fisioterapia pela câmera: amplitude articular (goniometria 2D por articulação e lado, máximo e mínimo), Timed Up and Go com as fases (levantar, ida, giro, volta, sentar) e sentar-levantar 5× e 30 s, com o tempo do vídeo exato ao quadro. Pose BlazePose no navegador. Studio Fisio com o perfil do paciente, curvas, tabela e relatório. Não é dispositivo médico.
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Teste (`teste`) | enum | TUG | goniometria (ADM), TUG, sentar-levantar 5×, sentar-levantar 30 s |
+| Articulação (goniometria) (`articulacao`) | enum | Joelho — flexão | Joelho — flexão, Quadril — flexão, Quadril — abdução, Ombro — flexão, Ombro — abdução, Cotovelo — flexão, Tornozelo — dorsi/plantar |
+| Lado (`lado`) | enum | automático | automático, esquerdo, direito |
+| Distância do TUG (m) (`distanciaM`) | float | 3 | 1–10 |
+| Fim do 5× (`fim5`) | enum | 5ª vez em pé | 5ª vez em pé, sentar após a 5ª |
+| Imagem espelhada (automático = segue a Fonte) (`espelhada`) | enum | automático | automático, sim, não |
+| Visibilidade mín. (`minVis`) | float | 0.4 | 0.1–0.95 |
+| Re-detectar pessoa (ms) (`detectarMs`) | int | 4000 | 1000–30000 |
+| Intervalo mín. (ms) (`everyMs`) | int | 0 | 0–1000 |
+
+### CV-48 · Industrial — monitor de EPI (sem treino)
+
+Capacete e colete por pessoa, sem treinar: a pose RTMO recorta cabeça e tronco e o MobileCLIP2 compara com frases configuráveis; votação no tempo por pessoa rastreada, conformidade por zona (áreas "Zona de contagem"), eventos de não conformidade e CSV, rosto borrado sem reconhecimento facial (LGPD). Estágio 2 pronto: amostras com caixas pré-rotuladas para o +Projeto e o Treinar (RF-DETR).
+
+#### EPI — capacete e colete (sem treino) — `epi.monitor`
+
+Monitor de EPI sem treino: a pose RTMO recorta cabeça e tronco de cada pessoa e o MobileCLIP2 compara com frases (com/sem capacete, com/sem colete — configuráveis); votação no tempo por pessoa rastreada, conformidade por zona (áreas "Zona de contagem"), eventos e rosto borrado (LGPD). "Coletar amostra" e "Enviar ao +Projeto" no painel EPI preparam o estágio 2 (detector treinado no Treinar).
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Verificar (`verificar`) | enum | capacete e colete | capacete e colete, só capacete, só colete |
+| Capacete: frase COM \| frase SEM (`capacete`) | text | a photo of a worker wearing a hard hat \| a photo of a person with a bare head, no helmet | –300 |
+| Colete: frase COM \| frase SEM (`colete`) | text | a photo of a person wearing a high-visibility reflective safety vest \| a photo of a person in ordinary clothes, no safety vest | –300 |
+| Votos por decisão (janela) (`janela`) | int | 9 | 3–40 |
+| Fração de votos para decidir (`limiar`) | float | 0.65 | 0.5–0.95 |
+| Borrar rostos (LGPD) (`borrar`) | bool | true |  |
+| Pessoas por passada do CLIP (`porVez`) | int | 3 | 1–8 |
+| Score mín. da pessoa (`conf`) | float | 0.3 | 0.05–0.95 |
+| Máx. pessoas (`maxPessoas`) | int | 12 | 1–30 |
+| Intervalo mín. do CLIP (ms) (`everyMs`) | int | 250 | 0–3000 |
+| Caixas e estado no vídeo (`desenhar`) | bool | true |  |
 
 ## Modelos
 

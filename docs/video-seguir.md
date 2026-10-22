@@ -1,4 +1,4 @@
-# GPlanSiS|Vídeo — Seguir sujeito / Reenquadrar (, Top 10 #9)
+# Editor de vídeo — Seguir sujeito / Reenquadrar
 
 ## O que é
 Botão **◎ Seguir sujeito** no cabeçalho do editor (e "Seguir sujeito…" no inspetor, seção Clipe). O recorte passa a acompanhar uma pessoa ou objeto e a saída vira **9:16, 1:1, 4:5 ou 16:9**. Isso serve para fazer um vertical (Reels/Shorts) a partir de um vídeo horizontal.

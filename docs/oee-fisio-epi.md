@@ -1,4 +1,4 @@
-# Onda 1-b — OEE pela câmera, Fisio e Monitor de EPI
+# OEE pela câmera, Fisio e Monitor de EPI (CV-46 a CV-48)
 
 Três módulos novos (CV-46, CV-47, CV-48 — renumerados depois da onda 1-a, que ocupou CV-41..45).
 Grupos de código `livres-o`, `livres-p`, `livres-q` (sem conflito com `livres-oa`).

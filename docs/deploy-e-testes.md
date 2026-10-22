@@ -35,6 +35,6 @@ O que a regressão final cobre: todos os operadores (80 na v86) em imagens reais
 3. Backup em produção: `tar czf /opt/aivision/bak/site-antes-vNN-$(date +%Y%m%d-%H%M%S).tgz --exclude=site/models --exclude=site/vendor --exclude=site/relacoes/models site`.
 4. Publicação seletiva: liste os arquivos alterados e envie só eles (`rsync -az --checksum -R --files-from=lista.txt . vps2:/opt/aivision/site/`), depois `chown caddy:caddy`. Nunca `--delete` sobre a produção.
 5. Regenerar o pacote AGPL (site sem pesos + `servicos/treino` sem `.env`/`dados` + `servicos/youtube`) em `/opt/aivision/site/codigo-fonte/aivision-fonte.tar.gz`.
-6. Fumaça em produção: páginas 200, `sw.js` com a versão nova, `import('/js/cv/registry.js')` com 40 módulos / 80 operadores (v86), `/api/yt` e `/api/treino` com 401 sem credencial.
+6. Fumaça em produção: páginas 200, `sw.js` com a versão nova, `import('/js/cv/registry.js')` com 48 módulos / 94 operadores (v86), `/api/yt` e `/api/treino` com 401 sem credencial.
 
 Serviços: `cd /opt/aivision/{treino,yt} && docker compose up -d --build` (o de treino só sem treino rodando).
