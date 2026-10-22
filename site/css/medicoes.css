@@ -59,3 +59,11 @@
 
 .med-calor { display: block; width: 100%; image-rendering: auto; border-radius: 6px; border: 1px solid var(--line-2);
   background: repeating-conic-gradient(var(--bg-2) 0 25%, var(--panel-solid) 0 50%) 0 0 / 12px 12px; }
+
+/* onda 2-a (CV-49..59): formulário da conferência de doca e amostra de cor da chama */
+.med-doca-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 8px; margin: 6px 0 8px; }
+.med-doca-form label { display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: var(--ink-3); }
+.med-doca-form label.larga { grid-column: 1 / -1; }
+.med-doca-form input, .med-doca-form select, .med-doca-form textarea { font: inherit; font-size: 12px; min-width: 0; background: var(--panel-solid); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; }
+.med-doca-form .btn { grid-column: 1 / -1; justify-self: start; }
+.med-amostra { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: -2px; margin-right: 4px; border: 1px solid var(--line); }

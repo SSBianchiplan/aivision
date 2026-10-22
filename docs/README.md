@@ -28,3 +28,5 @@ Histórico de versões: [../CHANGELOG.md](../CHANGELOG.md). Como contribuir: [..
 - [Editor de vídeo: Seguir sujeito / reenquadrar](video-seguir.md)
 - [Fonte dentro dos Studios](fonte-nos-studios.md)
 - [Segurança, NR-17, varejo, ocupação, medidores (CV-60 a CV-67)](seguranca-varejo-cidade.md)
+- [Indústria e logística (CV-49 a CV-59)](industria-logistica.md)
+- [Saúde e esportes (CV-70 a CV-77)](saude-esportes.md)

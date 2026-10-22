@@ -95,6 +95,9 @@ const StudioOEE = telaSobDemanda(() => import('./components/industrial/StudioOEE
 const EPIPanel = painelSobDemanda(() => import('./components/industrial/EPIPanel.js'), 'EPIPanel', 'epi', 'EPI');
 const FisioPanel = painelSobDemanda(() => import('./components/saude/FisioPanel.js'), 'FisioPanel', 'fisio', 'Fisio');
 const StudioFisio = telaSobDemanda(() => import('./components/saude/StudioFisio.js'), 'StudioFisio', 'bsc', 'GPlanSiS|Fisio');
+// onda 2-c (CV-70..77): painel Saúde e esportes+ e a tela cheia GPlanSiS|Vitais — sob demanda
+const SaudeEsportesPanel = painelSobDemanda(() => import('./components/saude/SaudeEsportesPanel.js'), 'SaudeEsportesPanel', 'onda2c', 'Saúde e esportes+');
+const StudioOnda2c = telaSobDemanda(() => import('./components/saude/StudioOnda2c.js'), 'StudioOnda2c', 'bsc', 'GPlanSiS|Vitais');
 // CV-40 Inspeção visual (Inspect): painel e a tela cheia GPlanSiS|Inspect, sob demanda (a reserva usa o fundo da .bsc)
 // +Projeto: modelo novo a partir das marcações (prints, caixas, Treinar, Pipeline) — sob demanda
 const ProjetoPanel = painelSobDemanda(() => import('./components/ProjetoPanel.js'), 'ProjetoPanel', 'projeto', '+Projeto');
@@ -128,13 +131,13 @@ const ViaPainel = sobDemanda(() => import('./via/ViaPainel.js'), 'ViaPainel', (p
 
 /** Ordem de empilhamento dentro de cada coluna. */
 const RAIL_ORDER = ['modules', 'models', 'coisas', 'esportes', 'bikefit', 'ergonomia', 'academia', 'salto', 'corrida', 'swing', 'vbt', 'quadra',
-                    'industrial', 'beltscan', 'contador', 'takt', 'oee', 'epi', 'fisio', 'inspecao', 'medicoes', 'projeto', 'config', 'camera', 'auth',
+                    'industrial', 'beltscan', 'contador', 'takt', 'oee', 'epi', 'fisio', 'onda2c', 'inspecao', 'medicoes', 'projeto', 'config', 'camera', 'auth',
                     'context', 'codes', 'captions', 'pipeline', 'stats', 'export'];
 /*
  * Coluna padrão dos painéis que ainda não estão no `dock` do store (os do
  * Industrial): sem isto um painel novo só apareceria no celular.
  */
-const DOCK_EXTRA = { industrial: 'right', beltscan: 'right', contador: 'right', takt: 'right', oee: 'right', epi: 'right', fisio: 'right', inspecao: 'right', medicoes: 'right', projeto: 'right' };
+const DOCK_EXTRA = { industrial: 'right', beltscan: 'right', contador: 'right', takt: 'right', oee: 'right', epi: 'right', fisio: 'right', onda2c: 'right', inspecao: 'right', medicoes: 'right', projeto: 'right' };
 
 /*
  * Disposição padrão dos widgets (versão 2): Ferramentas de mouse colada na
@@ -217,6 +220,7 @@ export function App({ sessao = null }) {
     studioTakt: st.studioTakt,
     studioOEE: st.studioOEE,
     studioFisio: st.studioFisio,
+    studioOnda2c: st.studioOnda2c,
     studioVideo: st.studioVideo,
     beltScanAtivo: st.nodes.some((n) => n.op === 'beltscan.volumetria' && n.enabled),
     player: st.player !== false,
@@ -839,6 +843,7 @@ export function App({ sessao = null }) {
       case 'oee':      return html`<${OEEPanel} ...${common} />`;
       case 'epi':      return html`<${EPIPanel} ...${common} />`;
       case 'fisio':    return html`<${FisioPanel} ...${common} />`;
+      case 'onda2c':   return html`<${SaudeEsportesPanel} ...${common} />`;
       case 'medicoes': return html`<${MedicoesPanel} ...${common} />`;
       case 'projeto':  return html`<${ProjetoPanel} ...${common} />`;
       case 'context':  return html`<${ContextPanel} ...${common} getFrame=${getFrame} />`;
@@ -949,6 +954,7 @@ export function App({ sessao = null }) {
     ${s.studioTakt && html`<${StudioTakt} onClose=${() => store.set({ studioTakt: false })} />`}
     ${s.studioOEE && html`<${StudioOEE} onClose=${() => store.set({ studioOEE: false })} />`}
     ${s.studioFisio && html`<${StudioFisio} onClose=${() => store.set({ studioFisio: false })} />`}
+    ${s.studioOnda2c && html`<${StudioOnda2c} onClose=${() => store.set({ studioOnda2c: false })} />`}
     ${s.studioVideo && html`<${StudioVideo} source=${source} onPickFile=${pickFile} onClose=${() => store.set({ studioVideo: false })} />`}
     ${s.panels.via && html`<${ViaPainel} onClose=${closePanel('via')} source=${source} displayCanvas=${displayCanvas} />`}
   `;

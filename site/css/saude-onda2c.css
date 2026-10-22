@@ -1,0 +1,81 @@
+/* ==========================================================================
+   ONDA 2-C — painel "Saúde e esportes+" e Studio GPlanSiS|Vitais (CV-70..77).
+   Carregado sob demanda (components/saude/onda2c-comum.js › carregarCss).
+   Três temas (escuro padrão, light, code) e celular.
+   ========================================================================== */
+
+/* ---------------------------------------------------------------- painel */
+.o2p-abas, .o2p-lista, .o2p-acoes { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.o2p-num { display: flex; flex-direction: column; gap: 2px; padding: 6px 8px; margin: 4px 0 6px; border-radius: 6px; background: var(--bg-2); border: 1px solid var(--line, rgba(255,255,255,.12)); }
+.o2p-num b { font-size: 26px; line-height: 1.1; font-variant-numeric: tabular-nums; color: var(--accent); }
+.o2p-num span { font-size: 12px; color: var(--ink-2); }
+.o2p-faixa { font-family: "IBM Plex Mono", monospace; }
+.o2p-tab { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 4px; }
+.o2p-tab th { text-align: left; font-weight: 500; color: var(--ink-2); padding: 2px 6px 2px 0; }
+.o2p-tab td { text-align: right; font-variant-numeric: tabular-nums; padding: 2px 0; }
+.o2p-aviso { margin: 2px 0; font-size: 12px; color: var(--warn, #F2A900); }
+.o2p-bloco { display: flex; flex-direction: column; gap: 4px; padding: 6px 8px; margin: 6px 0; border-radius: 6px; border: 1px dashed var(--line, rgba(255,255,255,.18)); font-size: 12px; }
+.o2p-bloco label { display: flex; align-items: center; gap: 6px; justify-content: space-between; }
+.o2p-bloco input[type=number] { width: 64px; }
+.o2p-bloco input[type=file] { max-width: 100%; font-size: 11px; }
+.o2p-ref { gap: 4px; }
+.o2p-fonte { font-size: 11px; opacity: .8; }
+.o2p-medico { margin: 8px 0 0; padding: 6px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 600; line-height: 1.35;
+  background: var(--err-bg, rgba(200,16,46,.12)); color: var(--err-ink, #FF8A80); border: 1px solid var(--err-line, rgba(200,16,46,.4)); }
+
+/* ---------------------------------------------------------------- studio */
+.o2s {
+  --o2-bg: #02302C; --o2-sup: #04413C; --o2-painel: rgba(4, 65, 60, .72); --o2-campo: #022621;
+  --o2-linha: rgba(255, 255, 255, .13); --o2-tinta: #FFFFFF; --o2-tinta2: #CFEBE4; --o2-tinta3: rgba(207, 235, 228, .72);
+  --o2-acento: #FFD84D; --o2-ok: #8CE0C8; --o2-erro: #FF8A80; --o2-faixa: #C8102E;
+  position: fixed; inset: 0; z-index: 5000; display: flex; flex-direction: column;
+  background: var(--o2-bg); color: var(--o2-tinta); font-family: Archivo, "Helvetica Neue", Arial, sans-serif; font-variant-numeric: tabular-nums;
+}
+:root[data-theme="light"] .o2s {
+  --o2-bg: #EAF3F1; --o2-sup: #FFFFFF; --o2-painel: #FFFFFF; --o2-campo: #F6FAF9;
+  --o2-linha: rgba(4, 65, 60, .18); --o2-tinta: #04413C; --o2-tinta2: #285C56; --o2-tinta3: #4A6F6A;
+  --o2-acento: #04413C; --o2-ok: #176B53; --o2-erro: #B3261E; --o2-faixa: #B00E28;
+}
+:root[data-theme="code"] .o2s {
+  --o2-bg: #1F1F1F; --o2-sup: #252526; --o2-painel: #252526; --o2-campo: #1E1E1E;
+  --o2-linha: #3C3C3C; --o2-tinta: #E0E0E0; --o2-tinta2: #CCCCCC; --o2-tinta3: #ABABAB;
+  --o2-acento: #FFD84D; --o2-ok: #89D185; --o2-erro: #F48771; --o2-faixa: #A1260D;
+}
+.o2s-barra { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; padding: 6px 10px; min-height: 46px; background: var(--o2-sup);
+  border-bottom: 1px solid var(--o2-linha); overflow-x: auto; scrollbar-width: none; }
+.o2s-barra::-webkit-scrollbar { display: none; }
+.o2s-titulo { font-size: 14px; font-weight: 800; white-space: nowrap; padding-left: 8px; border-left: 4px solid #FFD84D; margin-right: 4px; }
+.o2s-btn { flex: 0 0 auto; background: transparent; color: var(--o2-tinta); border: 1px solid var(--o2-linha); border-radius: 6px; padding: 5px 10px; font: inherit; font-size: 12.5px; cursor: pointer; white-space: nowrap; }
+.o2s-btn.on, .o2s-btn:hover { border-color: var(--o2-acento); color: var(--o2-acento); }
+.o2s-btn:disabled { opacity: .45; cursor: default; }
+.o2s-mola { flex: 1 1 auto; }
+.o2s-faixa { flex: 0 0 auto; background: var(--o2-faixa); color: #fff; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; font-size: 12px; padding: 5px 14px; }
+.o2s-corpo { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(300px, 1fr); gap: 10px; padding: 10px; }
+.o2s-video { position: relative; min-height: 0; border-radius: 8px; overflow: hidden; background: #02302C; }
+.o2s-video canvas { width: 100%; height: 100%; display: block; }
+.o2s-vazio { position: absolute; inset: auto 0 45% 0; text-align: center; color: var(--o2-tinta3); font-size: 13px; }
+.o2s-lado { min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.o2s-num { background: var(--o2-painel); border: 1px solid var(--o2-linha); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 3px; }
+.o2s-num b { font-size: 40px; line-height: 1; color: var(--o2-acento); }
+.o2s-num span { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--o2-tinta2); }
+.o2s-num i { font-style: normal; font-size: 12px; color: var(--o2-tinta3); }
+.o2s-conf { height: 6px; border-radius: 3px; background: var(--o2-linha); overflow: hidden; margin-top: 4px; }
+.o2s-conf div { height: 100%; background: var(--o2-ok); }
+.o2s-tab { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.o2s-tab th { text-align: left; font-weight: 500; color: var(--o2-tinta3); padding: 3px 6px 3px 0; border-bottom: 1px solid var(--o2-linha); }
+.o2s-tab td { text-align: right; padding: 3px 0; border-bottom: 1px solid var(--o2-linha); }
+.o2s-cond { border: 1px solid #C69A00; border-radius: 8px; padding: 6px 10px; font-size: 12px; background: rgba(242, 169, 0, .08); }
+.o2s-cond p { margin: 2px 0; }
+.o2s-dica { color: var(--o2-tinta3); }
+.o2s-serie, .o2s-esp, .o2s-ref { width: 100%; border-radius: 8px; display: block; }
+.o2s-serie, .o2s-esp { height: 120px; }
+.o2s-ref { height: 300px; }
+.o2s-fonte { font-size: 11px; color: var(--o2-tinta3); margin: 0; }
+.o2s-medico { flex: 0 0 auto; padding: 6px 12px; font-size: 12px; font-weight: 700; background: var(--o2-faixa); color: #fff; text-align: center; }
+@media (max-width: 760px) {
+  .o2s-corpo { grid-template-columns: 1fr; grid-template-rows: 38vh auto; overflow-y: auto; }
+  .o2s-num b { font-size: 32px; }
+}
+/* barra de vídeo do app por cima do Studio (padrão dos Studios): sobre o vídeo, sem cobrir os gráficos */
+body.o2s-aberto .vctl:not(.moved) { bottom: 40px; left: 28%; }
+@media (max-width: 760px) { body.o2s-aberto .vctl:not(.moved) { left: 50%; bottom: 76px; } }

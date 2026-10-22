@@ -29,6 +29,18 @@ const MODULOS = [
   { id: 'fisio', op: 'fisio.avaliar', icone: '🩺', nome: 'Fisio (ADM, TUG, sentar-levantar)', desc: 'Amplitude articular por articulação e lado, Timed Up and Go com fases e sentar-levantar 5× e 30 s, com referências e fontes. Não é dispositivo médico.' },
   { id: 'studioFisio', icone: '🎬', nome: 'Studio Fisio', desc: 'Tela de avaliação: perfil do paciente, vídeo com a pose, curvas, tabela das medidas e relatório para PDF.', studio: true,
     abrir: () => { const st = store.get(); if (!st.nodes.some((n) => n.op === 'fisio.avaliar')) noPipeline(MODULOS.find((x) => x.id === 'fisio')); store.set({ studioFisio: true }); } },
+  // onda 2-c (CV-70..77): um cartão por módulo; "Abrir" põe o preset e abre o painel Saúde e esportes+
+  ...[
+    ['vitais', '🫁', 'Sinais vitais sem contato', 'Respiração pelo tórax e frequência cardíaca rPPG pelo rosto, com faixa de confiança. Não é dispositivo médico.', 'Respiração sem contato'],
+    ['rostoClinico', '🙂', 'Rosto clínico (assimetria, fono)', 'Assimetria facial em expressões guiadas e exercícios orofaciais. Não é dispositivo médico.', 'Assimetria facial'],
+    ['movClinico', '🧍', 'Tremor, postura e marcha', 'Tremor de mão, postura estática e marcha clínica com piso calibrado. Não é dispositivo médico.', 'Postura estática'],
+    ['domiciliar', '🏠', 'Exercício domiciliar (voz)', 'Prescrição por link, contagem e correção por voz sobre a Academia, relatório ao fisioterapeuta.', 'Exercício domiciliar (voz)'],
+    ['hospital', '🏥', 'Hospital e ILPI', 'Higiene das mãos (OMS, indicativo) e queda de paciente só com o esqueleto.', 'Higiene das mãos (OMS)'],
+    ['referencia', '🎯', 'Comparar com a referência / yoga', 'Movimento modelo × tentativa por DTW, nota por fase; yoga com tempo sustentado.', 'Comparar com a referência'],
+    ['ciclo', '🥊', 'Corda, luta, basquete, natação', 'Saltos de corda, golpes e velocidade do punho, arremesso por zona e braçadas.', 'Pular corda'],
+    ['proesp', '🏫', 'PROESP-BR', 'Salto horizontal, 20 m, quadrado e abdominal por código do aluno, com a tabela do manual.', 'PROESP-BR — salto e corrida'],
+  ].map(([id, icone, nome, desc, preset]) => ({ id: 'o2c-' + id, icone, nome, desc, studio: true,
+    abrir: () => import('../saude/onda2c-comum.js').then((m) => m.aplicarPresetOnda2c(m.PRESETS_ONDA2C.find((p) => p.nome === preset))) })),
 ];
 
 /** Põe o operador do módulo no Pipeline (ou liga o que já existe) e abre os dois painéis. */

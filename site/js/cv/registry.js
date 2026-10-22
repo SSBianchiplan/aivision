@@ -43,7 +43,9 @@ import livresO, { MODULES_O } from './operators/livres-o.js';   // CV-46 OEE pel
 import livresP, { MODULES_P } from './operators/livres-p.js';   // CV-47 Fisio (goniometria, TUG, sentar-levantar)
 import livresQ, { MODULES_Q } from './operators/livres-q.js';   // CV-48 Monitor de EPI
 import livresOA, { MODULES_OA } from './operators/livres-oa.js';   // CV-41..45 onda 1-a (CVC, instrumentos, segurança por pose, fotocélula, logística) + cena.mapa_calor
+import livresR, { MODULES_R } from './operators/livres-r.js';   // CV-49..59 onda 2-a (indústria e logística: poka-yoke, cubagem, doca, nível, correia, torque, chama, solda, fumaça, baú, fissuras)
 import livresS, { MODULES_S } from './operators/livres-s.js';   // CV-60..67 onda 2-b (NR-17, predial, varejo, produto, ocupação, medidor, resumo, velocidade)
+import livresT, { MODULES_T } from './operators/livres-t.js';   // CV-70..77 onda 2-c (saúde e esportes: vitais, rosto, clínica, domiciliar, hospital, referência, ciclo, PROESP)
 
 /**
  * Catálogo de módulos, espelhando o catálogo de capacidades do SPEC §4.2.
@@ -213,7 +215,9 @@ MODULES.push(...MODULES_CENA, ...MODULES_L);
 MODULES.push(...MODULES_M);
 MODULES.push(...MODULES_OA);
 MODULES.push(...MODULES_O, ...MODULES_P, ...MODULES_Q);
+MODULES.push(...MODULES_R);
 MODULES.push(...MODULES_S);
+MODULES.push(...MODULES_T);
 
 // -------------------------------------------------------------- operadores
 
@@ -221,7 +225,7 @@ const ALL = [...classical, ...features, ...motion, ...tracking, ...models, ...fa
              ...openvocab, ...sam, ...depth, ...zeroshot, ...code, ...custom,
              ...livresA, ...livresB, ...livresC, ...livresD, ...livresE,
              ...livresF, ...livresG, ...livresH, ...livresI, ...livresJ, ...livresK, ...livresL, ...cena, ...livresM, ...livresN, ...livresOA,
-             ...livresO, ...livresP, ...livresQ, ...livresS];
+             ...livresO, ...livresP, ...livresQ, ...livresR, ...livresS, ...livresT];
 
 /** op name -> definição */
 export const OPERATORS = new Map(ALL.map((o) => [o.op, o]));

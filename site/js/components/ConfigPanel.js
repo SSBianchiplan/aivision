@@ -15,6 +15,7 @@ import { html, useState, useEffect } from '../vendor.js';
 import { Panel, ParamControl } from './Panel.js';
 import { useStore, store, persist } from '../state/store.js';
 import { MODULES, operatorsOf, OPERATOR_COUNT } from '../cv/registry.js';
+import { GUIA_R } from '../cv/operators/livres-r.js';
 import { ViaChave } from '../via/ViaChave.js';
 import {
   MODELS, AGPL_MODELS, modelStates, onModelState, supportsWebGPU, isIsolated,
@@ -267,6 +268,8 @@ const GUIDE = {
     cost: 'JS puro sobre QR e códigos, OCR PT-BR e Inspect.',
   },
 };
+// onda 2-a (CV-49..59)
+Object.assign(GUIDE, GUIA_R);
 
 export function ConfigPanel({ onClose, ring, ...layout }) {
   const s = useStore(store, (st) => ({

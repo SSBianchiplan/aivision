@@ -26,6 +26,7 @@ import { corCalor } from '../cv/operators/livres-oa/mapa-calor.js';
 import { ROTULO_ESTADO } from '../cv/runtime/livres-oa/alarmes.js';
 import { baixar } from '../cv/marcacoes.js';
 import { secoesLivresS } from './medicoes-livres-s.js';   // onda 2-b (CV-60..67)
+import { secoesOnda2a } from './medicoes-onda2a.js';   // CV-49..59 (onda 2-a)
 
 function carregarCss() {
   if (document.querySelector('link[data-medicoes]')) return;
@@ -57,6 +58,7 @@ export function MedicoesPanel({ onClose, ...layout }) {
     (tem('pallets', ['logistica.pallet'])) && html`<${SecaoPallets} key="p" />`,
     (tem('tempo_tela', ['midia.tempo_tela'])) && html`<${SecaoTempoTela} key="tt" />`,
     ...secoesLivresS(tem),
+    ...secoesOnda2a(tem),
   ].filter(Boolean);
   return html`
     <${Panel} id="medicoes" title="Medições" subtitle=${secoes.length ? `${secoes.length} em uso` : 'tráfego, instrumentos, segurança, sprint…'} onClose=${onClose} ...${layout}>
