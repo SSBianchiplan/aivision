@@ -2,7 +2,7 @@
 
 > Gerado a partir do código (`site/js/cv/registry.js`) por `ferramentas/gerar-modulos.mjs` — não editar à mão.
 
-**83 módulos · 150 operadores · 38 modelos.**
+**84 módulos · 151 operadores · 38 modelos.**
 
 ## Módulos
 
@@ -91,6 +91,7 @@
 | CV-85 | Agro e pecuária | 4 | client | livre |
 | CV-86 | Câmera de jogo amador | 1 | client | livre |
 | CV-87 | Diário de obra (RDO) | 1 | client | livre |
+| CV-88 | Motion 3D Studio — captura de movimento 3D | 1 | onnx | livre |
 
 ## Operadores por módulo
 
@@ -278,18 +279,24 @@ Decaimento temporal — o movimento deixa rastro. Bom para visualizar trajetóri
 
 #### Tracking com IDs (ByteTrack) — `track.bytetrack`
 
-IDs estáveis para os objetos do detector anterior na cadeia, rastro e contagem por linha. Sem modelo: IoU + previsão de velocidade, em duas passadas (alta e baixa confiança), como o ByteTrack.
+IDs estáveis para os objetos do detector anterior na cadeia, rastro e contagem por linha. Sem modelo: IoU + Kalman de velocidade no tempo, em duas passadas (alta e baixa confiança), como o ByteTrack. A caixa desenhada é a prevista para o quadro exibido (tempo real); a cadeia recebe a detecção real.
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
 | Confiança alta (`altaConf`) | float | 0.5 | 0.2–0.9 |
 | IoU mínimo para casar (`iouMin`) | float | 0.3 | 0.1–0.8 |
-| Frames para confirmar (`nascer`) | int | 2 | 1–10 |
-| Frames até esquecer (`perder`) | int | 30 | 1–120 |
+| Detecções para confirmar (`nascer`) | int | 2 | 1–10 |
+| Detecções até esquecer (`perder`) | int | 30 | 1–120 |
 | Rastro (pontos) (`rastro`) | int | 30 | 0–90 |
 | Linha de contagem (`linha`) | enum | nenhuma | nenhuma, horizontal, vertical |
 | Posição da linha (`posicao`) | float | 0.5 | 0.1–0.9 |
+| Linha livre (x1,y1,x2,y2 em 0–1; arraste no vídeo) (`linhaPts`) | text |  | –60 |
 | Mostrar classe (`mostrarNome`) | bool | true |  |
+| Desenhar a posição prevista (tempo real) (`prever`) | bool | true |  |
+| Trilha perdida: mostrar prevista por (ms) (`fantasmaMs`) | int | 300 | 0–2000 |
+| Esconder as caixas cruas do detector (`ocultarDetector`) | bool | true |  |
+| Atrasar a imagem para casar com as caixas (auto: arquivo e YouTube) (`sincronizar`) | enum | auto | auto, sempre, nunca |
+| Atraso máximo da imagem (ms) (`maxAtrasoMs`) | int | 600 | 50–1500 |
 
 ### CV-02 · Image Classification
 
@@ -320,6 +327,8 @@ YOLOX-S no COCO (80 classes), Apache-2.0. Decodifica as 8400 âncoras das stride
 | Máx. detecções (`maxDet`) | int | 30 | 1–100 |
 | Intervalo mín. (ms) (`everyMs`) | int | 0 | 0–2000 |
 | Mostrar score (`showScore`) | bool | true |  |
+| Entrada do modelo (`entrada`) | enum | quadro | quadro, plena, plena + ladrilhos, auto |
+| Só estas classes (vírgula; vazio = todas) (`classes`) | text |  | –300 |
 
 ### CV-05 · Segmentation
 
@@ -327,7 +336,7 @@ PP-HumanSeg: máscara pessoa/fundo, com modos de composição.
 
 #### Person Segmentation — `dnn.segment_person`
 
-PP-HumanSeg: máscara pessoa/fundo em 192×192, reescalada e composta sobre o frame. Diferente dos outros modelos, este ALTERA os pixels.
+PP-HumanSeg: máscara pessoa/fundo em 192×192, reescalada e composta sobre o frame (camada por cima do vídeo nítido; «só máscara» troca a imagem).
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
@@ -396,6 +405,9 @@ Detecção end-to-end nas 80 classes COCO. Saída já decodificada e ordenada, s
 | Máx. detecções (`maxDet`) | int | 50 | 1–300 |
 | Intervalo mín. (ms) (`everyMs`) | int | 0 | 0–2000 |
 | Mostrar score (`showScore`) | bool | true |  |
+| Entrada do modelo (`entrada`) | enum | quadro | quadro, plena, plena + ladrilhos, auto |
+| Só estas classes (vírgula; vazio = todas) (`classes`) | text |  | –300 |
+| Cair no YOLOX se o YOLO26 não rodar (`reserva`) | bool | false |  |
 
 #### YOLO26 — Instâncias — `yolo26.segment` · AGPL
 
@@ -744,6 +756,7 @@ RF-DETR no COCO (80 classes), Apache-2.0 — a alternativa livre ao YOLO26. Tran
 | Só estas classes (vírgula; vazio = todas) (`classes`) | text |  | –300 |
 | Intervalo mín. (ms) (`everyMs`) | int | 0 | 0–3000 |
 | Mostrar score (`showScore`) | bool | true |  |
+| Entrada do modelo (`entrada`) | enum | quadro | quadro, plena, plena + ladrilhos, auto |
 
 ### CV-24 · Modelos treinados livres
 
@@ -1022,7 +1035,7 @@ Jogadores e bola (do detector anterior na cadeia ou RF-DETR próprio), IDs, time
 
 | Parâmetro | Tipo | Padrão | Faixa / opções |
 |---|---|---|---|
-| Esporte (`esporte`) | enum | futebol | futebol, futsal, basquete, vôlei, tênis, padel |
+| Esporte (`esporte`) | enum | futebol | futebol, futsal, basquete, vôlei, tênis, padel, beach tennis |
 | Comprimento do campo (m, 0 = oficial) (`comprimento`) | float | 0 | 0–120 |
 | Largura do campo (m, 0 = oficial) (`largura`) | float | 0 | 0–90 |
 | Detector (automático = o da cadeia, senão RF-DETR small) (`detector`) | enum | automático | automático, cadeia, RF-DETR small, RF-DETR nano, YOLOX |
@@ -1039,6 +1052,7 @@ Jogadores e bola (do detector anterior na cadeia ou RF-DETR próprio), IDs, time
 | Calibração (preenchida pelo painel Quadra) (`calibracao`) | text |  | –2400 |
 | Desenhar as linhas da quadra calibrada (`mostrarLinhas`) | bool | true |  |
 | Radar no vídeo (`radar`) | enum | canto inferior direito | nenhum, canto inferior direito, canto inferior esquerdo, canto superior direito |
+| Radar: posição e tamanho (x1,y1,x2,y2 em 0–1; arraste no vídeo) (`radarCaixa`) | text |  | –60 |
 | Rótulos (`rotulos`) | enum | id e velocidade | id e velocidade, id, nenhum |
 | Rastro da bola (`rastroBola`) | bool | true |  |
 | Intervalo mín. do detector próprio (ms) (`everyMs`) | int | 0 | 0–2000 |
@@ -2415,6 +2429,28 @@ Conta por hora as pessoas e os equipamentos do canteiro (máximo ao mesmo tempo 
 | O que contar (classes) (`classes`) | text | pessoa, caminhão, betoneira, escavadeira, carro | –200 |
 | Foto a cada (min; 0 = só pelo botão) (`fotoMin`) | int | 30 | 0–240 |
 | Contar a cada (ms) (`intervaloMs`) | int | 500 | 100–10000 |
+
+### CV-88 · Motion 3D Studio — captura de movimento 3D
+
+Captura de movimento 3D no navegador, num estúdio em tela cheia: esqueleto 2D sobre o vídeo e 3D (three.js) com órbita, grade e piso, gravação de tomadas com timecode, corte e reprodução, suavização One Euro, ângulos das articulações (educacional, não é laudo), retarget para um esqueleto padrão e avatar, exportação BVH e GLB para o Blender, JSON (motionai.pose.v1) e CSV. Multicâmera de 1 a 4 câmeras com calibração pelo próprio corpo (MoCap do GPlanSiS|ROBO), importação do FreeMoCap e guia ChArUco. GVHMR, ExMR e FlowHMR como conectores de servidor com consentimento — não instalados por padrão.
+
+#### Motion 3D — captura (Live Link) — `motion3d.captura`
+
+Captura de movimento 3D ao vivo de uma câmera ou vídeo: BlazePose com os 33 pontos 3D do mundo, suavização One Euro (GPlanSiS|ROBO), taxa e latência, gravação de tomadas para o Motion 3D Studio (esqueleto 2D e 3D, retarget, BVH/GLB/JSON/CSV). Tudo no aparelho. 3D de uma câmera é estimado (escala e profundidade aproximadas).
+
+| Parâmetro | Tipo | Padrão | Faixa / opções |
+|---|---|---|---|
+| Imagem espelhada (automático = segue a Fonte) (`espelhada`) | enum | automático | automático, sim, não |
+| Visibilidade mín. (`minVis`) | float | 0.4 | 0.1–0.95 |
+| Re-detectar pessoa (ms) (`detectarMs`) | int | 4000 | 1000–30000 |
+| Intervalo mín. (ms) — Update Rate (`everyMs`) | int | 0 | 0–1000 |
+| Suavizar (One Euro) (`suavizar`) | bool | true |  |
+| One Euro: corte mín. (Hz) (`minCorte`) | float | 1.2 | 0.1–10 |
+| One Euro: beta (`beta`) | float | 0.4 | 0–5 |
+| Desenhar esqueleto (fora do Studio) (`desenhar`) | bool | true |  |
+| Atores (várias pessoas: YOLOX + um BlazePose por pessoa) (`pessoas`) | int | 1 | 1–4 |
+| Sincronizar imagem e pose (auto = arquivo e YouTube; câmera: previsão) (`sincronizar`) | enum | auto | auto, sempre, nunca |
+| Atraso máximo da imagem (ms) (`maxAtrasoMs`) | int | 500 | 50–1500 |
 
 ## Modelos
 
