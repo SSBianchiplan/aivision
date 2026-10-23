@@ -15,6 +15,7 @@
  *
  * Nada da imagem é guardado: só números.
  */
+import { confirmar } from './dialogo.js';
 import { html, useState, useEffect, useRef } from '../vendor.js';
 import { Panel } from './Panel.js';
 import { useStore, store } from '../state/store.js';
@@ -91,7 +92,7 @@ function SecaoTrafego() {
     <${Cab} titulo="Tráfego (CVC)">
       <button class="btn tiny" onClick=${baixarBlocos} title="Contagem por bloco × movimento × classe">CSV blocos</button>
       <button class="btn tiny" onClick=${baixarMov} title="Um registro por veículo/pedestre">CSV eventos</button>
-      <button class="btn tiny" onClick=${() => confirm('Zerar a contagem?') && zerar('trafego')}>Zerar</button>
+      <button class="btn tiny" onClick=${async () => (await confirmar('Zerar a contagem?', { titulo: 'Zerar contagem', ok: 'Zerar', perigo: true })) && zerar('trafego')}>Zerar</button>
     <//>
     <div class="kpis med-kpis">${classes.map((c) => html`<div class="kpi" key=${c}><b>${d.porClasse[c] || 0}</b><em>${c}</em></div>`)}</div>
     <p class="hint tight">${d.movimentos.length} movimentos · ${d.emCurso} em curso · ${d.incompletos} sem destino · blocos de ${d.blocoMin} min</p>

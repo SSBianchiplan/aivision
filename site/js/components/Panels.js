@@ -173,6 +173,8 @@ export function PipelineConteudo({ onResetState, presetsPrimeiro = null }) {
                 ${def ? def.label : n.op}
               </button>
               <div class="node-acts">
+                ${def && def.calibravel && html`<button class="cal-btn" title=${def.calibravel.rotulo || 'Calibrar'}
+                  onClick=${() => window.dispatchEvent(new CustomEvent('aiv:calibrar', { detail: { op: def.calibravel.acao || n.op, no: n.id } }))}>⚙</button>`}
                 <button onClick=${() => move(i, -1)} disabled=${i === 0} title="Subir">↑</button>
                 <button onClick=${() => move(i, 1)} disabled=${i === s.nodes.length - 1} title="Descer">↓</button>
                 <button class=${n.enabled ? 'on' : ''} onClick=${() => toggleNode(n.id)}

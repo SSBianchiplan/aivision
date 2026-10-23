@@ -30,6 +30,7 @@
  * invisível e nos vizinhos (layout/grade.js; Alt/⌥ desliga).
  */
 
+import { confirmar, perguntar, anunciar, avisar as avisarModal } from './dialogo.js';
 import { html, useState, useEffect, useRef, useCallback } from '../vendor.js';
 import { useStore, store, persist } from '../state/store.js';
 import { railTop } from '../state/breakpoint.js';
@@ -42,7 +43,7 @@ import {
   exportarJSON, importarJSON, eventosCSV, eventos, zerarContagens, resultados, fresco, baixar,
   funcoesDe, COR_FUNC, AREAS, usarConjunto, apagarConjunto, comprimentoPx, anguloGraus, areaPx,
   fmtComprimento, fmtArea, mmPorPx,
-  setExib, setOpc, alinhar, selecionados, travar, definirGrupo, contadoresCSV,
+  setExib, setOpc, alinhar, selecionados, travar, definirGrupo, contadoresCSV, rt,
 } from '../cv/marcacoes.js';
 import { MaisFerramentas, CATALOGO, ICONES, lerBarra, salvarBarra } from './ferramentas-mais.js';
 import { OpcoesFerramenta, CartaoAnalise, Camadas, BarraAlinhar, detalheNovo, AcoesItem, ALINHAR } from './ferramentas-analise.js';
@@ -63,7 +64,7 @@ async function salvarExemplos() {
     avisarProjeto(`Print salvo com ${pr.caixas.length} ${pr.caixas.length === 1 ? 'exemplo' : 'exemplos'} em «${pr.pasta || (projetoAtivo() || {}).nome || ''}».`);
     abrirProjeto();
     return pr;
-  } catch (e) { window.alert(e.message); return null; }
+  } catch (e) { await avisarModal(e.message, { titulo: 'Não deu para salvar os exemplos' }); return null; }
 }
 
 const POS_KEY = 'gplansis.ferramentas.pos';
@@ -143,6 +144,7 @@ export function FerramentasMouse({ onSnapshot }) {
 
   // escondido pela barra do topo: volta ao "Mover", para o vídeo responder como antes
   useEffect(() => { if (!ativo) { setFerramenta('mover'); setLista(false); setMais(false); } }, [ativo]);
+  useEffect(() => { rt.widgetAtivo = ativo; }, [ativo]);
 
   // ---------------------------------------------------------- layout medido
   const medir = useCallback(() => {
@@ -246,11 +248,12 @@ export function FerramentasMouse({ onSnapshot }) {
         const mapa = e.shiftKey ? { KeyH: 'distH', KeyV: 'distV' } : { KeyA: 'esq', KeyH: 'cx', KeyD: 'dir', KeyW: 'topo', KeyV: 'cy', KeyS: 'base' };
         if (mapa[c] && selecionados().length >= 2) { pega(); alinhar(selecionados(), mapa[c]); return; }
         if (c === 'KeyL' && !e.shiftKey && selecionados().length) { pega(); const ids = selecionados(); travar(ids, !ids.every((id) => (st.itens.find((i) => i.id === id) || {}).travado)); return; }
-        if (c === 'KeyG' && !e.shiftKey && selecionados().length) { pega(); const g = window.prompt('Nome do grupo (camada) — vazio tira do grupo:', ''); if (g != null) definirGrupo(selecionados(), g); return; }
+        if (c === 'KeyG' && !e.shiftKey && selecionados().length) { pega(); perguntar('Nome do grupo (camada) — vazio tira do grupo:', { titulo: 'Agrupar', ok: 'Agrupar' }).then((g) => { if (g != null) definirGrupo(selecionados(), g); }); return; }
         return;
       }
       if (e.ctrlKey || e.metaKey) return;
-      if (e.key === 'Escape') { if (cancelarRascunho()) pega(); else if (st.sel) { selecionar(null); } return; }
+      // Esc que cancela ou desseleciona é consumido: num Studio, o mesmo Esc não fecha a tela cheia junto
+      if (e.key === 'Escape') { if (cancelarRascunho()) pega(); else if (st.sel) { pega(); selecionar(null); } return; }
       if (e.key === '.') { pega(); setMais((v) => !v); return; }
       // contador: 1–9 escolhem a classe
       if (st.ferramenta === 'contador' && /^[1-9]$/.test(e.key)) { pega(); setOpc({ contClasse: `Classe ${e.key}` }); return; }
@@ -287,7 +290,7 @@ export function FerramentasMouse({ onSnapshot }) {
     { id: 'desfazer', nome: 'Desfazer', tecla: 'Ctrl/⌘+Z', icon: 'desfazer', disabled: !m.podeDesfazer, onClick: desfazer },
     { id: 'refazer', nome: 'Refazer', tecla: 'Ctrl/⌘+Y', icon: 'refazer', disabled: !m.podeRefazer, onClick: refazer },
     { id: 'visivel', nome: m.visivel ? 'Ocultar marcações' : 'Mostrar marcações', tecla: '⇧H', icon: m.visivel ? 'olho' : 'olhoFechado', on: !m.visivel, onClick: () => setVisivel(!m.visivel) },
-    { id: 'limpar', nome: 'Limpar tudo', tecla: '', icon: 'limpar', disabled: !m.n, onClick: () => { if (window.confirm(`Apagar as ${m.n} marcações? (dá para desfazer)`)) limparTudo(); } },
+    { id: 'limpar', nome: 'Limpar tudo', tecla: '', icon: 'limpar', disabled: !m.n, onClick: () => { const n = m.n; limparTudo(); anunciar(n === 1 ? '1 marcação apagada' : `${n} marcações apagadas`, { acao: 'Desfazer', onAcao: () => { if (!marcStore.get().itens.length) desfazer(); } }); } },
     { id: 'lista', nome: 'Lista de marcações', tecla: '⇧K', icon: 'lista', on: lista, badge: m.n || null, onClick: () => setLista((v) => !v) },
     { id: 'capturar', nome: 'Capturar PNG com as marcações', tecla: 'S', icon: 'capturar', onClick: () => onSnapshot && onSnapshot() },
     ...(nEx ? [{ id: 'salvarEx', nome: `+Projeto: salvar estes exemplos (${nEx}) como print rotulado`, tecla: '', icon: 'salvarEx', badge: nEx, onClick: salvarExemplos }] : []),
@@ -305,7 +308,7 @@ export function FerramentasMouse({ onSnapshot }) {
     analise: { on: Boolean(m.analise), disabled: !m.sel && !m.analise,
       onClick: () => { const st = marcStore.get(); marcStore.set({ analise: st.analise ? null : st.sel }); } },
     travar: { disabled: !nSel && !m.sel, onClick: () => { const ids = selecionados(); const it = marcStore.get().itens; travar(ids, !ids.every((id) => (it.find((i) => i.id === id) || {}).travado)); } },
-    agrupar: { disabled: !nSel && !m.sel, onClick: () => { const g = window.prompt('Nome do grupo (camada) — vazio tira do grupo:', ''); if (g != null) definirGrupo(selecionados(), g); } },
+    agrupar: { disabled: !nSel && !m.sel, onClick: async () => { const g = await perguntar('Nome do grupo (camada) — vazio tira do grupo:', { titulo: 'Agrupar', ok: 'Agrupar' }); if (g != null) definirGrupo(selecionados(), g); } },
   };
   for (const [id, modo] of ALINHAR) extras[id] = { disabled: modo.startsWith('dist') ? !sel3 : !sel2, onClick: () => alinhar(selecionados(), modo) };
   const porId = {};
@@ -549,9 +552,9 @@ function ListaMarcacoes({ box, direita, onFechar }) {
           ${st.conjuntos.map((c) => html`<option key=${c} value=${c}>${c}</option>`)}
         </select>
         <button class="btn tiny" title="Novo conjunto (as marcações atuais ficam salvas no conjunto atual)"
-                onClick=${() => { const n = window.prompt('Nome do novo conjunto de marcações:'); if (n) usarConjunto(n); }}>+</button>
+                onClick=${async () => { const n = await perguntar('Nome do novo conjunto de marcações:', { titulo: 'Novo conjunto', ok: 'Criar conjunto' }); if (n) usarConjunto(n); }}>+</button>
         <button class="btn tiny" title="Apagar este conjunto" disabled=${st.conjuntos.length < 2}
-                onClick=${() => { if (window.confirm(`Apagar o conjunto «${st.conjunto}»?`)) apagarConjunto(); }}>−</button>
+                onClick=${async () => { if (await confirmar(`Apagar o conjunto «${st.conjunto}»?`, { titulo: 'Apagar conjunto', ok: 'Apagar conjunto', cancelar: 'Manter', perigo: true })) apagarConjunto(); }}>−</button>
         <button class="ferr-x" onClick=${onFechar} aria-label="Fechar a lista">✕</button>
       </div>
 
@@ -626,7 +629,8 @@ function ListaMarcacoes({ box, direita, onFechar }) {
         ${st.escala && k
           ? html`Escala: 1 px = <b>${k.toFixed(4)} mm</b> (${st.escala.ref} = ${st.escala.medida})
               <button class="btn tiny" onClick=${() => definirEscala(null)}>remover</button>`
-          : html`Sem calibração: medidas em px da fonte. Desenhe uma régua sobre algo de tamanho conhecido e calibre.`}
+          : html`Sem calibração: medidas em px da fonte. Desenhe uma régua sobre algo de tamanho conhecido e calibre.
+              <button class="btn tiny cal-btn" onClick=${() => window.dispatchEvent(new CustomEvent('aiv:calibrar', { detail: { op: 'escala' } }))}>⚙ Calibrar escala</button>`}
       </div>
       <label class="ferr-roi"><input type="checkbox" checked=${st.roiLigada} onChange=${(e) => setRoiLigada(e.target.checked)} />
         Aplicar ROI e exclusão ao processamento</label>

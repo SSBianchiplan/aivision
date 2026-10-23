@@ -27,6 +27,7 @@ import { cinza, recorte } from '../../runtime/livres-n/visao.js';
 import * as canal from '../../runtime/livres-n/canal.js';
 import { numBR } from '../../numfmt.js';
 import { carimbarDesenho } from '../../runtime/tempo-real/carimbo.js';
+import { registrarRegiao, regioesMudaram } from '../../regioes.js';
 
 const G = 'CV-40';
 const AREAS = new Set(['retangulo', 'poligono', 'elipse']);
@@ -163,6 +164,8 @@ function opFerramenta({ op, tipo, label, desc, params, spec, preparar }) {
   const def = FERRAMENTAS[tipo];
   return {
     op, label, group: G, overlayOnly: true, desc,
+    // medidas em mm: a régua calibrada (components/calibrar.js › escala)
+    ...(tipo === 'caliper' ? { calibravel: { rotulo: 'Calibrar a escala (régua em mm)', acao: 'escala' } } : {}),
     params: { ...params, ...COMUNS },
     apply(src, p, state, ctx) {
       const mq = ctx.marcacoes;
@@ -343,5 +346,63 @@ export const defeito = opFerramenta({
   },
   spec: (p) => ({ ranges: faixaHsv(p), within_object: p.dentro_objeto, max_pct: p.max_pct, min_spot_px: p.mancha_min, max_spots: p.max_manchas >= 0 ? p.max_manchas : null }),
 });
+
+// ---------------------------------------------------------------- regiões editáveis (cv/regioes.js)
+/*
+ * As ROIs de um programa que NÃO estão ligadas a uma marcação (vieram do Studio, de um modelo, de um
+ * import) e o gatilho padrão ficavam fixos no vídeo. Viram regiões: arrastar ajusta e, ao soltar, o
+ * programa é salvo numa versão nova (a trilha de versões do Inspect registra o ajuste).
+ */
+const insProg = () => { try { return canal.programaAtivo(); } catch (_) { return null; } };
+function ferramentasFixas(prog) {
+  if (!prog || !prog.imagem) return [];
+  const mq = canal.marcacoesAtuais();
+  return prog.tools.filter((t) => t.ativo !== false && FERRAMENTAS[t.type] && !canal.marcacaoDe(prog, t, mq)
+    && (FERRAMENTAS[t.type].roi === 'linha' ? Array.isArray(t.p0) && Array.isArray(t.p1) : t.roi));
+}
+function salvarAjuste(prog, nota) {
+  try { canal.salvar(prog, nota); } catch (e) { console.warn('[inspect] salvar ROI', e); }
+}
+registrarRegiao('inspect.programa', {
+  chave: (p, no) => { const prog = insProg(); return prog ? ferramentasFixas(prog).map((t) => t.code) : []; },
+  nome: 'Inspect · ROI', nomeSub: (p, no) => no.sub, tipo: 'retangulo', cor: '#2dd4bf', ferramentas: ['retangulo'], aoSoltar: true,
+  ler(p, no) {
+    const prog = insProg(); const t = prog && prog.tools.find((x) => x.code === no.sub);
+    if (!t || !prog.imagem) return null;
+    const W = prog.imagem.w, H = prog.imagem.h;
+    if (FERRAMENTAS[t.type].roi === 'linha') return null;
+    return [[t.roi.x / W, t.roi.y / H], [(t.roi.x + t.roi.w) / W, (t.roi.y + t.roi.h) / H]];
+  },
+  gravar(p, pts, no) {
+    const prog = insProg(); if (!prog) return null;
+    const novo = JSON.parse(JSON.stringify(prog)), t = novo.tools.find((x) => x.code === no.sub);
+    if (!t || !novo.imagem) return null;
+    const W = novo.imagem.w, H = novo.imagem.h;
+    const x1 = Math.min(pts[0][0], pts[1][0]), y1 = Math.min(pts[0][1], pts[1][1]), x2 = Math.max(pts[0][0], pts[1][0]), y2 = Math.max(pts[0][1], pts[1][1]);
+    t.roi = { x: Math.round(x1 * W), y: Math.round(y1 * H), w: Math.max(1, Math.round((x2 - x1) * W)), h: Math.max(1, Math.round((y2 - y1) * H)) };
+    salvarAjuste(novo, `ROI de ${t.code} ajustada no vídeo`);
+    return null;
+  },
+});
+registrarRegiao('inspect.programa', {
+  chave: 'gatilho', nome: 'Inspect · gatilho', tipo: 'retangulo', cor: '#a78bfa', ferramentas: ['retangulo'], aoSoltar: true,
+  ler() {
+    const prog = insProg(); if (!prog || !prog.trigger || prog.trigger.mode === 'manual' || prog.trigger.mode === 'interval') return null;
+    const mq = canal.marcacoesAtuais();
+    if (mq && mq.itens.some((i) => i.funcao === 'ins_gatilho')) return null;    // a marcação manda
+    const r = Array.isArray(prog.trigger.roi) ? prog.trigger.roi : [0.25, 0.25, 0.5, 0.5];
+    return [[r[0], r[1]], [r[0] + r[2], r[1] + r[3]]];
+  },
+  gravar(p, pts) {
+    const prog = insProg(); if (!prog) return null;
+    const novo = JSON.parse(JSON.stringify(prog));
+    const x1 = Math.min(pts[0][0], pts[1][0]), y1 = Math.min(pts[0][1], pts[1][1]);
+    const r4 = (v) => Math.round(v * 1e4) / 1e4;
+    novo.trigger = { ...novo.trigger, roi: [r4(x1), r4(y1), r4(Math.abs(pts[1][0] - pts[0][0])), r4(Math.abs(pts[1][1] - pts[0][1]))] };
+    salvarAjuste(novo, 'Gatilho ajustado no vídeo');
+    return null;
+  },
+});
+if (typeof window !== 'undefined') canal.assinar(() => regioesMudaram());
 
 export default [programa, presenca, blobs, paquimetro, cor, forma, defeito];

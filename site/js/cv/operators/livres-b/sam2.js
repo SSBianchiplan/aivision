@@ -28,6 +28,7 @@ import { MODELS, runFeeds, ensureOrt } from '../../runtime/onnx.js';
 import { stretch, toTensorData } from '../../runtime/tensor.js';
 import { ensure, schedule, colorFor, hexToRgb, detectionsFromCtx, paintMask, bilinear, normalizar } from '../../runtime/opkit.js';
 import { prepRfdetr, inferRfdetr } from './rfdetr.js';
+import { registrarRegiao } from '../../regioes.js';
 
 const G = 'CV-22';
 const S = 1024, M = 256;
@@ -293,5 +294,12 @@ export const sam2Seguir = {
     return out;
   },
 };
+
+// o ponto do objeto, arrastável no vídeo (cv/regioes.js)
+registrarRegiao('sam2.seguir', {
+  chave: 'ponto', nome: 'SAM 2 · ponto do objeto', tipo: 'ponto', cor: '#fbbf24', ferramentas: ['ponto'], campos: ['pontoX', 'pontoY'],
+  ler: (p) => (p.alvo === 'ponto na imagem' ? [[p.pontoX, p.pontoY]] : null),
+  gravar: (p, pts) => ({ pontoX: Math.round(pts[0][0] * 1000) / 1000, pontoY: Math.round(pts[0][1] * 1000) / 1000 }),
+});
 
 export default [sam2Seguir];

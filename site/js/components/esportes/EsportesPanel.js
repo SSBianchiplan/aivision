@@ -13,6 +13,13 @@ import { Panel } from '../Panel.js';
 import { useStore, store, persist } from '../../state/store.js';
 import { getOperator, defaultParams } from '../../cv/registry.js';
 import { newNodeId } from '../../cv/executor.js';
+import { pedirCalibracao } from '../calibrar.js';
+
+/** Módulos com calibração: o «⚙ Calibrar» abre o editor de cada um (components/calibrar.js). */
+const CALIBRAR = {
+  'quadra.analise': 'Escolher o esporte e arrastar os 4 cantos da quadra no vídeo',
+  'clinica.marcha': 'Duas linhas no piso a uma distância conhecida',
+};
 
 const MODULOS = [
   { id: 'bikefit', op: 'bikefit.analise', icone: '🚴', nome: 'Bike Fit', desc: 'Ângulos do ciclista por pedalada, cadência, KOPS e vista frontal, com faixas por modalidade.' },
@@ -86,7 +93,8 @@ export function EsportesPanel({ onClose, ...layout }) {
                     <button class="btn tiny ${aberto ? '' : 'accent'}"
                             onClick=${() => { store.set({ panels: { ...store.get().panels, [m.id]: !aberto } }); persist(); }}>
                       ${aberto ? 'Fechar painel' : 'Abrir'}</button>
-                    <button class="btn tiny" onClick=${() => noPipeline(m)} disabled=${ativo}>${ativo ? 'No Pipeline ✓' : 'No Pipeline'}</button>`}
+                    <button class="btn tiny" onClick=${() => noPipeline(m)} disabled=${ativo}>${ativo ? 'No Pipeline ✓' : 'No Pipeline'}</button>
+                    ${CALIBRAR[m.op] && html`<button class="btn tiny cal-btn" title=${CALIBRAR[m.op]} onClick=${() => pedirCalibracao(m.op)}>⚙ Calibrar</button>`}`}
               </div>
             </div>
           `;

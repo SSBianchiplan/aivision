@@ -8,6 +8,7 @@
  * navegador, no perfil ativo; a aba Arquivo exporta/importa o JSON
  * "beltscan/4" — o mesmo do HTML e do beltscan.py --config.
  */
+import { confirmar, perguntar } from '../dialogo.js';
 import { html, useState, useEffect } from '../../vendor.js';
 import { PREDEFINICOES, CAMERAS, normalizarConfig, clonar, PADRAO, predefFeijao } from '../../cv/runtime/livres-k/beltscan.js';
 import {
@@ -263,8 +264,8 @@ function AbaArquivo({ mudou, msg }) {
         ${perfis.map((p) => html`<option key=${p.id} value=${p.id}>${p.nome}</option>`)}
       </select></label>
     <div class="bsc-acoes">
-      <button class="bsc-btn" onClick=${async () => { const n = prompt('Nome do novo perfil (copia a configuração atual):', 'Linha 1'); if (!n) return; const atual = motor.exportar(); const id = criarPerfil(n); await trocarPerfil(id, { buscarEnsaio: false }); motor.definirConfig(atual); setPerfis(listaPerfis()); mudou(); msg('Perfil criado: ' + n); }}>Novo perfil</button>
-      <button class="bsc-btn" onClick=${async () => { if (!confirm('Voltar este perfil à configuração original?')) return; await restaurarPerfil(); mudou(); msg(motor.status); }}>Restaurar original</button>
+      <button class="bsc-btn" onClick=${async () => { const n = await perguntar('Nome do novo perfil (copia a configuração atual):', { titulo: 'Novo perfil', padrao: 'Linha 1', ok: 'Criar perfil' }); if (!n) return; const atual = motor.exportar(); const id = criarPerfil(n); await trocarPerfil(id, { buscarEnsaio: false }); motor.definirConfig(atual); setPerfis(listaPerfis()); mudou(); msg('Perfil criado: ' + n); }}>Novo perfil</button>
+      <button class="bsc-btn" onClick=${async () => { if (!(await confirmar('Voltar este perfil à configuração original?', { titulo: 'Restaurar original', ok: 'Restaurar', perigo: true }))) return; await restaurarPerfil(); mudou(); msg(motor.status); }}>Restaurar original</button>
     </div>
     <label class="bsc-sel"><span>Predefinição</span>
       <select value="" onChange=${(e) => { const f = PREDEFINICOES[e.target.value]; if (!f) return; f(C); motor.reiniciar(false); mudou(); msg('Predefinição aplicada: ' + e.target.value); }}>

@@ -15,6 +15,7 @@
  * Treinar, classes exigidas/proibidas, rótulos OK, α e amostras de
  * calibração conformal, limiar), e o lote da ordem e o prazo dos modelos.
  */
+import { confirmar } from '../dialogo.js';
 import { html, useState, useRef, useEffect } from '../../vendor.js';
 import { FERRAMENTAS, PENDENTES, FAIXAS_HSV } from '../../cv/runtime/livres-n/ferramentas.js';
 import { novaFerramenta, validar, MODELOS, EXEMPLOS_INSPECT } from '../../cv/runtime/livres-n/programa.js';
@@ -208,7 +209,7 @@ function CartaoFerramenta({ prog, t, i, mudar, mover, tirar, msg, pedirDesenho, 
         </div>
         <div class="ins-campos">${(CAMPOS[t.type] || []).map((c) => html`<${Campo} key=${c[0]} t=${t} c=${c} mudar=${set} opcoes=${opcoes} />`)}</div>
         ${t.type === 'serial' && html`<div class="ins-roi"><span>Registro de seriais de ${prog.codigo}: último nº <b>${canal.ultimoSerial(prog) ?? '—'}</b> (repetido = NOK)</span>
-          <button class="ins-btn" onClick=${() => { if (confirm(`Zerar o registro de seriais de ${prog.codigo}? (nova série)`)) { canal.zerarSeriais(prog); msg('Registro de seriais zerado.'); } }}>Zerar registro</button></div>`}
+          <button class="ins-btn" onClick=${async () => { if (await confirmar(`Zerar o registro de seriais de ${prog.codigo}? (nova série)`, { titulo: 'Zerar seriais', ok: 'Zerar registro', perigo: true })) { canal.zerarSeriais(prog); msg('Registro de seriais zerado.'); } }}>Zerar registro</button></div>`}
         ${t.type === 'classify' && html`<${CalibracaoClassif} prog=${prog} t=${t} set=${set} msg=${msg} />`}
         ${(t.type === 'ocr' || t.type === 'code') && html`<p class="ins-dica">Lote da ordem: ${prog.lote ? html`<b>${prog.lote}</b>` : html`<em>vazio</em>`} (campo «Lote» em Escala…). Hoje: ${new Date().toLocaleDateString('pt-BR')}.</p>`}
         ${t.type === 'presence' && html`<div class="ins-roi"><span>Molde: ${asset ? html`<b>${asset.w}×${asset.h} px</b> (capturado em ${asset.W} px de largura)` : html`<em>não capturado</em>`}</span>
@@ -355,7 +356,7 @@ export function InspectEditor({ rascunho: prog, mudou, onFechar, onMsg, pedirDes
             <button class="ins-btn" onClick=${() => arq.current && arq.current.click()}>Importar…</button>
             <input ref=${arq} type="file" accept=".json,application/json" hidden onChange=${importar} />
             <button class="ins-btn" onClick=${() => { const d = canal.duplicarPrograma(prog.id); if (d) { onMsg && onMsg(`Duplicado: ${d.nome}.`); onFechar(d); } }} disabled=${!prog.versao}>Duplicar</button>
-            <button class="ins-btn perigo" onClick=${() => { if (confirm(`Apagar o programa ${prog.codigo} — ${prog.nome}? O histórico de inspeções fica.`)) { canal.apagarPrograma(prog.id); onFechar(null); } }} disabled=${!prog.versao}>Apagar</button>
+            <button class="ins-btn perigo" onClick=${async () => { if (await confirmar(`Apagar o programa ${prog.codigo} — ${prog.nome}? O histórico de inspeções fica.`, { titulo: 'Apagar programa', ok: 'Apagar programa', cancelar: 'Manter', perigo: true })) { canal.apagarPrograma(prog.id); onFechar(null); } }} disabled=${!prog.versao}>Apagar</button>
           </div>
           <div class="ins-acoes">
             <select class="ins-btn" value="" onChange=${(e) => { const k = e.target.value; e.target.value = ''; if (!k) return; const p = canal.criar(k === '__vazio' ? null : k); onMsg && onMsg(`Criado: ${p.codigo} — ${p.nome}.`); onFechar(p); }}>

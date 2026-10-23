@@ -280,6 +280,9 @@ export const rt = {
   cursor: null,        // último ponto do ponteiro sobre o vídeo { cx, cy } (lupa, mira)
   sam: null,           // sessão do "Segmentar com um clique": { pontos, poligono, ocupado, erro }
   progresso: '',       // texto de carregamento de modelo (SAM) para a dica
+  capturarCriacao: null, // cv/regioes.js: «Redesenhar com a ferramenta X» pega a próxima forma desenhada
+  aoApagarRegiao: null,  // cv/regioes.js: apagar uma região ligada a um operador
+  widgetAtivo: false,    // o widget Ferramentas está aberto (o teclado das seleções é dele)
 };
 
 /**
@@ -361,7 +364,8 @@ function salvar() {
     const tudo = lerTudo();
     tudo.versao = 1;
     tudo.ativo = st.conjunto;
-    tudo.conjuntos[st.conjunto] = { itens: st.itens, escala: st.escala };
+    // as marcações LIGADAS a operadores (cv/regioes.js) não são salvas: nascem dos parâmetros
+    tudo.conjuntos[st.conjunto] = { itens: st.itens.filter((i) => !i.vinc), escala: st.escala };
     tudo.visivel = st.visivel;
     tudo.roiLigada = st.roiLigada;
     tudo.exib = st.exib;
@@ -391,7 +395,7 @@ export function usarConjunto(nome) {
   if (!nome) return;
   const st = marcStore.get();
   const tudo = lerTudo();
-  tudo.conjuntos[st.conjunto] = { itens: st.itens, escala: st.escala };
+  tudo.conjuntos[st.conjunto] = { itens: st.itens.filter((i) => !i.vinc), escala: st.escala };
   const c = tudo.conjuntos[nome] || { itens: [], escala: st.escala };
   tudo.conjuntos[nome] = c;
   tudo.ativo = nome;
@@ -548,6 +552,8 @@ export function novoId() { return 'mk' + (++seq).toString(36) + Date.now().toStr
 
 /** Cria uma marcação a partir da ferramenta e devolve o id. */
 export function criar(ferramenta, pts, extra = {}) {
+  // «Redesenhar com a ferramenta X» (cv/regioes.js): a forma desenhada vira a geometria da região
+  if (rt.capturarCriacao) { const id = rt.capturarCriacao(ferramenta, pts, extra); if (id) return id; }
   const [tipo, funcao0] = CRIA[ferramenta] || CRIA.retangulo;
   const funcao = extra.funcao || funcao0;
   const st = marcStore.get();
@@ -591,12 +597,16 @@ export function atualizar(id, patch) {
 
 export function apagar(id) {
   const st = marcStore.get();
+  const alvo = st.itens.find((i) => i.id === id);
+  // região de um operador: o operador decide (sem «apagar» ela é obrigatória e fica)
+  if (alvo && alvo.vinc && rt.aoApagarRegiao && rt.aoApagarRegiao(alvo) === false) return;
   confirmar((itens) => itens.filter((i) => i.id !== id), { sel: st.sel === id ? null : st.sel, selN: st.selN.filter((x) => x !== id) });
   resultados.delete(id);
 }
 
 export function limparTudo() {
-  confirmar(() => [], { sel: null, selN: [], analise: null });
+  // as regiões dos operadores ficam (apagar uma delas é pelo menu dela)
+  confirmar((itens) => itens.filter((i) => i.vinc), { sel: null, selN: [], analise: null });
   resultados.clear();
 }
 
@@ -644,7 +654,7 @@ export function exportarJSON() {
   const st = marcStore.get();
   return JSON.stringify({
     formato: 'gplansis.marcacoes', versao: 1, conjunto: st.conjunto,
-    criado_em: new Date().toISOString(), escala: st.escala, itens: st.itens,
+    criado_em: new Date().toISOString(), escala: st.escala, itens: st.itens.filter((i) => !i.vinc),
   }, null, 2);
 }
 
@@ -1141,11 +1151,14 @@ const tmp = [0, 0];
 export function paraQuadro(w, h) {
   const st = marcStore.get();
   if (!st.itens.length) return null;
+  // regiões dos operadores (cv/regioes.js) não são marcações para a cadeia: o operador lê o parâmetro
+  const proprias = st.itens.some((i) => i.vinc) ? st.itens.filter((i) => !i.vinc) : st.itens;
+  if (!proprias.length) return null;
   const T = vista;
   const c = cache;
   if (c.v === versao && c.w === w && c.h === h && c.sx === T.sx && c.sy === T.sy && c.sw === T.sw && c.sh === T.sh
       && c.fs === T.fs && c.fd === T.fd && c.W === T.W && c.H === T.H) return c.obj;
-  const itens = st.itens.map((it) => {
+  const itens = proprias.map((it) => {
     const pts = it.pts.map(([u, v]) => { fonteParaVista(u, v, tmp); return [tmp[0], tmp[1]]; });
     const o = {
       id: it.id, nome: it.nome, tipo: it.tipo, funcao: it.funcao, cor: it.cor, texto: it.texto,

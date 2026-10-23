@@ -21,6 +21,7 @@
  * A fonte é a do app; a barra de vídeo do app fica por cima desta tela.
  * Gancho de teste: window.aivCounter.
  */
+import { confirmar } from '../dialogo.js';
 import { html, useState, useEffect, useRef, useCallback } from '../../vendor.js';
 import { useStore, store } from '../../state/store.js';
 import { getOperator, defaultParams } from '../../cv/registry.js';
@@ -37,6 +38,7 @@ import {
 } from './counter-comum.js';
 import { EnviarTreinoContador, EscolherOnnx } from './CounterPanel.js';
 import { FonteStudio, fonteStudioAberta } from '../studio/FonteStudio.js';
+import { FerramentasStudio } from '../studio/FerramentasStudio.js';
 import { BotaoVia } from '../../via/BotaoVia.js';   // [VIA] botão «✦ Via» da barra (js/via/)
 
 const ROT_ESTADO = { ATIVO_NR: 'ativo, não reconhecido', ATIVO_R: 'ativo, reconhecido', RTN_NR: 'voltou ao normal' };
@@ -179,6 +181,7 @@ export function StudioCounter({ onClose, onResetState, onPickFile }) {
       <div class="cvs-barra">
         <b class="cvs-titulo"><span class="cvs-marca">iaVision</span> <span class="cvs-gp">GPlanSiS<i>|</i></span>CounterVision</b>
         <${FonteStudio} classeBotao="cvs-btn" />
+        <${FerramentasStudio} classeBotao="cvs-btn" alvo=${cvVid} transformacao=${() => tf.current} />
         <select class="cvs-btn" aria-label="Detector" value=${cadeia && cadeia !== 'outro' ? cadeia : ''} onChange=${(e) => motorSel(e.target.value)}>
           ${!cadeia && html`<option value="">Escolha o detector…</option>`}
           ${cadeia === 'outro' && html`<option value="">Cadeia própria</option>`}
@@ -216,7 +219,7 @@ export function StudioCounter({ onClose, onResetState, onPickFile }) {
             <button class="cvs-btn" onClick=${() => { criarLinha('vertical'); setMsg('Linha vertical no meio criada.'); }}>Linha no meio</button>
             <button class="cvs-btn ${mascara ? 'on' : ''}" aria-pressed=${mascara} onClick=${() => setMascara(!mascara)}>Máscara de cor</button>
             <button class="cvs-btn acento" onClick=${capturar} disabled=${!vivo}>Capturar quadro com caixas</button>
-            <button class="cvs-btn" onClick=${() => { if (confirm('Zerar a contagem desta sessão? (o total por turno e a fila guardada ficam)')) { M.zerar(); zerarContagens(); avisarAgora(); setMsg('Contagem zerada.'); } }}>Zerar</button>
+            <button class="cvs-btn" onClick=${async () => { if (await confirmar('Zerar a contagem desta sessão? (o total por turno e a fila guardada ficam)', { titulo: 'Zerar contagem', ok: 'Zerar', perigo: true })) { M.zerar(); zerarContagens(); avisarAgora(); setMsg('Contagem zerada.'); } }}>Zerar</button>
           </div>
         </section>
 
@@ -261,7 +264,7 @@ export function StudioCounter({ onClose, onResetState, onPickFile }) {
             <div class="cvs-acoes">
               <button class="cvs-btn" onClick=${csvFila}>CSV (fila: ${res ? res.guardados : M.fila.guardados})</button>
               <button class="cvs-btn" onClick=${() => baixarTexto(`contagem_sessao_${carimbo()}.csv`, csvEventos(M.eventos), 'text/csv')}>CSV da sessão</button>
-              <button class="cvs-btn" onClick=${async () => { if (!confirm('Esvaziar a fila guardada neste navegador? Exporte antes.')) return; await M.fila.esvaziar(); setV((n) => n + 1); setMsg('Fila esvaziada.'); }}>Esvaziar fila</button>
+              <button class="cvs-btn" onClick=${async () => { if (!(await confirmar('Esvaziar a fila guardada neste navegador? Exporte antes.', { titulo: 'Esvaziar fila', ok: 'Esvaziar fila', perigo: true }))) return; await M.fila.esvaziar(); setV((n) => n + 1); setMsg('Fila esvaziada.'); }}>Esvaziar fila</button>
             </div>
             ${res && res.erroFila && html`<p class="cvs-dica" style=${{ color: 'var(--cvs-p1)' }}>Fila: ${res.erroFila}</p>`}
             <div class="cvs-tab"><table><thead><tr><th>#</th><th>Hora</th><th>t (s)</th><th>Marcação</th><th>ID</th><th>Sentido</th><th>Classe</th><th>Conf.</th></tr></thead><tbody>
@@ -304,7 +307,7 @@ export function StudioCounter({ onClose, onResetState, onPickFile }) {
             </ul>
             <div class="cvs-acoes">
               <label class="cvs-btn">Adicionar cor… <input type="color" class="cvs-sr" onChange=${(e) => { const a = amostraDeHex(e.target.value); if (typeof a === 'string') setMsg(a); else { cor.adicionar(a); setV((n) => n + 1); setMsg(`Cor "${a.nome}" adicionada (sem tamanho típico: o tamanho sai das peças vistas).`); } }} /></label>
-              <button class="cvs-btn" onClick=${() => { if (confirm('Apagar todas as cores?')) { cor.limpar(); setV((n) => n + 1); } }} disabled=${!cor.amostras.length}>Limpar cores</button>
+              <button class="cvs-btn" onClick=${async () => { if (await confirmar('Apagar todas as cores?', { titulo: 'Limpar cores', ok: 'Apagar cores', cancelar: 'Manter', perigo: true })) { cor.limpar(); setV((n) => n + 1); } }} disabled=${!cor.amostras.length}>Limpar cores</button>
             </div>
             <label class="cvs-campo"><span>Tolerância de cor <em>+${pCor.tol}°</em></span>
               <input type="range" min="0" max="40" step="1" value=${pCor.tol} onInput=${(e) => definirParam('contagem.cor', 'tol', Number(e.target.value))} /></label>
@@ -330,7 +333,7 @@ export function StudioCounter({ onClose, onResetState, onPickFile }) {
           <div class="cvs-acoes">
             <button class="cvs-btn" disabled=${!nDs} onClick=${async () => baixarBlob(await zipYolo(), `contagem_dataset_yolo_${carimbo()}.zip`)}>Baixar ZIP YOLO</button>
             <button class="cvs-btn acento" disabled=${!nDs} onClick=${() => setEnviar(!enviar)}>Enviar ao Treinar</button>
-            <button class="cvs-btn" disabled=${!nDs} onClick=${() => { if (confirm('Descartar os quadros capturados?')) limparDataset(); }}>Limpar</button>
+            <button class="cvs-btn" disabled=${!nDs} onClick=${async () => { if (await confirmar('Descartar os quadros capturados?', { titulo: 'Descartar quadros', ok: 'Descartar', cancelar: 'Manter', perigo: true })) limparDataset(); }}>Limpar</button>
           </div>
           ${enviar && nDs > 0 && html`<${EnviarTreinoContador} onFechar=${() => setEnviar(false)} />`}
         </section>

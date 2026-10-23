@@ -28,6 +28,7 @@
  * A fonte é a do app; a barra de vídeo do app fica por cima desta tela.
  * Gancho de teste: window.aivInspect.
  */
+import { confirmar } from '../dialogo.js';
 import { html, useState, useEffect, useRef, useCallback } from '../../vendor.js';
 import { useStore, store } from '../../state/store.js';
 import * as canal from '../../cv/runtime/livres-n/canal.js';
@@ -39,6 +40,7 @@ import {
 } from './inspect-comum.js';
 import { InspectEditor } from './InspectEditor.js';
 import { FonteStudio, fonteStudioAberta } from '../studio/FonteStudio.js';
+import { FerramentasStudio } from '../studio/FerramentasStudio.js';
 import { BotaoVia } from '../../via/BotaoVia.js';   // [VIA] botão «✦ Via» da barra (js/via/)
 
 const clonar = (o) => JSON.parse(JSON.stringify(o));
@@ -347,6 +349,7 @@ export function StudioInspect({ onClose }) {
       <div class="ins-barra">
         <b class="ins-titulo"><span class="ins-marca">iaVision</span> <span class="ins-gp">GPlanSiS<i>|</i></span>Inspect</b>
         <${FonteStudio} classeBotao="ins-btn" />
+        <${FerramentasStudio} classeBotao="ins-btn" alvo=${cvVivo} transformacao=${() => tf.current} />
         <select class="ins-btn" aria-label="Programa ativo" value=${prog ? prog.id : ''} onChange=${(ev) => { canal.ativar(ev.target.value); setTeste(null); }}>
           ${!prog && html`<option value="">— nenhum programa —</option>`}
           ${progs.map((p) => html`<option key=${p.id} value=${p.id}>${p.codigo} · v${p.versao} — ${p.nome}</option>`)}
@@ -360,7 +363,7 @@ export function StudioInspect({ onClose }) {
         <button class="ins-btn" onClick=${() => setTreinar(true)} title="Enviar as peças (JPEG) a um projeto do Treinar">Enviar ao Treinar</button>
         ${prog && prog.tools.some((t) => t.type === 'anomaly') && html`<button class="ins-btn" onClick=${() => setTreinar('anomalia')}
           title="Manda as peças OK (recortadas na ROI da anomalia) a um projeto de anomalia do Treinar">Treinar anomalia com as BOAS</button>`}
-        <button class="ins-btn" onClick=${() => { if (confirm('Zerar o histórico, a fila de revisão e os contadores?')) canal.zerar(); }}>Zerar</button>
+        <button class="ins-btn" onClick=${async () => { if (await confirmar('Zerar o histórico, a fila de revisão e os contadores?', { titulo: 'Zerar Inspect', ok: 'Zerar tudo', perigo: true })) canal.zerar(); }}>Zerar</button>
         <${BotaoVia} modulo="inspecao" classe="ins-btn" />
         <button class="ins-btn ins-fechar" onClick=${onClose} aria-label="Fechar a tela Inspect">✕</button>
       </div>

@@ -376,6 +376,29 @@ export class Reprodutor {
     return { x: (this.w - fw) / 2, y: (this.h - fh) / 2, w: fw, h: fh };
   }
 
+  /**
+   * Onde o quadro da mídia está no visor, em px do canvas, e o enquadramento mostrado (Ferramentas do
+   * Studio: components/studio/FerramentasStudio.js — as marcações em 0–1 da mídia).
+   */
+  geometria() {
+    const e = this.e;
+    if (!e || !e.v) return null;
+    const el = this.video;
+    const vw = el.videoWidth || e.v.largura, vh = el.videoHeight || e.v.altura;
+    if (!vw || !vh) return null;
+    let ret = { x: 0, y: 0, w: 1, h: 1 }, a;
+    if (e.modo === 'recorte' || e.modo === 'alvo') a = this.areaQuadro();
+    else {
+      const c = this.clipeAtual;
+      ret = c && this.qMostrado >= 0 ? enquadramento(e.v, c, Math.min(c.b - 1, Math.max(c.a, this.qMostrado)), e.recorte) : e.recorte;
+      const sw = ret.w * vw, sh = ret.h * vh, k = Math.min(this.w / sw, this.h / sh);
+      a = { x: (this.w - sw * k) / 2, y: (this.h - sh * k) / 2, w: sw * k, h: sh * k };
+    }
+    const d = this.dpr || 1;
+    return { ox: a.x * d, oy: a.y * d, dw: a.w * d, dh: a.h * d, dpr: d,
+      vista: { W: vw, H: vh, sx: ret.x * vw, sy: ret.y * vh, sw: ret.w * vw, sh: ret.h * vh, fs: false, fd: false } };
+  }
+
   desenhar() {
     const { ctx } = this;
     const e = this.e;

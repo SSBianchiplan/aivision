@@ -31,7 +31,7 @@ import {
   confirmar, novoId, atualizar, COR_FUNC, funcoesDe, dadosExemplo,
   vistaParaFonte, LINHAS, ESQUELETO, areaPx, perimetroPx, fmtArea, centroide, circuloPor3, pintarMascara,
   recortarMascara, mascaraCanvas, contarClique, descontarClique, tempoAgora, segundosCrono, fmtTempo, mmPorPx,
-  caixaItem,
+  caixaItem, fonteParaVista, travar, setFerramenta, desfazer as desfazerM, refazer as refazerM,
 } from '../cv/marcacoes.js';
 import {
   varinha, segmentarSam, situacaoSam, esquecerSam, encaixarBorda, passoTrajetorias, soltarModelo, iniciarTrajetoria, velocidadePx, dentroFonte,
@@ -42,6 +42,9 @@ import '../projeto/acoes.js';
 import { salvarQuadroComoPrint } from '../projeto/exemplos.js';
 import { quadroCanvas } from '../projeto/captura.js';
 import { ativo as projetoAtivo, adicionarClasse, classePorNome } from '../projeto/base.js';
+import { regiaoDoItem, tique as tiqueRegioes, podeApagar, paramsDe } from '../cv/regioes.js';
+import './regioes-acoes.js';
+import './calibrar.js';
 
 /** Leitura do conta-gotas (o widget mostra). Store próprio: muda na velocidade do mouse. */
 export const leituraStore = createStore({ leitura: null });
@@ -97,6 +100,14 @@ function padraoHachura(ctx, dpr) {
   return hachura.p;
 }
 
+/** Topo do canvas na janela, sem medir a cada quadro (no máximo uma vez por segundo). */
+let topoC = { t: -1e9, v: 0, c: null };
+function topoCanvas() {
+  const agora = performance.now();
+  if (topoC.c !== vista.canvas || agora - topoC.t > 1000) topoC = { t: agora, v: vista.canvas ? vista.canvas.getBoundingClientRect().top : 0, c: vista.canvas };
+  return topoC.v;
+}
+
 /** Pílula de texto (nome + resultado) presa a um ponto. */
 function pilula(ctx, txt, x, y, cor, dpr, escura = true) {
   ctx.font = `600 ${11 * dpr}px ui-monospace, monospace`;
@@ -149,7 +160,17 @@ export function desenharMarcacoes(ctx) {
   instalarMenu();
   // trajetórias seguem o ponto a cada quadro novo; os auxílios (grade, lupa, mira, réguas) têm camada própria
   if (vista.ok) { try { passoTrajetorias(); } catch (e) { console.warn('[trajetória]', e); } }
+  tiqueRegioes();
   desenharAuxiliosJa();
+  // um Studio que COPIA este canvas está com as Ferramentas abertas e pinta as marcações por cima dele
+  if (!rt.ocultarNoDisplay) pintarItens(ctx, st);
+}
+
+/**
+ * Só as formas (sem o passo das trajetórias e os auxílios): o Viewport pinta pelo desenharMarcacoes;
+ * os Studios (components/studio/FerramentasStudio.js) pintam por aqui, com a vista do canvas deles.
+ */
+export function pintarItens(ctx, st = marcStore.get()) {
   const rasc = rt.rascunho;
   if (!vista.ok || (!st.itens.length && !rasc && !rt.selecao && !rt.sam)) return;
   const dpr = vista.dpr;
@@ -180,7 +201,9 @@ export function desenharMarcacoes(ctx) {
     for (const it of st.itens) {
       if (!it.visivel) continue;
       if (rasc && rasc.alvo === it.id) continue;          // máscara sendo pintada: o rascunho mostra
-      desenharItem(ctx, it, it.id === st.sel || st.selN.includes(it.id), it.id === rt.hover, dpr, st.roiLigada);
+      const sel = it.id === st.sel || st.selN.includes(it.id);
+      if (it.vinc) { desenharRegiao(ctx, it, sel, it.id === rt.hover, dpr, st.ferramenta === 'selecionar'); continue; }
+      desenharItem(ctx, it, sel, it.id === rt.hover, dpr, st.roiLigada);
     }
   }
 
@@ -192,7 +215,7 @@ export function desenharMarcacoes(ctx) {
   if (st.roiLigada && (temRoi || st.itens.some((i) => i.funcao === 'exclusao' && AREAS.has(i.tipo)))) {
     // no alto, logo abaixo da barra do topo (que flutua sobre o vídeo): --rail-top é a base dela
     const rt0 = parseFloat(document.documentElement.style.getPropertyValue('--rail-top')) || 76;
-    const topo = Math.max(vista.dy, (rt0 - vista.canvas.getBoundingClientRect().top) * dpr) + 6 * dpr;
+    const topo = Math.max(vista.dy, (rt0 - topoCanvas()) * dpr) + 6 * dpr;
     pilula(ctx, temRoi ? 'ROI ATIVA — o pipeline só vê a área clara' : 'EXCLUSÃO ATIVA — o pipeline ignora a área hachurada',
            vista.dx + vista.dw / 2 - 150 * dpr, topo, '#38bdf8', dpr);
   }
@@ -206,6 +229,57 @@ export function desenharMarcacoes(ctx) {
     const rt0 = parseFloat(document.documentElement.style.getPropertyValue('--rail-top')) || 76;
     const topo = Math.max(vista.dy, (rt0 - vista.canvas.getBoundingClientRect().top) * dpr) + 34 * dpr;
     pilula(ctx, txt, vista.dx + Math.max(4 * dpr, (vista.dw - w) / 2), topo, selBs.cor, dpr);
+  }
+  ctx.restore();
+}
+
+/**
+ * Região de um operador (cv/regioes.js). O operador já desenha a geometria dele: aqui só aparece o
+ * contorno quando ela está selecionada, sob o cursor, com «Selecionar» ativo — ou tracejada enquanto
+ * é a geometria padrão (ainda não ajustada: a Quadra sem calibração). Alças só com seleção.
+ */
+function desenharRegiao(ctx, it, sel, hover, dpr, modoSel) {
+  const padrao = it.vinc && it.vinc.padrao;
+  if (!sel && !hover && !modoSel && !padrao) return;
+  const n = telaDe(it);
+  const cor = it.cor;
+  const forte = sel || hover;
+  ctx.save();
+  ctx.globalAlpha = forte ? 1 : 0.7;
+  ctx.lineWidth = (forte ? 2.4 : 1.4) * dpr;
+  ctx.strokeStyle = cor;
+  ctx.setLineDash(padrao && !sel ? [7 * dpr, 5 * dpr] : []);
+  ctx.beginPath();
+  if (it.tipo === 'ponto') ctx.arc(P[0], P[1], 7 * dpr, 0, Math.PI * 2);
+  else if (it.tipo === 'retangulo') caminhoArea(ctx, 'retangulo', n);
+  else { for (let i = 0; i < n; i++) (i ? ctx.lineTo(P[i * 2], P[i * 2 + 1]) : ctx.moveTo(P[0], P[1])); if (it.tipo !== 'linha') ctx.closePath(); }
+  ctx.stroke();
+  ctx.setLineDash([]);
+  // linhas extras (Quadra: as linhas do esporte pela geometria que está sendo arrastada)
+  const r = (sel || padrao) && regiaoDoItem(it);
+  if (r && r.def.desenho) {
+    let seg = [];
+    try {
+      const q = it.pts.map(([u, v]) => { fonteParaVista(u, v, t2); return [t2[0], t2[1]]; });
+      seg = r.def.desenho(q, paramsDe(r.no)) || [];
+    } catch (_) { seg = []; }
+    ctx.globalAlpha = 0.85; ctx.lineWidth = 1.2 * dpr;
+    ctx.beginPath();
+    for (const [a, b, c, d] of seg) { ctx.moveTo(vista.dx + a * vista.dw, vista.dy + b * vista.dh); ctx.lineTo(vista.dx + c * vista.dw, vista.dy + d * vista.dh); }
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  if (forte || padrao) {
+    const [x1, y1] = caixa(n);
+    const txt = padrao && !sel ? `${it.nome} · clique e arraste os cantos` : `${it.vinc.rotulo || ''} · ${it.nome}${it.travado ? ' 🔒' : ''}`;
+    pilula(ctx, txt, x1, y1 - 19 * dpr < vista.dy + 4 * dpr ? y1 + 4 * dpr : y1 - 19 * dpr, cor, dpr);
+  }
+  if (sel && !it.travado) {
+    alcas(ctx, it, n, dpr);
+    if (r && r.def.rotulos) {
+      ctx.font = `600 ${10 * dpr}px ui-monospace, monospace`; ctx.fillStyle = cor;
+      for (let i = 0; i < Math.min(n, r.def.rotulos.length); i++) ctx.fillText(r.def.rotulos[i], P[i * 2] + 7 * dpr, P[i * 2 + 1] - 7 * dpr);
+    }
   }
   ctx.restore();
 }
@@ -823,7 +897,8 @@ export function ponteiroDown(e) {
     }, 550);
   }
   const f = ferramenta();
-  if (!f || !vista.ok) return false;
+  if (!f) return vista.ok && (e.button === undefined || e.button === 0) ? downNavegando(e) : false;
+  if (!vista.ok) return false;
   if (e.button !== undefined && e.button !== 0) return true;
   try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) { /* segue sem captura */ }
   const p0 = clienteParaFonte(e.clientX, e.clientY);
@@ -904,8 +979,11 @@ export function ponteiroDown(e) {
   } else if (f === 'selecionar') {
     const sel = st.sel && st.itens.find((i) => i.id === st.sel);
     const iv = sel && !sel.travado && !e.shiftKey ? acharVertice(sel, x, y) : -1;
+    const ia = iv < 0 && sel && !sel.travado && !e.shiftKey ? acharAresta(sel, x, y) : null;
     if (iv >= 0) {
       arr = { modo: 'vertice', id: sel.id, idx: iv, marcado: false };
+    } else if (ia) {
+      arr = { modo: 'aresta', id: sel.id, ini: p0, orig: sel.pts.map((q) => q.slice()), aresta: ia, marcado: false };
     } else {
       const hit = acharItem(x, y);
       if (hit && hit.tipo === 'linha' && hit.id === st.sel && !hit.travado) {
@@ -939,6 +1017,7 @@ export function ponteiroMove(e) {
     return true;
   }
   const f = ferramenta();
+  if (!f && vista.ok) return moveNavegando(e);
   if (!f || !vista.ok) return false;
   const p = clienteParaFonte(e.clientX, e.clientY);
   const r = rt.rascunho;
@@ -959,9 +1038,30 @@ export function ponteiroMove(e) {
     if (hit && !hit.travado) apagar(hit.id);
     return true;
   }
-  if (arr && (arr.modo === 'vertice' || arr.modo === 'mover')) {
+  if (arr && (arr.modo === 'vertice' || arr.modo === 'mover' || arr.modo === 'aresta')) {
+    arrastar(p);
+    return true;
+  }
+  // realce do que está sob o cursor (borracha e seleção)
+  if (f === 'borracha' || f === 'selecionar' || f === 'cronometro' || f === 'trajetoria' || f === 'distancia' || f === 'borrachaMascara') {
+    const hit = acharItem(x, y);
+    const id = hit ? hit.id : null;
+    if (id !== rt.hover) { rt.hover = id; rt.redesenhar(); }
+  }
+  return true;
+}
+
+/** Arrasto de vértice, aresta ou forma inteira (com «Selecionar» ou direto com «Mover»). */
+function arrastar(p) {
+  {
     if (!arr.marcado) { marcoDesfazer(); arr.marcado = true; }
     rt.arrastando = true;
+    if (arr.modo === 'aresta') {
+      const du = p[0] - arr.ini[0], dv = p[1] - arr.ini[1];
+      const { id, orig, aresta } = arr;
+      editarSemHistorico((itens) => itens.map((it) => (it.id !== id ? it : { ...it, pts: moverAresta(orig, aresta, du, dv) })));
+      return;
+    }
     if (arr.modo === 'vertice') {
       const { id, idx } = arr;
       const q = encaixe(p, null);
@@ -973,15 +1073,7 @@ export function ponteiroMove(e) {
         ...it, pts: orig.get(it.id).map((q) => [Math.max(0, Math.min(1, q[0] + du)), Math.max(0, Math.min(1, q[1] + dv))]),
       })));
     }
-    return true;
   }
-  // realce do que está sob o cursor (borracha e seleção)
-  if (f === 'borracha' || f === 'selecionar' || f === 'cronometro' || f === 'trajetoria' || f === 'distancia' || f === 'borrachaMascara') {
-    const hit = acharItem(x, y);
-    const id = hit ? hit.id : null;
-    if (id !== rt.hover) { rt.hover = id; rt.redesenhar(); }
-  }
-  return true;
 }
 
 function moverVertice(it, idx, p) {
@@ -996,6 +1088,151 @@ function moverVertice(it, idx, p) {
   // distância: arrastar a ponta solta a ligação com o objeto
   if (it.tipo === 'distancia' && it.refs) return { pts, refs: it.refs.map((r, k) => (k === idx ? null : r)) };
   return pts;
+}
+
+/**
+ * Aresta da forma selecionada sob o ponto: { i, j } (polígono, perspectiva, polilinha) ou
+ * { lado: 'x1'|'x2'|'y1'|'y2' } (retângulo). Arrastar a aresta move as duas pontas juntas.
+ */
+function acharAresta(it, x, y) {
+  if (!it || it.tipo === 'ponto' || it.tipo === 'texto' || it.tipo === 'contador' || it.tipo === 'trajetoria' || it.tipo === 'mascara') return null;
+  const n = telaDe(it);
+  const tol = 8 * vista.dpr;
+  if (it.tipo === 'retangulo' || it.tipo === 'elipse') {
+    const [x1, y1, x2, y2] = caixa(n);
+    const dentroY = y >= y1 - tol && y <= y2 + tol, dentroX = x >= x1 - tol && x <= x2 + tol;
+    // qual ponto (0 ou 1) tem o x/y de cada lado (o espelho pode trocar)
+    const ix1 = P[0] <= P[2] ? 0 : 1, iy1 = P[1] <= P[3] ? 0 : 1;
+    if (dentroY && Math.abs(x - x1) < tol) return { eixo: 0, idx: ix1 };
+    if (dentroY && Math.abs(x - x2) < tol) return { eixo: 0, idx: 1 - ix1 };
+    if (dentroX && Math.abs(y - y1) < tol) return { eixo: 1, idx: iy1 };
+    if (dentroX && Math.abs(y - y2) < tol) return { eixo: 1, idx: 1 - iy1 };
+    return null;
+  }
+  if (n < 2 || it.tipo === 'linha' || it.tipo === 'regua' || it.tipo === 'seta' || it.tipo === 'perfil') return null;   // linha: arrastar = mover
+  const fechada = AREAS.has(it.tipo) || it.tipo === 'perspectiva';
+  const m = fechada ? n : n - 1;
+  for (let i = 0; i < m; i++) {
+    const j = (i + 1) % n;
+    if (distSeg(x, y, P[i * 2], P[i * 2 + 1], P[j * 2], P[j * 2 + 1]) < tol) return { i, j };
+  }
+  return null;
+}
+
+function moverAresta(orig, a, du, dv) {
+  const pts = orig.map((q) => q.slice());
+  const c = (v) => Math.max(0, Math.min(1, v));
+  if (a.eixo !== undefined) {
+    // o deslocamento da tela vira deslocamento na fonte: com espelho, x anda ao contrário — já vem da fonte
+    pts[a.idx][a.eixo] = c(orig[a.idx][a.eixo] + (a.eixo === 0 ? du : dv));
+    return pts;
+  }
+  for (const k of [a.i, a.j]) pts[k] = [c(orig[k][0] + du), c(orig[k][1] + dv)];
+  return pts;
+}
+
+/*
+ * «Mover» (navegar): o vídeo continua respondendo a zoom e arrasto, mas as REGIÕES (marcações e as
+ * regiões dos operadores, cv/regioes.js) são clicáveis — clicar seleciona; com a forma já
+ * selecionada, arrastar o vértice, a aresta ou a forma ajusta. Arrastar sobre uma forma não
+ * selecionada continua sendo o arrasto do enquadramento (não move zona sem querer).
+ */
+let pendSel = null;
+function downNavegando(e) {
+  const st = marcStore.get();
+  if (!st.itens.length || !st.visivel || semFonte()) return false;
+  const [x, y] = clienteParaTela(e.clientX, e.clientY);
+  const p0 = clienteParaFonte(e.clientX, e.clientY);
+  const sel = st.sel && st.itens.find((i) => i.id === st.sel);
+  if (sel && !sel.travado) {
+    const iv = acharVertice(sel, x, y);
+    const ia = iv < 0 ? acharAresta(sel, x, y) : null;
+    const dentro = iv < 0 && !ia && acharItem(x, y) === sel;
+    if (iv >= 0 || ia || dentro) {
+      try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) { /* segue */ }
+      if (iv >= 0) arr = { modo: 'vertice', id: sel.id, idx: iv, marcado: false };
+      else if (ia) arr = { modo: 'aresta', id: sel.id, ini: p0, orig: sel.pts.map((q) => q.slice()), aresta: ia, marcado: false };
+      else arr = { modo: 'mover', ini: p0, orig: new Map([[sel.id, sel.pts.map((q) => q.slice())]]), marcado: false };
+      arr.nav = true;
+      rt.redesenhar();
+      return true;
+    }
+  }
+  const hit = acharItem(x, y);
+  pendSel = { id: hit ? hit.id : null, cx: e.clientX, cy: e.clientY };
+  return false;     // o Viewport segue com o zoom/arrasto; o clique (sem arrastar) seleciona no soltar
+}
+
+function moveNavegando(e) {
+  if (arr && arr.nav) {
+    arrastar(clienteParaFonte(e.clientX, e.clientY));
+    return true;
+  }
+  if (pendSel && Math.hypot(e.clientX - pendSel.cx, e.clientY - pendSel.cy) > 5) pendSel = null;
+  // realce sob o cursor (só com formas na tela; nada a fazer sem elas)
+  const st = marcStore.get();
+  if (!st.itens.length || !st.visivel || e.buttons) return false;
+  const [x, y] = clienteParaTela(e.clientX, e.clientY);
+  const hit = acharItem(x, y);
+  const id = hit ? hit.id : null;
+  if (id !== rt.hover) {
+    rt.hover = id; rt.redesenhar();
+    if (vista.canvas) vista.canvas.style.cursor = id ? 'pointer' : '';
+  }
+  return false;
+}
+
+function upNavegando(e) {
+  if (arr && arr.nav) {
+    try { e.currentTarget.releasePointerCapture(e.pointerId); } catch (_) { /* já solto */ }
+    arr = null;
+    rt.arrastando = false;
+    rt.redesenhar();
+    return true;
+  }
+  const ps = pendSel;
+  pendSel = null;
+  if (ps && Math.hypot(e.clientX - ps.cx, e.clientY - ps.cy) <= 5) {
+    const st = marcStore.get();
+    if (ps.id || st.sel) { selecionar(ps.id); rt.redesenhar(); }
+    // região de operador com ação de clique (radar sem calibração → assistente)
+    const it = ps.id && st.itens.find((i) => i.id === ps.id);
+    const r = it && it.vinc && regiaoDoItem(it);
+    if (r && r.def.aoClicar) { try { r.def.aoClicar(paramsDe(r.no), r.no); } catch (err) { console.warn('[regiões] clique', err); } }
+  }
+  return false;
+}
+
+// ---- teclado das seleções: setas (ajuste fino) sempre; Esc, Delete e desfazer com o widget fechado
+if (typeof window !== 'undefined') {
+  window.addEventListener('keydown', (e) => {
+    const st = marcStore.get();
+    if (!st.sel || !vista.ok) return;
+    const t = e.target;
+    if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+    if (document.querySelector('.pje, .vde')) return;
+    const pega = () => { e.preventDefault(); e.stopImmediatePropagation(); };
+    const seta = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+    if (seta && !e.altKey && !e.ctrlKey && !e.metaKey) {
+      // 1 px da tela (⇧: 10), convertido para a fonte; com espelho, a seta segue o que se vê
+      const k = (e.shiftKey ? 10 : 1) * vista.dpr;
+      const sgx = vista.fd !== vista.fs ? -1 : 1;
+      const du = (seta[0] * k * sgx * vista.sw) / (vista.dw * vista.W), dv = (seta[1] * k * vista.sh) / (vista.dh * vista.H);
+      const ids = st.selN.length ? st.selN : [st.sel];
+      const c = (v) => Math.max(0, Math.min(1, v));
+      pega();
+      confirmar((itens) => itens.map((it) => (!ids.includes(it.id) || it.travado ? it : { ...it, pts: it.pts.map(([u, v]) => [c(u + du), c(v + dv)]) })));
+      return;
+    }
+    if (rt.widgetAtivo) return;      // com o widget aberto, Esc/Delete/desfazer são dele (FerramentasMouse)
+    if (e.key === 'Escape') { pega(); selecionar(null); rt.redesenhar(); return; }
+    if (e.key === 'Delete' || e.key === 'Backspace') { pega(); apagar(st.sel); return; }
+    if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+      const k = e.key.toLowerCase();
+      if (k === 'z' && !e.shiftKey && st.podeDesfazer) { pega(); desfazerM(); }
+      else if (((k === 'z' && e.shiftKey) || k === 'y') && st.podeRefazer) { pega(); refazerM(); }
+    }
+  }, true);
 }
 
 export function ponteiroUp(e) {
@@ -1015,7 +1252,7 @@ export function ponteiroUp(e) {
     return true;
   }
   const f = ferramenta();
-  if (!f) return false;
+  if (!f) return upNavegando(e);
   try { e.currentTarget.releasePointerCapture(e.pointerId); } catch (_) { /* já solto */ }
   if (arr && arr.modo === 'pincel') { arr = null; terminarPincel(); return true; }
   if (arr && arr.modo === 'criar' && rt.rascunho) {
@@ -1229,6 +1466,12 @@ function contextoVideo({ area = null, item = null, ponto = null }) {
     ctx.apagar = () => apagar(item.id);
     ctx.duplicar = () => criarVarias([{ ...item, id: undefined, nome: item.nome + ' (cópia)', pts: item.pts.map(([u, v]) => [Math.min(1, u + 0.02), Math.min(1, v + 0.02)]) }]);
     if (temArea && item.tipo !== 'elipse') ctx.trocarClasse = (cls) => atualizar(item.id, { funcao: 'projeto_exemplo', ...dadosExemplo(cls) });
+  }
+  // região de um operador (cv/regioes.js): as ações dela (components/regioes-acoes.js), não as de marcação
+  if (item && item.vinc) {
+    ctx.regiao = item.id;
+    ctx.definirFuncao = null; ctx.trocarClasse = null; ctx.duplicar = null; ctx.rotular = null; ctx.usarComoRotulo = null;
+    ctx.apagar = podeApagar(item) ? () => apagar(item.id) : null;
   }
   return ctx;
 }

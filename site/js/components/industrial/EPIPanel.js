@@ -10,6 +10,7 @@
  * capacete / sem capacete / colete / sem colete), para revisar e treinar o
  * RF-DETR no Treinar.
  */
+import { confirmar } from '../dialogo.js';
 import { html, useState, useEffect } from '../../vendor.js';
 import { Panel } from '../Panel.js';
 import { useStore, store, persist } from '../../state/store.js';
@@ -66,7 +67,7 @@ export function EPIPanel({ onClose, ...layout }) {
       <div class="row tight" style=${{ gap: '6px', flexWrap: 'wrap' }}>
         <button class="btn ${no && no.enabled ? '' : 'accent'}" onClick=${() => { ativarEPI({ abrirPipeline: true }); msg('Pose RTMO + EPI no Pipeline.'); }}>
           ${no ? (no.enabled ? 'No Pipeline ✓' : 'Ligar no Pipeline') : 'Adicionar ao Pipeline'}</button>
-        <button class="btn" onClick=${() => { if (confirm('Zerar votos, zonas e eventos do EPI?')) { canalEpi.zerar(); msg('Sessão nova.'); } }}>Nova sessão</button>
+        <button class="btn" onClick=${async () => { if (await confirmar('Zerar votos, zonas e eventos do EPI?', { titulo: 'Nova sessão', ok: 'Zerar e começar', perigo: true })) { canalEpi.zerar(); msg('Sessão nova.'); } }}>Nova sessão</button>
       </div>
       ${aviso && html`<p class="hint tight" style=${{ color: /^⚠/.test(aviso) ? 'var(--err)' : 'var(--ok)' }}>${aviso}</p>`}
       ${r && !r.modelos && html`<p class="hint tight">Carregando o MobileCLIP2 (≈ 110 MB na primeira vez, depois fica no aparelho)…</p>`}

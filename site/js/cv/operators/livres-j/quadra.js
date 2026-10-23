@@ -34,6 +34,8 @@ import { corTronco } from '../../runtime/livres-j/sessao.js';
 import {
   obterSessao, publicar, publicarQuadro, quadroPedido, geracaoSessao, estaPausado,
 } from '../../runtime/livres-j/canal.js';
+import { registrarRegiao, arred } from '../../regioes.js';
+import { vista } from '../../marcacoes.js';
 
 const G = 'CV-35';
 const DETECTORES = { 'RF-DETR small': 'rfdetr-small', 'RF-DETR nano': 'rfdetr-nano', YOLOX: 'yolox' };
@@ -165,6 +167,8 @@ export const analise = {
   group: G,
   model: 'rfdetr-small',
   overlayOnly: true,
+  // «⚙ Calibrar quadra» (components/calibrar.js): no nó do Pipeline, nos painéis e no radar do vídeo
+  calibravel: { rotulo: 'Calibrar quadra (esporte e 4 cantos)' },
   desc: 'Jogadores e bola (do detector anterior na cadeia ou RF-DETR próprio), IDs, times pela cor do ' +
         'uniforme, calibração da quadra por 4+ pontos (homografia) → radar 2D, mapa de calor, distância, ' +
         'velocidade e zonas por jogador; posse e passes (futebol, futsal, basquete), quique dentro/fora e ' +
@@ -188,6 +192,7 @@ export const analise = {
     calibracao: { type: 'text', default: '', max: 2400, label: 'Calibração (preenchida pelo painel Quadra)' },
     mostrarLinhas: { type: 'bool', default: true, label: 'Desenhar as linhas da quadra calibrada' },
     radar: { type: 'enum', options: ['nenhum', 'canto inferior direito', 'canto inferior esquerdo', 'canto superior direito'], default: 'canto inferior direito', label: 'Radar no vídeo' },
+    radarCaixa: { type: 'text', default: '', max: 60, label: 'Radar: posição e tamanho (x1,y1,x2,y2 em 0–1; arraste no vídeo)' },
     rotulos: { type: 'enum', options: ['id e velocidade', 'id', 'nenhum'], default: 'id e velocidade', label: 'Rótulos' },
     rastroBola: { type: 'bool', default: true, label: 'Rastro da bola' },
     everyMs: { type: 'int', min: 0, max: 2000, step: 50, default: 0, label: 'Intervalo mín. do detector próprio (ms)' },
@@ -312,7 +317,7 @@ export const analise = {
   desenhar(ctx, p, state, esp, L, W) {
     const { w, h } = ctx, ov = ctx.overlay, cal = state.cal, v = state.vis;
     if (cal && p.mostrarLinhas && state.linhas) {
-      for (const [x1, y1, x2, y2] of state.linhas) ov.push({ type: 'line', x1: x1 * w, y1: y1 * h, x2: x2 * w, y2: y2 * h, color: 'rgba(255,255,255,0.55)', width: 1.2 });
+      for (const [x1, y1, x2, y2] of state.linhas) ov.push({ type: 'line', x1: x1 * w, y1: y1 * h, x2: x2 * w, y2: y2 * h, color: 'rgba(255,255,255,0.55)', width: 1.2, agora: true });
     }
     if (!v) {
       ctx.metrics['quadra'] = ctx.metrics['quadra'] || 'aguardando detecções…';
@@ -364,15 +369,17 @@ export const analise = {
 
   /** Radar no canto do vídeo: só linhas e pontos (o overlay não tem preenchimento). */
   radar(ov, p, r, w, h, esp, L, W, cor) {
-    const larg = Math.min(0.34 * w, 0.42 * h * (L / W));
-    const k = larg / L, alt = W * k, m = 10;
-    const x0 = p.radar.includes('esquerdo') ? m : w - larg - m;
-    const y0 = p.radar.includes('superior') ? m + 28 : h - alt - m;
+    // caixa do radar: a arrastada no vídeo (radarCaixa, cv/regioes.js) ou a do canto escolhido
+    const cx = caixaRadar(p, w, h, L, W);
+    const k = cx.larg / L;
+    const x0 = cx.x0, y0 = cx.y0;
     const X = (x) => x0 + x * k, Y = (y) => y0 + y * k;
-    for (const [a, b, c, d] of esp.linhas(L, W)) ov.push({ type: 'line', x1: X(a), y1: Y(b), x2: X(c), y2: Y(d), color: 'rgba(255,255,255,0.85)', width: 1 });
+    for (const [a, b, c, d] of esp.linhas(L, W)) ov.push({ type: 'line', x1: X(a), y1: Y(b), x2: X(c), y2: Y(d), color: 'rgba(255,255,255,0.85)', width: 1, agora: true });
     if (!r.cfg || !r.cfg.calibrada) {
-      ov.push({ type: 'line', x1: X(0), y1: Y(0), x2: X(L), y2: Y(W), color: 'rgba(248,113,113,0.7)', width: 1 });
-      ov.push({ type: 'line', x1: X(L), y1: Y(0), x2: X(0), y2: Y(W), color: 'rgba(248,113,113,0.7)', width: 1 });
+      ov.push({ type: 'line', x1: X(0), y1: Y(0), x2: X(L), y2: Y(W), color: 'rgba(248,113,113,0.7)', width: 1, agora: true });
+      ov.push({ type: 'line', x1: X(L), y1: Y(0), x2: X(0), y2: Y(W), color: 'rgba(248,113,113,0.7)', width: 1, agora: true });
+      // convite: clicar no radar (região editável, cv/regioes.js) abre «⚙ Calibrar quadra»
+      ov.push({ type: 'banner', x: X(0) + 2, y: Y(0) + 2, text: 'Sem calibração — clique para calibrar', color: '#f87171', agora: true });
       return;
     }
     for (const j of r.jogadores) {
@@ -385,5 +392,93 @@ export const analise = {
     }
   },
 };
+
+/** Caixa do radar em px (x0, y0, larg, alt), com a proporção da quadra. */
+function caixaRadar(p, w, h, L, W) {
+  const c = lerCaixa(p.radarCaixa);
+  if (c) {
+    // cabe na caixa arrastada, com a proporção L×W, encostado no canto de cima à esquerda dela
+    const bw = (c[2] - c[0]) * w, bh = (c[3] - c[1]) * h;
+    const larg = Math.max(20, Math.min(bw, bh * (L / W)));
+    return { x0: c[0] * w, y0: c[1] * h, larg, alt: larg * (W / L) };
+  }
+  // margens proporcionais à largura (10 e 28 px num quadro de 480): a caixa padrão, em 0–1, não muda
+  // quando o modo automático troca a largura do pipeline (a região arrastável fica estável)
+  const larg = Math.min(0.34 * w, 0.42 * h * (L / W)), alt = W * (larg / L), m = w * (10 / 480);
+  const x0 = p.radar.includes('esquerdo') ? m : w - larg - m;
+  const y0 = p.radar.includes('superior') ? m + w * (28 / 480) : h - alt - m;
+  return { x0, y0, larg, alt };
+}
+function lerCaixa(t) {
+  const v = String(t || '').split(',').map(Number);
+  if (v.length !== 4 || !v.every(Number.isFinite)) return null;
+  const c = [Math.min(v[0], v[2]), Math.min(v[1], v[3]), Math.max(v[0], v[2]), Math.max(v[1], v[3])];
+  return c[2] - c[0] > 0.01 && c[3] - c[1] > 0.01 ? c : null;
+}
+
+// ------------------------------------------------------------ regiões editáveis com o mouse (cv/regioes.js)
+
+const CANTOS = ['c00', 'cL0', 'cLW', 'c0W'];
+const lerCal = (p) => { try { const c = JSON.parse(p.calibracao || 'null'); return c && typeof c === 'object' ? c : null; } catch (_) { return null; } };
+/** Os 4 cantos da quadra no quadro (0–1), pela homografia da calibração atual. */
+function cantosDaCalibracao(p) {
+  const c = lerCal(p);
+  if (!c || c.esporte !== p.esporte) return null;
+  const { L, W } = medidas(p.esporte, p.comprimento, p.largura);
+  const cal = montarCalibracao(c, p.esporte, L, W);
+  if (!cal || cal.erro) return null;
+  const out = [];
+  for (const [x, y] of [[0, 0], [L, 0], [L, W], [0, W]]) {
+    const q = aplicar(cal.Hi, x, y);
+    if (!q || q[2] <= 0 || Math.abs(q[0]) > 3 || Math.abs(q[1]) > 3) return null;
+    out.push([q[0], q[1]]);
+  }
+  return out;
+}
+registrarRegiao('quadra.analise', {
+  chave: 'cantos', nome: 'Quadra · cantos', tipo: 'perspectiva', cor: '#22d3ee',
+  rotulos: ['canto (0, 0)', 'canto (L, 0)', 'canto (L, W)', 'canto (0, W)'],
+  ferramentas: ['perspectiva', 'retangulo'],
+  ler: (p) => cantosDaCalibracao(p),
+  // sem calibração: um trapézio de transmissão (fundo perto embaixo) para arrastar até as linhas
+  padrao: () => [[0.16, 0.86], [0.3, 0.36], [0.7, 0.36], [0.84, 0.86]],
+  gravar(p, pts) {
+    const c = lerCal(p) || {};
+    const pares = CANTOS.map((id, i) => ({ id, u: Math.round(pts[i][0] * 1e4) / 1e4, v: Math.round(pts[i][1] * 1e4) / 1e4 }));
+    return { calibracao: JSON.stringify({ esporte: p.esporte, pares, aros: c.esporte === p.esporte && Array.isArray(c.aros) ? c.aros : [],
+      w: c.w || 640, h: c.h || 360, ...(c.aroR ? { aroR: c.aroR } : {}) }) };
+  },
+  apagar: () => ({ calibracao: '' }),
+  // prévia das linhas pela geometria arrastada (antes de soltar, o operador ainda desenha a anterior)
+  desenho(pts, p) {
+    const { L, W } = medidas(p.esporte, p.comprimento, p.largura);
+    const cal = montarCalibracao({ pares: CANTOS.map((id, i) => ({ id, u: pts[i][0], v: pts[i][1] })) }, p.esporte, L, W);
+    return cal && !cal.erro ? linhasNaImagem(p.esporte, L, W, cal.Hi) : [];
+  },
+});
+registrarRegiao('quadra.analise', {
+  chave: 'radar', nome: 'Quadra · radar', tipo: 'retangulo', cor: '#fde047',
+  campos: ['radarCaixa'],
+  ferramentas: ['retangulo'],
+  ler(p) {
+    if (p.radar === 'nenhum') return null;
+    // o tamanho do quadro do pipeline (as margens do radar são em px dele)
+    const w = 480, h = w * ((vista.sh || 9) / (vista.sw || 16));
+    const { L, W } = medidas(p.esporte, p.comprimento, p.largura);
+    const c = caixaRadar(p, w, h, L, W);
+    return [[c.x0 / w, c.y0 / h], [(c.x0 + c.larg) / w, (c.y0 + c.alt) / h]];
+  },
+  gravar(p, pts) {
+    const [a, b] = arred(pts);
+    return { radarCaixa: [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])].join(','),
+      ...(p.radar === 'nenhum' ? { radar: 'canto inferior direito' } : {}) };
+  },
+  apagar: () => ({ radar: 'nenhum', radarCaixa: '' }),
+  // sem calibração, clicar no radar abre o assistente (components/calibrar.js)
+  aoClicar(p) {
+    if (cantosDaCalibracao(p) || typeof window === 'undefined') return;
+    window.dispatchEvent(new CustomEvent('aiv:calibrar', { detail: { op: 'quadra.analise' } }));
+  },
+});
 
 export default [analise];

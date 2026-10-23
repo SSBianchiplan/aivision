@@ -19,6 +19,7 @@
  * Carregado sob demanda (SobDemanda.js), como os painéis de módulo.
  */
 
+import { confirmar, perguntar } from './dialogo.js';
 import { html, useState, useEffect, useRef, useCallback } from '../vendor.js';
 import { useStore, store, persist } from '../state/store.js';
 import { Panel } from './Panel.js';
@@ -164,7 +165,7 @@ function PassoProjeto({ p, projetos, irPara }) {
                        onKeyDown=${(e) => { if (e.key === 'Enter') e.target.blur(); }} />
                 ${i < 9 && html`<kbd title="atalho no editor">${i + 1}</kbd>`}
                 <button class="btn tiny" aria-label=${`Apagar a classe ${c.nome}`} title="Apagar a classe (e as caixas dela)"
-                        onClick=${() => { if (window.confirm(`Apagar a classe «${c.nome}» e as caixas dela?`)) apagarClasse(i).catch((er) => setMsg(er.message)); }}>✕</button>
+                        onClick=${async () => { if (await confirmar(`Apagar a classe «${c.nome}» e as caixas dela?`, { titulo: 'Apagar classe', ok: 'Apagar classe', cancelar: 'Manter', perigo: true })) apagarClasse(i).catch((er) => setMsg(er.message)); }}>✕</button>
               </li>`)}
           </ul>
           <div class="pj-lin">
@@ -174,7 +175,7 @@ function PassoProjeto({ p, projetos, irPara }) {
           </div>`}
         <div class="row tight">
           <button class="btn accent" onClick=${() => irPara('prints')}>Próximo: prints ›</button>
-          <button class="btn danger" onClick=${() => { if (window.confirm(`Apagar o projeto «${p.nome}» e os prints DESTE aparelho? (o que já está no Treinar fica lá)`)) apagarProjeto(p.id); }}>Apagar</button>
+          <button class="btn danger" onClick=${async () => { if (await confirmar(`Apagar o projeto «${p.nome}» e os prints DESTE aparelho? (o que já está no Treinar fica lá)`, { titulo: 'Apagar projeto', ok: 'Apagar projeto', cancelar: 'Manter', perigo: true })) apagarProjeto(p.id); }}>Apagar</button>
         </div>`}
       ${msg && html`<p class="pj-msg" role="status">${msg}</p>`}
     </section>`;
@@ -204,7 +205,7 @@ function ArvorePastas({ p, prints, onSoltar }) {
 function AcoesPasta({ p, setMsg }) {
   const nova = async (sub) => {
     const base = sub && p.pasta ? p.pasta + '/' : '';
-    const n = window.prompt(sub ? `Nome da subpasta de «${p.pasta || p.nome}»:` : 'Nome da pasta (use / para subpasta):', '');
+    const n = await perguntar(sub ? `Nome da subpasta de «${p.pasta || p.nome}»:` : 'Nome da pasta (use / para subpasta):', { titulo: sub ? 'Nova subpasta' : 'Nova pasta', ok: 'Criar pasta' });
     if (!n) return;
     try { await criarPasta(base + n); } catch (e) { setMsg(e.message); }
   };
@@ -212,8 +213,8 @@ function AcoesPasta({ p, setMsg }) {
     <div class="pj-lin pj-pasta-acoes">
       <button class="btn tiny" onClick=${() => nova(false)}>+ Pasta</button>
       <button class="btn tiny" disabled=${!p.pasta} onClick=${() => nova(true)}>+ Subpasta</button>
-      <button class="btn tiny" disabled=${!p.pasta} onClick=${() => { const n = window.prompt('Novo nome da pasta:', p.pasta); if (n) renomearPasta(p.pasta, n).catch((e) => setMsg(e.message)); }}>Renomear</button>
-      <button class="btn tiny" disabled=${!p.pasta} onClick=${() => { if (window.confirm(`Apagar a pasta «${p.pasta}»? Os prints sobem para a pasta-mãe.`)) apagarPasta(p.pasta); }}>Apagar</button>
+      <button class="btn tiny" disabled=${!p.pasta} onClick=${async () => { const n = await perguntar('Novo nome da pasta:', { titulo: 'Renomear pasta', padrao: p.pasta, ok: 'Renomear' }); if (n) renomearPasta(p.pasta, n).catch((e) => setMsg(e.message)); }}>Renomear</button>
+      <button class="btn tiny" disabled=${!p.pasta} onClick=${async () => { if (await confirmar(`Apagar a pasta «${p.pasta}»? Os prints sobem para a pasta-mãe.`, { titulo: 'Apagar pasta', ok: 'Apagar pasta', cancelar: 'Manter', perigo: true })) apagarPasta(p.pasta); }}>Apagar</button>
     </div>`;
 }
 
@@ -324,7 +325,7 @@ function PassoPrints({ p, prints, abrirEditor }) {
               <option value="">${p.nome} (raiz)</option>
               ${p.pastas.map((c) => html`<option key=${c} value=${c}>${c}</option>`)}
             </select>
-            <button class="btn tiny danger" onClick=${() => { if (window.confirm('Apagar este print do aparelho?')) { apagarPrint(pr.id); setSel(null); } }}>Apagar</button>
+            <button class="btn tiny danger" onClick=${async () => { if (await confirmar('Apagar este print do aparelho?', { titulo: 'Apagar print', ok: 'Apagar print', cancelar: 'Manter', perigo: true })) { apagarPrint(pr.id); setSel(null); } }}>Apagar</button>
           </div>
         </div>`}
       ${msg && html`<p class="pj-msg" role="status">${msg}</p>`}

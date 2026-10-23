@@ -40,9 +40,11 @@
  *   criarTomada(trilha 33×3, opc) · listarTomadas() · lerTomada(id) · aplicarTomada(id, opc) ·
  *   estado(). O Studio se registra lá ao montar (registrarStudio) e sai ao desmontar.
  */
+import { confirmar, perguntar } from '../dialogo.js';
 import { html, useState, useEffect, useRef, useCallback } from '../../vendor.js';
 import { store, persist } from '../../state/store.js';
 import { FonteStudio, fonteStudioAberta } from '../studio/FonteStudio.js';
+import { FerramentasStudio } from '../studio/FerramentasStudio.js';
 import { estadoFonte, ouvirFonte } from '../../camera/fonte-app.js';
 import { defaultParams } from '../../cv/registry.js';
 import { newNodeId } from '../../cv/executor.js';
@@ -879,7 +881,7 @@ export function StudioMotion3D({ onClose, displayCanvas, onResetState }) {
 
   const apagar = useCallback(async (meta) => {
     setMenu(null);
-    if (!confirm(`Apagar ${meta.nome} deste navegador?`)) return;
+    if (!(await confirmar(`Apagar ${meta.nome} deste navegador?`, { titulo: 'Apagar tomada', ok: 'Apagar tomada', cancelar: 'Manter', perigo: true }))) return;
     naoSalvas.current.delete(meta.id);
     try { await armazem.apagar(meta.id); } catch (_) { /* não salva */ }
     if (play && play.tomada.id === meta.id) setPlay(null);
@@ -1347,7 +1349,7 @@ export function StudioMotion3D({ onClose, displayCanvas, onResetState }) {
                 ${menu === 'mod:' + m.id && html`<div class="m3d-menu" role="menu">
                   <button role="menuitem" onClick=${() => { setMenu(null); usarModelo(m); }}>${m.tipo === 'marionete' ? 'Abrir na Marionete 2D' : 'Usar como avatar'}</button>
                   ${m.tipo !== 'marionete' && html`<button role="menuitem" onClick=${async () => { setMenu(null); const r = await armazem.lerModelo(m.id); if (r) baixar(new Blob([r.bytes]), r.arquivo || `${m.nome}.${m.formato}`); }}>Baixar o arquivo</button>`}
-                  <button role="menuitem" class="perigo" onClick=${async () => { setMenu(null); if (!confirm(`Apagar ${m.nome} deste navegador?`)) return; await armazem.apagarModelo(m.id); if (avatar && avatar.id === m.id) { avatar.rig.destruir(); setAvatar(null); setOpc((o) => ({ ...o, avatar: 'capsulas' })); } recarregarModelos(); }}>Apagar</button>
+                  <button role="menuitem" class="perigo" onClick=${async () => { setMenu(null); if (!(await confirmar(`Apagar ${m.nome} deste navegador?`, { titulo: 'Apagar modelo', ok: 'Apagar modelo', cancelar: 'Manter', perigo: true }))) return; await armazem.apagarModelo(m.id); if (avatar && avatar.id === m.id) { avatar.rig.destruir(); setAvatar(null); setOpc((o) => ({ ...o, avatar: 'capsulas' })); } recarregarModelos(); }}>Apagar</button>
                 </div>`}
               </span>`}
             </div>`)}
@@ -1355,7 +1357,7 @@ export function StudioMotion3D({ onClose, displayCanvas, onResetState }) {
             <div key=${t.id} class=${`m3d-cartao ${play && play.tomada.id === t.id ? 'sel' : ''}`} role="button" tabindex="0" aria-label=${`Tomada ${t.nome}`}
               onClick=${() => carregar(t)} onKeyDown=${(e) => { if (e.key === 'Enter') carregar(t); }}>
               <img class="m3d-mini" src=${t.thumb || ''} alt="" />
-              <b onDblClick=${(e) => { e.stopPropagation(); const n = prompt('Novo nome da tomada:', t.nome); if (n) renomear(t, n); }}>${t.naoSalva ? '• ' : ''}${t.nome}</b>
+              <b onDblClick=${async (e) => { e.stopPropagation(); const n = await perguntar('Novo nome da tomada:', { titulo: 'Renomear tomada', padrao: t.nome, ok: 'Renomear' }); if (n) renomear(t, n); }}>${t.naoSalva ? '• ' : ''}${t.nome}</b>
               <small>Animation Sequence · ${t.quadros} q · ${numero(t.quadros / (t.fps || 30), 1)} s</small>
               <small class="m3d-orig">${(ORIGENS[t.origem] || {}).source_type || t.origem}</small>
               <span class="m3d-menu-w m3d-cartao-acoes" onClick=${(e) => e.stopPropagation()}>
@@ -1370,7 +1372,7 @@ export function StudioMotion3D({ onClose, displayCanvas, onResetState }) {
                   <button role="menuitem" onClick=${() => exportar(t, 'json-robo')}>Exportar JSON gplansis-mocap/1</button>
                   <button role="menuitem" onClick=${() => exportar(t, 'csv')}>Exportar CSV</button>
                   ${avatar && html`<button role="menuitem" onClick=${() => exportar(t, 'glb-avatar')}>Exportar GLB no avatar (${avatar.nome})</button>`}
-                  <button role="menuitem" onClick=${() => { setMenu(null); const n = prompt('Novo nome da tomada:', t.nome); if (n) renomear(t, n); }}>Renomear</button>
+                  <button role="menuitem" onClick=${async () => { setMenu(null); const n = await perguntar('Novo nome da tomada:', { titulo: 'Renomear tomada', padrao: t.nome, ok: 'Renomear' }); if (n) renomear(t, n); }}>Renomear</button>
                   <button role="menuitem" class="perigo" onClick=${() => apagar(t)}>Apagar</button>
                 </div>`}
               </span>
@@ -1448,6 +1450,7 @@ export function StudioMotion3D({ onClose, displayCanvas, onResetState }) {
         <span class="m3d-msg" role="status" aria-live="polite">${msg}</span>
         <span class=${`m3d-selo ${remoto ? 'remoto' : ''}`} title=${remoto ? 'Enviando vídeo a um motor de servidor (com consentimento)' : 'Tudo processado neste aparelho'}>${remoto ? 'GPU REMOTA' : 'ON-DEVICE'}</span>
         <${FonteStudio} classeBotao="m3d-btn" />
+        <${FerramentasStudio} classeBotao="m3d-btn" alvo=${cvVid} copiaDisplay=${true} />
         <button class="m3d-btn m3d-so-cel" onClick=${() => setGaveta(gaveta === 'dir' ? null : 'dir')} aria-expanded=${gaveta === 'dir'}>Detalhes</button>
         <button class="m3d-btn m3d-fechar" onClick=${onClose} aria-label="Fechar o Motion 3D Studio">✕</button>
       </div>

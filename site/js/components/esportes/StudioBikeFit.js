@@ -57,6 +57,7 @@ import { PipelineConteudo } from '../Panels.js';
 import { dadosSessao, htmlRelatorio } from '../../cv/runtime/livres-e/relatorio.js';
 import { Recorder, salvar, formatarTempo, suportado as gravacaoSuportada } from '../../cv/recorder.js';
 import { FonteStudio, fonteStudioAberta } from '../studio/FonteStudio.js';
+import { FerramentasStudio } from '../studio/FerramentasStudio.js';
 import { BotaoVia } from '../../via/BotaoVia.js';   // [VIA] botão «✦ Via» da barra (js/via/)
 
 const OP = 'bikefit.analise';
@@ -440,6 +441,10 @@ function desenharVideo(g, area, est, u) {
     g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
     try { g.drawImage(dc, dx, dy, dw, dh, ox, oy, r.w * c.s, r.h * c.s); } catch (_) { /* canvas sumiu */ }
     paraArea = ([x, y]) => ({ x: ox + x * r.w * c.s, y: oy + y * r.h * c.s });
+    // onde o quadro está no canvas, em px do canvas (Ferramentas do Studio: components/studio/FerramentasStudio.js)
+    const m = g.getTransform();
+    c.tfFerr = { ox: ox * m.a + m.e, oy: oy * m.d + m.f, dw: r.w * c.s * m.a, dh: r.h * c.s * m.d,
+      clip: { x: area.x * m.a + m.e, y: area.y * m.d + m.f, w: area.w * m.a, h: area.h * m.d } };
   } else if (temDc) {
     const fit = Math.min(area.w / dc.width, area.h / dc.height);
     const w = dc.width * fit, h = dc.height * fit;
@@ -2035,6 +2040,7 @@ export function StudioBikeFit({ displayCanvas, onClose, onResetState }) {
       <div class="sbf-barra">
         <b class="sbf-titulo"><span class="sbf-marca">iaVision</span> GPlanSiS<i>|</i>StudioBikeFit</b>
         <${FonteStudio} classeBotao="sbf-btn" />
+        <${FerramentasStudio} classeBotao="sbf-btn" alvo=${canvasRef} copiaDisplay=${true} transformacao=${() => camRef.current && camRef.current.tfFerr} />
         <div class="sbf-seg" role="group" aria-label="Vista">
           <button class=${vista === 'lateral' ? 'on' : ''} onClick=${() => definirVista('lateral')}>Lateral</button>
           <button class=${vista === 'frontal' ? 'on' : ''} onClick=${() => definirVista('frontal')}>Frontal</button>

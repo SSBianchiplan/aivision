@@ -1,0 +1,163 @@
+/* ==========================================================================
+   MODAIS DO SISTEMA (js/components/dialogo.js) — confirmar, avisar, perguntar
+   e o aviso «Apagadas · Desfazer». Carregado sob demanda pelo módulo.
+
+   Os valores repetem os tokens de css/app.css (escuro) e css/theme.css (light
+   e code) porque esta folha também serve a /treino/, que não carrega o
+   theme.css. Se um token do tema mudar, mude aqui também.
+   ========================================================================== */
+
+.aiv-dlg-fundo, .aiv-dlg-aviso {
+  /* escuro (padrão do iaVision) */
+  --dlg-fundo: rgba(0, 10, 9, .62);
+  --dlg-bg: #04413C;
+  --dlg-borda: rgba(255, 255, 255, .16);
+  --dlg-ink: #FFFFFF;
+  --dlg-ink-2: #CFEBE4;
+  --dlg-campo: #022621;
+  --dlg-campo-borda: rgba(255, 255, 255, .28);
+  --dlg-sinal: #FFD84D;          /* destaque amarelo do iaVision */
+  --dlg-sinal-ink: #04413C;
+  --dlg-sinal-borda: #FFD84D;
+  --dlg-foco: #FFD84D;
+  --dlg-btn-bg: rgba(255, 255, 255, .06);
+  --dlg-btn-hover: rgba(255, 255, 255, .12);
+  --dlg-perigo: #FF8A80;         /* --err do escuro, como preenchimento */
+  --dlg-perigo-ink: #2B0A06;
+  --dlg-perigo-hover: #FFA59D;
+  --dlg-erro: #FF8A80;
+  --dlg-sombra: 0 18px 60px rgba(0, 0, 0, .55);
+  --dlg-sans: "Archivo", "Helvetica Neue", -apple-system, "Segoe UI", system-ui, sans-serif;
+}
+
+:root[data-theme="light"] .aiv-dlg-fundo, :root[data-theme="light"] .aiv-dlg-aviso {
+  --dlg-fundo: rgba(4, 65, 60, .35);
+  --dlg-bg: #FFFFFF;
+  --dlg-borda: rgba(4, 65, 60, .24);
+  --dlg-ink: #04413C;
+  --dlg-ink-2: #285C56;
+  --dlg-campo: #FFFFFF;
+  --dlg-campo-borda: rgba(4, 65, 60, .38);
+  --dlg-sinal: #FFD84D;          /* amarelo como PREENCHIMENTO, com tinta escura (8,3:1) */
+  --dlg-sinal-ink: #04413C;
+  --dlg-sinal-borda: #D9AE00;
+  --dlg-foco: #04413C;
+  --dlg-btn-bg: #F1F8F6;
+  --dlg-btn-hover: #E3EEEB;
+  --dlg-perigo: #B3261E;
+  --dlg-perigo-ink: #FFFFFF;     /* 6,5:1 */
+  --dlg-perigo-hover: #8C1D18;
+  --dlg-erro: #B3261E;
+  --dlg-sombra: 0 18px 50px rgba(4, 65, 60, .22);
+}
+
+:root[data-theme="code"] .aiv-dlg-fundo, :root[data-theme="code"] .aiv-dlg-aviso {
+  --dlg-fundo: rgba(0, 0, 0, .6);
+  --dlg-bg: #252526;
+  --dlg-borda: #3C3C3C;
+  --dlg-ink: #CCCCCC;
+  --dlg-ink-2: #BBBBBB;
+  --dlg-campo: #313131;
+  --dlg-campo-borda: #3C3C3C;
+  --dlg-sinal: #FFD84D;
+  --dlg-sinal-ink: #1E1E1E;
+  --dlg-sinal-borda: #FFD84D;
+  --dlg-foco: #FFD84D;
+  --dlg-btn-bg: #313131;
+  --dlg-btn-hover: #3C3C3C;
+  --dlg-perigo: #F14C4C;         /* errorForeground forte do VS Code, só em preenchimento */
+  --dlg-perigo-ink: #1E1E1E;
+  --dlg-perigo-hover: #F48771;
+  --dlg-erro: #F48771;
+  --dlg-sombra: 0 18px 50px rgba(0, 0, 0, .6);
+}
+
+/* ---------------------------------------------------------------- modal */
+.aiv-dlg-fundo {
+  position: fixed; inset: 0; z-index: 9000;   /* acima dos Studios (5000–6000), popovers e gaveta da Via */
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+  background: var(--dlg-fundo);
+  font-family: var(--dlg-sans);
+  animation: aiv-dlg-fade .14s ease-out;
+}
+.aiv-dlg {
+  width: min(440px, 100%);
+  max-height: calc(100vh - 32px); overflow: auto;
+  background: var(--dlg-bg); color: var(--dlg-ink);
+  border: 1px solid var(--dlg-borda); border-top: 3px solid var(--dlg-sinal);
+  border-radius: 12px;
+  box-shadow: var(--dlg-sombra);
+  padding: 18px 20px 16px;
+  outline: none;
+  animation: aiv-dlg-entra .16s ease-out;
+}
+.aiv-dlg.aiv-dlg-perigoso { border-top-color: var(--dlg-perigo); }
+.aiv-dlg-tit { margin: 0 0 8px; font-size: 16px; font-weight: 700; line-height: 1.3; letter-spacing: .01em; }
+.aiv-dlg-msg { margin: 0; font-size: 14px; line-height: 1.5; color: var(--dlg-ink-2); white-space: pre-line; overflow-wrap: anywhere; }
+.aiv-dlg-campo {
+  display: block; width: 100%; margin-top: 12px;
+  font: inherit; font-size: 15px; color: var(--dlg-ink);
+  background: var(--dlg-campo); border: 1px solid var(--dlg-campo-borda); border-radius: 8px;
+  padding: 9px 11px; min-height: 40px;
+}
+.aiv-dlg-campo:focus { outline: 2px solid var(--dlg-foco); outline-offset: 1px; border-color: transparent; }
+.aiv-dlg-campo[aria-invalid="true"] { border-color: var(--dlg-erro); }
+.aiv-dlg-erro { margin: 6px 0 0; font-size: 13px; color: var(--dlg-erro); }
+.aiv-dlg-acoes { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.aiv-dlg-btn {
+  font: inherit; font-size: 14px; font-weight: 600; line-height: 1.2;
+  min-height: 38px; padding: 8px 16px; border-radius: 8px; cursor: pointer;
+  color: var(--dlg-ink); background: var(--dlg-btn-bg); border: 1px solid var(--dlg-borda);
+}
+.aiv-dlg-btn:hover { background: var(--dlg-btn-hover); }
+.aiv-dlg-btn:focus-visible { outline: 2px solid var(--dlg-foco); outline-offset: 2px; }
+.aiv-dlg-ok { background: var(--dlg-sinal); color: var(--dlg-sinal-ink); border-color: var(--dlg-sinal-borda); }
+.aiv-dlg-ok:hover { background: var(--dlg-sinal); filter: brightness(1.06); }
+.aiv-dlg-ok.aiv-dlg-perigo { background: var(--dlg-perigo); color: var(--dlg-perigo-ink); border-color: var(--dlg-perigo); }
+.aiv-dlg-ok.aiv-dlg-perigo:hover { background: var(--dlg-perigo-hover); filter: none; }
+.aiv-dlg-ok.aiv-dlg-perigo:focus-visible { outline-color: var(--dlg-perigo); }
+
+/* celular: folha embaixo, botões largos (o OK em cima, onde o polegar alcança) */
+@media (max-width: 600px) {
+  .aiv-dlg-fundo { align-items: flex-end; padding: 0; }
+  .aiv-dlg {
+    width: 100%; max-height: 85vh;
+    border-radius: 16px 16px 0 0; border-left: 0; border-right: 0; border-bottom: 0;
+    padding: 18px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    animation: aiv-dlg-sobe .2s ease-out;
+  }
+  .aiv-dlg-acoes { flex-direction: column-reverse; }
+  .aiv-dlg-btn { width: 100%; min-height: 46px; font-size: 15px; }
+  .aiv-dlg-campo { font-size: 16px; }   /* 16 px: o iOS não dá zoom no campo */
+}
+
+/* ---------------------------------------------------------------- aviso («Apagadas · Desfazer») */
+.aiv-dlg-aviso {
+  position: fixed; z-index: 9000; left: 50%; bottom: calc(92px + env(safe-area-inset-bottom, 0px));   /* acima da barra de vídeo */
+  transform: translateX(-50%);
+  display: flex; align-items: center; gap: 6px;
+  max-width: calc(100vw - 32px);
+  padding: 8px 8px 8px 16px;
+  background: var(--dlg-bg); color: var(--dlg-ink);
+  border: 1px solid var(--dlg-borda); border-left: 3px solid var(--dlg-sinal); border-radius: 10px;
+  box-shadow: var(--dlg-sombra);
+  font-family: var(--dlg-sans); font-size: 14px;
+  animation: aiv-dlg-fade .14s ease-out;
+}
+.aiv-dlg-aviso-txt { padding-right: 6px; }
+.aiv-dlg-aviso-acao, .aiv-dlg-aviso-x {
+  font: inherit; font-weight: 700; cursor: pointer; border-radius: 7px; min-height: 34px;
+  background: transparent; color: var(--dlg-ink); border: 1px solid transparent; padding: 6px 12px;
+}
+.aiv-dlg-aviso-acao { color: var(--dlg-sinal-ink); background: var(--dlg-sinal); border-color: var(--dlg-sinal-borda); }
+.aiv-dlg-aviso-x { font-size: 18px; line-height: 1; padding: 6px 10px; color: var(--dlg-ink-2); }
+.aiv-dlg-aviso-x:hover { background: var(--dlg-btn-hover); }
+.aiv-dlg-aviso-acao:focus-visible, .aiv-dlg-aviso-x:focus-visible { outline: 2px solid var(--dlg-foco); outline-offset: 2px; }
+
+@keyframes aiv-dlg-fade { from { opacity: 0; } }
+@keyframes aiv-dlg-entra { from { opacity: 0; transform: translateY(6px) scale(.98); } }
+@keyframes aiv-dlg-sobe { from { transform: translateY(100%); } }
+@media (prefers-reduced-motion: reduce) {
+  .aiv-dlg-fundo, .aiv-dlg, .aiv-dlg-aviso { animation: none; }
+}

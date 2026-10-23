@@ -12,9 +12,11 @@
  * câmera, arquivo, tela ou YouTube sem fechar a tela. Gancho de teste:
  * window.aivFisio (injetar(P, t) põe uma pose sintética pelo mesmo caminho do operador).
  */
+import { confirmar } from '../dialogo.js';
 import { html, useState, useEffect, useRef, useCallback } from '../../vendor.js';
 import { useStore, store } from '../../state/store.js';
 import { FonteStudio, fonteStudioAberta } from '../studio/FonteStudio.js';
+import { FerramentasStudio } from '../studio/FerramentasStudio.js';
 import {
   canalFisio, processar, cfgFisio, pacienteAtivo, listaPacientes, novoPaciente, atualizarPaciente, trocarPaciente, removerPaciente,
   assinarPaciente, OPCOES_ART,
@@ -166,6 +168,7 @@ export function StudioFisio({ onClose }) {
       <div class="fis-barra">
         <b class="fis-titulo"><span class="fis-marca">iaVision</span> <span class="fis-gp">GPlanSiS<i>|</i></span>Fisio</b>
         <${FonteStudio} classeBotao="fis-btn" />
+        <${FerramentasStudio} classeBotao="fis-btn" alvo=${cvVid} />
         <span class="fis-seg" role="group" aria-label="Teste">
           ${testes.map((k) => html`<button key=${k} class=${cfg.teste === k ? 'on' : ''} aria-pressed=${cfg.teste === k} onClick=${() => mudarTeste(k)}>${TESTES[k].curto}</button>`)}
         </span>
@@ -189,7 +192,7 @@ export function StudioFisio({ onClose }) {
             <button role="menuitem" onClick=${() => exportar('video')}>Quadro com a pose (PNG)</button>
           </div>`}
         </span>
-        <button class="fis-btn" onClick=${() => { if (confirm('Nova sessão? Medidas e tentativas desta sessão serão apagadas (o cadastro do paciente fica). Exporte antes, se precisar.')) { canalFisio.zerar(); setSelT(null); setMsg('Sessão nova.'); } }}>Nova sessão</button>
+        <button class="fis-btn" onClick=${async () => { if (await confirmar('Nova sessão? Medidas e tentativas desta sessão serão apagadas (o cadastro do paciente fica). Exporte antes, se precisar.', { titulo: 'Nova sessão', ok: 'Apagar e começar', perigo: true })) { canalFisio.zerar(); setSelT(null); setMsg('Sessão nova.'); } }}>Nova sessão</button>
         <${BotaoVia} modulo="fisio" classe="fis-btn" />
         <button class="fis-btn fis-fechar" onClick=${onClose} aria-label="Fechar o Studio Fisio">✕</button>
       </div>
@@ -279,7 +282,7 @@ function EditorPaciente({ pac, lista, onMsg }) {
           ${lista.map((x) => html`<option key=${x.id} value=${x.id}>${x.nome}</option>`)}
         </select>
         <button class="fis-btn" onClick=${() => { novoPaciente(); onMsg('Paciente novo.'); }}>+ Novo</button>
-        ${pac && html`<button class="fis-btn" onClick=${() => { if (confirm(`Apagar o cadastro de ${pac.nome} deste aparelho?`)) removerPaciente(pac.id); }}>Apagar</button>`}
+        ${pac && html`<button class="fis-btn" onClick=${async () => { if (await confirmar(`Apagar o cadastro de ${pac.nome} deste aparelho?`, { titulo: 'Apagar paciente', ok: 'Apagar cadastro', cancelar: 'Manter', perigo: true })) removerPaciente(pac.id); }}>Apagar</button>`}
       </div>
       ${pac && html`<div class="fis-form">
         <label class="largo">Nome ou código (prefira um código ao compartilhar)<input type="text" value=${p.nome} onChange=${(e) => campo('nome', e.target.value)} /></label>

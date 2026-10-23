@@ -158,6 +158,7 @@ export const marcha = {
   op: 'clinica.marcha',
   label: 'Marcha clínica (velocidade, passada, cadência, apoio)',
   group: G, overlayOnly: true,
+  calibravel: { rotulo: 'Calibrar piso (2 linhas a distância conhecida)' },
   desc: 'Marcha de lado para a câmera, sobre o motor da Corrida (pés e pelve por quadro): cadência, tempo de passo, % de ' +
         'apoio de cada pé e, com o PISO CALIBRADO (duas linhas "Marcha · piso" a uma distância conhecida), a velocidade ' +
         'pelo tempo entre as linhas e o comprimento da passada. Sem as linhas, escala aproximada pela estatura. ' + AVISO_SAUDE,

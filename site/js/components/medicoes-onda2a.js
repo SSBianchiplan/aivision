@@ -7,6 +7,7 @@
  * Só números e textos: nada da imagem é guardado (o mapa de fissuras é
  * redesenhado a partir dos pontos medidos).
  */
+import { confirmar } from './dialogo.js';
 import { html, useState } from '../vendor.js';
 import { store, persist } from '../state/store.js';
 import { ler, zerar, csv, hora } from '../cv/runtime/livres-oa/canal.js';
@@ -77,7 +78,7 @@ function SecaoPoka() {
       <button class="btn tiny" onClick=${csvCiclos}>CSV ciclos</button>
       <button class="btn tiny" onClick=${csvDesvios}>CSV desvios</button>
       <button class="btn tiny" onClick=${() => comandar('r.pokayoke', { acao: 'reiniciar_ciclo' })} title="Volta o ciclo atual ao 1º passo">Reiniciar ciclo</button>
-      <button class="btn tiny" onClick=${() => confirm('Zerar ciclos e desvios?') && zerar('r.pokayoke')}>Zerar</button>
+      <button class="btn tiny" onClick=${async () => (await confirmar('Zerar ciclos e desvios?', { ok: 'Zerar', perigo: true })) && zerar('r.pokayoke')}>Zerar</button>
     <//>
     ${d.desvioAtivo && html`<p class="med-aviso" role="alert">DESVIO: ${d.desvioAtivo.texto}</p>`}
     <${Kpis} itens=${[[r.ciclos || 0, 'ciclos'], [r.ok || 0, 'OK'], [r.nok || 0, 'NOK'], [Number.isFinite(r.fpy) ? fmt(100 * r.fpy, 0) + '%' : '—', 'FPY'],
@@ -108,7 +109,7 @@ function SecaoCubagem() {
     <${Cab} titulo="Cubagem na esteira (laser)">
       <button class="btn tiny" onClick=${baixarCsv}>CSV</button>
       <button class="btn tiny" onClick=${() => comandar('r.cubagem', { acao: 'referencia' })} title="Com a esteira vazia">Refazer referência</button>
-      <button class="btn tiny" onClick=${() => confirm('Zerar as caixas?') && zerar('r.cubagem')}>Zerar</button>
+      <button class="btn tiny" onClick=${async () => (await confirmar('Zerar as caixas?', { ok: 'Zerar', perigo: true })) && zerar('r.cubagem')}>Zerar</button>
     <//>
     ${d.aprendendo ? html`<p class="hint tight">Aprendendo a esteira vazia: ${d.refN}/${d.refQuadros} quadros.</p>`
       : d.atual ? html`<p class="hint tight">Sob o laser: altura ${fmt(d.atual.alt, 0)} mm × largura ${fmt(d.atual.larg, 0)} mm</p>` : html`<p class="hint tight">Esteira livre.</p>`}
@@ -129,7 +130,7 @@ function SecaoCubFoto() {
     <${Cab} titulo="Cubagem por foto (2 vistas)">
       <button class="btn tiny" onClick=${() => comandar('r.cubfoto', { acao: 'limpar' })}>Limpar vistas</button>
     <//>
-    ${!d.calibrado && html`<p class="hint tight">Calibre a régua (Ferramentas de mouse → régua → medida conhecida) no plano da face.</p>`}
+    ${!d.calibrado && html`<p class="hint tight">Calibre a régua (Ferramentas de mouse → régua → medida conhecida) no plano da face. <button class="btn tiny cal-btn" onClick=${() => window.dispatchEvent(new CustomEvent('aiv:calibrar', { detail: { op: 'escala' } }))}>⚙ Calibrar régua</button></p>`}
     ${!d.faces.length ? html`<p class="hint tight">Contorne a face com uma área (ou o clique do SAM) com a função "Cubagem · face".</p>`
       : html`<div class="med-tab"><table><thead><tr><th>face</th><th>lados</th><th></th></tr></thead><tbody>${d.faces.map((f) => html`
         <tr key=${f.id}><td>${f.nome}</td><td>${fmt(f.comp, 1)} × ${fmt(f.larg, 1)} ${f.unidade}</td><td>
@@ -163,7 +164,7 @@ function SecaoDoca() {
       ${d && html`<button class="btn tiny" onClick=${baixarEv}>CSV eventos</button>`}
       ${d && html`<button class="btn tiny" onClick=${baixarHist}>CSV conferências</button>`}
       <button class="btn tiny" onClick=${() => comandar('r.doca', { acao: 'encerrar' })} title="Fecha esta conferência e começa outra">Encerrar</button>
-      <button class="btn tiny" onClick=${() => confirm('Zerar contagens e histórico?') && zerar('r.doca')}>Zerar</button>
+      <button class="btn tiny" onClick=${async () => (await confirmar('Zerar contagens e histórico?', { ok: 'Zerar', perigo: true })) && zerar('r.doca')}>Zerar</button>
     <//>
     <div class="med-doca-form">
       <label>Placa/ordem <input value=${f.ordem} onInput=${(e) => setForm({ ...f, ordem: e.target.value })} /></label>
@@ -389,7 +390,7 @@ function SecaoFissuras() {
         <button class="btn tiny" onClick=${() => baixar(`fissuras_${carimbo()}.html`, relatorioFissuras(R), 'text/html')}>Relatório</button>`}
     <//>
     ${!R ? html`<p class="hint tight">Aguardando a primeira medição.</p>` : html`
-      ${R.unidade !== 'mm' && html`<p class="hint tight">Sem régua calibrada: medidas em px. Calibre no plano da parede.</p>`}
+      ${R.unidade !== 'mm' && html`<p class="hint tight">Sem régua calibrada: medidas em px. Calibre no plano da parede. <button class="btn tiny cal-btn" onClick=${() => window.dispatchEvent(new CustomEvent('aiv:calibrar', { detail: { op: 'escala' } }))}>⚙ Calibrar régua</button></p>`}
       <${Kpis} itens=${[[R.fissuras.length, 'fissuras'], [fmt(R.comprimento, R.unidade === 'mm' ? 0 : 0), `${R.unidade} no total`], [fmt(R.larguraMax, 2), `${R.unidade} abertura máx.`]]} />
       ${R.fissuras.length > 0 && html`<div class="med-calor" dangerouslySetInnerHTML=${{ __html: svgFissuras(R, 320) }}></div>
         <div class="med-tab"><table><thead><tr><th>ID</th><th>compr.</th><th>máx.</th><th>média</th><th>classe</th></tr></thead>

@@ -157,7 +157,11 @@ export class PipelineExecutor {
           if (Number.isFinite(tR)) { tipo = 'async'; tDados = tR; }
           else if (Number.isFinite(tDados)) { tipo = 'async'; tR = tDados; }
         }
-        entradas.push({ id: node.id, tipo, t: tR, itens: itens || [] });
+        // geometria que vem de PARÂMETRO (linhas da quadra, radar, linha de contagem): é «agora», não de um
+        // quadro — editada com o mouse, aparece na hora em vez de esperar o atraso da sincronia
+        const agora = itens && tipo !== 'proprio' && itens.some((x) => x.agora) ? itens.filter((x) => x.agora) : null;
+        entradas.push({ id: node.id, tipo, t: tR, itens: agora ? itens.filter((x) => !x.agora) : itens || [] });
+        if (agora) entradas.push({ id: node.id + '#agora', tipo: 'proprio', t: NaN, itens: agora });
 
         if (!next || next.width !== ctx.w || next.height !== ctx.h) {
           throw new Error('operador devolveu buffer de tamanho inválido');

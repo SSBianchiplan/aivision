@@ -43,6 +43,7 @@ import { clone } from '../core.js';
 import { iou, colorFor } from '../runtime/opkit.js';
 import { carimboAtual } from '../runtime/tempo-real/carimbo.js';
 import { novoEixo, prever, atualizar, posEm } from '../runtime/tempo-real/kalman.js';
+import { registrarRegiao, arred } from '../regioes.js';
 
 const G = 'CV-04';
 /** Constante de tempo da correção suave do desenho (ms). */
@@ -131,9 +132,13 @@ function associar(p, state, dets, tDet) {
     t.perdido = 0; t.hits++;
     // contagem: cruzou a linha entre o último centro e este?
     if (p.linha !== 'nenhuma' && t.ultimo) {
-      const a = p.linha === 'horizontal' ? t.ultimo.cy : t.ultimo.cx, b = p.linha === 'horizontal' ? cy : cx;
-      if (a < p.posicao && b >= p.posicao) state.contagem.ida++;
-      else if (a >= p.posicao && b < p.posicao) state.contagem.volta++;
+      // ida = do lado negativo para o positivo da linha A→B (horizontal: para baixo; vertical: para a direita)
+      const [A, B] = linhaDe(p);
+      const a = lado(A, B, t.ultimo.cx, t.ultimo.cy), b = lado(A, B, cx, cy);
+      if (a !== b && cruzaSegmento(A, B, [t.ultimo.cx, t.ultimo.cy], [cx, cy])) {
+        if (a < 0 && b >= 0) state.contagem.ida++;
+        else if (a >= 0 && b < 0) state.contagem.volta++;
+      }
     }
     t.ultimo = { cx, cy };
     if (p.rastro) { t.rastro.push([cx, cy]); if (t.rastro.length > p.rastro) t.rastro.shift(); }
@@ -184,6 +189,7 @@ export const byteTrack = {
     rastro: { type: 'int', min: 0, max: 90, step: 5, default: 30, label: 'Rastro (pontos)' },
     linha: { type: 'enum', options: ['nenhuma', 'horizontal', 'vertical'], default: 'nenhuma', label: 'Linha de contagem' },
     posicao: { type: 'float', min: 0.1, max: 0.9, step: 0.05, default: 0.5, label: 'Posição da linha' },
+    linhaPts: { type: 'text', default: '', max: 60, label: 'Linha livre (x1,y1,x2,y2 em 0–1; arraste no vídeo)' },
     mostrarNome: { type: 'bool', default: true, label: 'Mostrar classe' },
     prever: { type: 'bool', default: true, label: 'Desenhar a posição prevista (tempo real)' },
     fantasmaMs: { type: 'int', min: 0, max: 2000, step: 50, default: 300, label: 'Trilha perdida: mostrar prevista por (ms)' },
@@ -270,9 +276,8 @@ export const byteTrack = {
       }
     }
     if (p.linha !== 'nenhuma') {
-      const L = p.linha === 'horizontal'
-        ? { x1: 0, y1: p.posicao * h, x2: w, y2: p.posicao * h } : { x1: p.posicao * w, y1: 0, x2: p.posicao * w, y2: h };
-      ctx.overlay.push({ type: 'line', ...L, color: '#f87171', width: 2 });
+      const [A, B] = linhaDe(p);
+      ctx.overlay.push({ type: 'line', x1: A[0] * w, y1: A[1] * h, x2: B[0] * w, y2: B[1] * h, color: '#f87171', width: 2 });
       ctx.overlay.push({ type: 'banner', x: 10, y: 10, text: `cruzaram: ${state.contagem.ida} ↓/→ · ${state.contagem.volta} ↑/←`, color: '#f87171' });
     }
     // para a cadeia: a detecção REAL (a mesma até chegar a próxima), com o instante dela
@@ -291,5 +296,27 @@ export const byteTrack = {
     return clone(src);
   },
 };
+
+/** A linha de contagem (0–1 do quadro): a livre arrastada no vídeo ou a horizontal/vertical na posição. */
+function linhaDe(p) {
+  const v = String(p.linhaPts || '').split(',').map(Number);
+  if (v.length === 4 && v.every(Number.isFinite) && Math.hypot(v[2] - v[0], v[3] - v[1]) > 0.01) return [[v[0], v[1]], [v[2], v[3]]];
+  return p.linha === 'vertical' ? [[p.posicao, 1], [p.posicao, 0]] : [[0, p.posicao], [1, p.posicao]];
+}
+const lado = (A, B, x, y) => ((B[0] - A[0]) * (y - A[1]) - (B[1] - A[1]) * (x - A[0]) >= 0 ? 1 : -1);
+/** O passo do centro (P→Q) cruza o SEGMENTO A–B (não a reta inteira)? Linha de ponta a ponta: sempre. */
+function cruzaSegmento(A, B, P, Q) {
+  const d = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+  return d(P, Q, A) * d(P, Q, B) <= 0;
+}
+
+// linha de contagem editável com o mouse (cv/regioes.js)
+registrarRegiao('track.bytetrack', {
+  chave: 'linha', nome: 'Rastreio · linha de contagem', tipo: 'linha', cor: '#f87171', ferramentas: ['linha'],
+  ler: (p) => (p.linha === 'nenhuma' ? null : linhaDe(p)),
+  campos: ['linhaPts'],
+  gravar: (p, pts) => ({ linhaPts: arred(pts).flat().join(',') }),
+  apagar: () => ({ linha: 'nenhuma', linhaPts: '' }),
+});
 
 export default [byteTrack];

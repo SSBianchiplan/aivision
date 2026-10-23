@@ -11,6 +11,7 @@
  * aparece se o adaptador existe e há um projeto ativo.
  */
 
+import { perguntar } from '../components/dialogo.js';
 import { registrarAcao, mostrarBalao, dadosDe, areaDe } from '../components/menu-contexto.js';
 import { ativo, criarPasta, classePorNome, abrirPainel, avisar } from './base.js';
 
@@ -30,7 +31,7 @@ function pastasItens() {
 
 async function escolherPasta(sub) {
   if (sub !== '\u0000nova') return sub;
-  const n = window.prompt('Nome da pasta (use / para subpasta, ex.: turno-A/defeitos-novos):', ativo().pasta ? ativo().pasta + '/' : '');
+  const n = await perguntar('Nome da pasta (use / para subpasta, ex.: turno-A/defeitos-novos):', { titulo: 'Nova pasta', padrao: ativo().pasta ? ativo().pasta + '/' : '', ok: 'Criar pasta' });
   if (!n) return null;
   return criarPasta(n);
 }

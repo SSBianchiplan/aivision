@@ -627,7 +627,7 @@ export function BikeFit3D({ onClose }) {
         <input id=${'bf3d-arq-' + def.k} type="file" accept="video/*" hidden onChange=${(e) => { const f = e.target.files && e.target.files[0]; if (f) abrirArquivo(def.k, f, f.name); e.target.value = ''; }} />
         <button class="bf3d-btn ${v.calibrando ? 'on' : ''}" disabled=${!v.video}
           onClick=${() => { if (v.calibrando) v.calibrando = false; else { v.cliques = {}; v.calibrando = true; v.cal = null; } atualizar(); }}>
-          ${v.calibrando ? 'Cancelar' : nCliques === 5 ? 'Recalibrar' : 'Calibrar (5 cliques)'}</button>
+          ${v.calibrando ? 'Cancelar' : nCliques === 5 ? '⚙ Recalibrar' : '⚙ Calibrar (5 cliques)'}</button>
         ${v.calibrando && nCliques > 0 && html`<button class="bf3d-btn" onClick=${() => { const ks = PONTOS_REF.map((p) => p.k).filter((k) => v.cliques[k]); const c = { ...v.cliques }; delete c[ks[ks.length - 1]]; v.cliques = c; atualizar(); }}>Desfazer</button>`}
         <label class="bf3d-chk" title="Marque se a imagem desta fonte já vem espelhada (selfie)">
           <input type="checkbox" checked=${v.espelhada} onChange=${(e) => { v.espelhada = e.target.checked; recalibrar(); }} /> espelhada</label>

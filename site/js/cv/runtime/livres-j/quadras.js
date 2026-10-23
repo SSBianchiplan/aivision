@@ -229,6 +229,23 @@ export const ESPORTES = {
     zonas: ['junto à rede', 'meio', 'fundo'],
     zona(x, y, L) { const d = Math.abs(x - L / 2); return d < 3 ? 'junto à rede' : d <= 6.95 ? 'meio' : 'fundo'; },
   },
+
+  // beach tennis (ITF): 16 × 8 m (duplas), rede no meio; sem linhas de saque
+  'beach tennis': {
+    nome: 'Beach tennis', L: 16, W: 8, ajustavel: null,
+    posse: false, rally: true, arremessos: false, times: 'lado', raioPosse: 1, vMax: 8, rede: true, quique: false,
+    linhas(L, W) { return [...retangulo(0, 0, L, W), seg(L / 2, -0.3, L / 2, W + 0.3)]; },
+    pontos(L, W) {
+      return {
+        c00: [0, 0, 'Canto (esq., em cima)'], c0W: [0, W, 'Canto (esq., embaixo)'],
+        cL0: [L, 0, 'Canto (dir., em cima)'], cLW: [L, W, 'Canto (dir., embaixo)'],
+        r0: [L / 2, 0, 'Rede × lateral (em cima)'], rW: [L / 2, W, 'Rede × lateral (embaixo)'],
+      };
+    },
+    sugestao: ['c00', 'cL0', 'cLW', 'c0W'],
+    zonas: ['junto à rede', 'meio', 'fundo'],
+    zona(x, y, L) { const d = Math.abs(x - L / 2); return d < 2.5 ? 'junto à rede' : d <= 5.5 ? 'meio' : 'fundo'; },
+  },
 };
 export const NOMES_ESPORTES = Object.keys(ESPORTES);
 

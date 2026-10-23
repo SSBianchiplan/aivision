@@ -14,6 +14,7 @@
  *   Resumo de vídeo     linha do tempo clicável, eventos, CSV, abrir no editor
  *   Velocidade          média, mediana, V85, excessos, CSV
  */
+import { confirmar } from './dialogo.js';
 import { html, useState, useEffect, useRef } from '../vendor.js';
 import { ler, zerar, csv, hora } from '../cv/runtime/livres-oa/canal.js';
 import { ROTULO_ESTADO } from '../cv/runtime/livres-oa/alarmes.js';
@@ -82,7 +83,7 @@ function SecaoAEP() {
     <${Cab} titulo="AEP por posto (NR-17)">
       <button class="btn tiny" onClick=${relatorio} disabled=${!postos.length} title="Rascunho para o ergonomista: imprimir ou salvar em PDF">Relatório</button>
       <button class="btn tiny" onClick=${() => baixar(`aep_${carimbo()}.csv`, csvAEP(postos, M), 'text/csv')} disabled=${!postos.length}>CSV</button>
-      <button class="btn tiny" onClick=${() => confirm('Zerar a consolidação da AEP?') && zerar('aep')}>Zerar</button>
+      <button class="btn tiny" onClick=${async () => (await confirmar('Zerar a consolidação da AEP?', { ok: 'Zerar', perigo: true })) && zerar('aep')}>Zerar</button>
     <//>
     <p class="med-aviso" role="note">⚠ ${AVISO_AEP}</p>
     ${d && !d.vivo && html`<p class="hint tight">Coloque <b>Ergonomia (RULA/REBA)</b> antes do nó AEP (preset Segurança do trabalho › AEP).</p>`}
@@ -200,7 +201,7 @@ function SecaoPlanograma() {
     gs.flatMap((g) => g.celulas.map((c) => [g.nome, c.r + 1, c.c + 1, c.estado ? ROTULO_CELULA[c.estado] : '', c.sim != null ? c.sim.toFixed(3) : '', c.pVazio != null ? c.pVazio.toFixed(3) : ''])));
   return html`
     <${Cab} titulo="Vitrine × planograma">
-      <button class="btn tiny" onClick=${() => confirm('Capturar a vitrine ATUAL como referência (arrumada)?') && zerar('planograma_ref')}>Capturar referência</button>
+      <button class="btn tiny" onClick=${async () => (await confirmar('Capturar a vitrine ATUAL como referência (arrumada)?', { titulo: 'Referência do planograma', ok: 'Capturar referência' })) && zerar('planograma_ref')}>Capturar referência</button>
       <button class="btn tiny" onClick=${exp} disabled=${!gs.length}>CSV</button>
     <//>
     ${gs.map((g) => html`<div key=${g.id} style=${{ margin: '6px 0' }}>

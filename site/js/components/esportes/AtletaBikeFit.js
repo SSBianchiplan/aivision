@@ -11,6 +11,7 @@
  * que é a fonte única dos alvos da sessão (operador, tabela, gráficos,
  * selos e relatório leem dali). Regras e fontes em runtime/livres-e/atleta.js.
  */
+import { confirmar } from '../dialogo.js';
 import { html, useState, useEffect, useRef } from '../../vendor.js';
 import {
   obterAtleta, listaAtletas, atualizarAtleta, trocarAtleta, novoAtleta, removerAtleta,
@@ -119,7 +120,7 @@ export function AtletaBikeFit({ perfil, editar = null, onEditar }) {
         </select>
         <button type="button" class="bfa-b" title="Novo atleta" onClick=${() => novoAtleta('Novo atleta')}>+ Novo</button>
         <button type="button" class="bfa-b" title="Remover este atleta" disabled=${lista.length <= 1}
-          onClick=${() => { if (window.confirm(`Remover o atleta "${a.nome}" e os alvos dele?`)) removerAtleta(a.id); }}>Remover</button>
+          onClick=${async () => { if (await confirmar(`Remover o atleta "${a.nome}" e os alvos dele?`, { titulo: 'Remover atleta', ok: 'Remover atleta', cancelar: 'Manter', perigo: true })) removerAtleta(a.id); }}>Remover</button>
       </div>
       <label class="bfa-c bfa-larga"><span>Nome</span>
         <input value=${a.nome} maxlength="60" onInput=${(e) => atualizarAtleta({ nome: e.target.value })} /></label>

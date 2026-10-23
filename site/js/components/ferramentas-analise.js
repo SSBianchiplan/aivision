@@ -15,6 +15,7 @@
  *                     trajetória, perspectiva, análise)
  */
 
+import { perguntar } from './dialogo.js';
 import { html, useState, useEffect, useRef } from '../vendor.js';
 import { useStore } from '../state/store.js';
 import {
@@ -61,7 +62,7 @@ export function OpcoesFerramenta({ ferramenta, box, direita }) {
       <label>Classe <select value=${o.contClasse} aria-label="Classe do contador" onChange=${(e) => setOpc({ contClasse: e.target.value })}>
         ${classes.map((c) => html`<option key=${c} value=${c}>${c}</option>`)}
       </select></label>
-      <button class="btn tiny" onClick=${() => { const n = window.prompt('Nome da nova classe de contagem:'); if (n && n.trim()) setOpc({ contClasse: n.trim().slice(0, 40) }); }}>+ classe</button>
+      <button class="btn tiny" onClick=${async () => { const n = await perguntar('Nome da nova classe de contagem:', { titulo: 'Nova classe', ok: 'Criar classe' }); if (n && n.trim()) setOpc({ contClasse: n.trim().slice(0, 40) }); }}>+ classe</button>
       <span class="ferr-opc-d">1–9 trocam · ⇧+clique tira</span>`;
   } else if (ferramenta === 'sam') {
     const s = rt.sam;
@@ -275,7 +276,7 @@ export function BarraAlinhar({ icone }) {
       <button class="ferr-mini" title="Travar / destravar" aria-label="Travar ou destravar a seleção"
               onClick=${() => { const st = marcStore.get(); travar(ids, !ids.every((id) => (st.itens.find((i) => i.id === id) || {}).travado)); }}>${icone('travar')}</button>
       <button class="ferr-mini" title="Agrupar (camada)" aria-label="Agrupar a seleção"
-              onClick=${() => { const g = window.prompt('Nome do grupo (camada) para as selecionadas — vazio tira do grupo:', ''); if (g != null) definirGrupo(ids, g); }}>${icone('agrupar')}</button>
+              onClick=${async () => { const g = await perguntar('Nome do grupo (camada) para as selecionadas — vazio tira do grupo:', { titulo: 'Agrupar', ok: 'Agrupar' }); if (g != null) definirGrupo(ids, g); }}>${icone('agrupar')}</button>
     </div>`;
 }
 

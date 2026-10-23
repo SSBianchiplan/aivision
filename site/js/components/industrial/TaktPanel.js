@@ -7,6 +7,7 @@
  * Gráficos, calibração do piso e configuração estão na tela cheia
  * GPlanSiS|Takt (StudioTakt.js).
  */
+import { confirmar } from '../dialogo.js';
 import { html, useState, useEffect } from '../../vendor.js';
 import { Panel } from '../Panel.js';
 import { useStore, store } from '../../state/store.js';
@@ -84,10 +85,11 @@ export function TaktPanel({ onClose, ...layout }) {
         <button class="btn tiny" onClick=${() => baixar(motor.intervalosCSV(), `takt_${carimbo()}_intervalos.csv`, 'text/csv')}>Intervalos CSV</button>
         <button class="btn tiny" onClick=${() => baixar(motor.kpiCSV(), `takt_${carimbo()}_kpi.csv`, 'text/csv')}>KPI CSV</button>
         <button class="btn tiny" onClick=${() => baixar(motor.eventosCSV(), `takt_${carimbo()}_eventos.csv`, 'text/csv')}>Eventos CSV</button>
-        <button class="btn tiny" onClick=${() => { if (confirm('Começar uma sessão nova? Os intervalos desta sessão serão apagados.')) { novaSessao(); msg('Sessão nova.'); } }}>Nova sessão</button>
+        <button class="btn tiny" onClick=${async () => { if (await confirmar('Começar uma sessão nova? Os intervalos desta sessão serão apagados.', { titulo: 'Nova sessão', ok: 'Apagar e começar', perigo: true })) { novaSessao(); msg('Sessão nova.'); } }}>Nova sessão</button>
       </div>
       <p class="hint tight">${motor.piso.calibrado ? `Piso calibrado (erro ${motor.piso.erro.toFixed(3).replace('.', ',')} m): presença e planta em metros.` : 'Piso sem calibração: a presença usa o plano da imagem (calibre no Studio para metros e planta).'}
-        ${motor.cfg.privacidade.borrar ? ' Rostos borrados.' : html` <b style=${{ color: 'var(--err)' }}>Borrão de rostos desligado.</b>`}</p>
+        ${motor.cfg.privacidade.borrar ? ' Rostos borrados.' : html` <b style=${{ color: 'var(--err)' }}>Borrão de rostos desligado.</b>`}
+        <button class="btn tiny cal-btn" onClick=${() => window.dispatchEvent(new CustomEvent('aiv:calibrar', { detail: { op: 'takt.posto' } }))}>⚙ ${motor.piso.calibrado ? 'Recalibrar piso' : 'Calibrar piso'}</button></p>
     <//>
   `;
 }

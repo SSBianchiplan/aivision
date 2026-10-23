@@ -24,7 +24,7 @@
  * ========================================================================
  */
 
-const VERSION = 'iav-v105-vps';   // 23/10/2026: Sincronia genérica desenho×imagem em todos os operadores (executor carimba cada nó; Viewport atrasa a imagem em arquivo/YouTube)
+const VERSION = 'iav-v106-vps';   // 23/10/2026: Regiões editáveis + calibração da quadra + Ferramentas nos Studios + modais do sistema
 const SHELL = `${VERSION}-shell`;
 /*
  * Pesos dos modelos num cache de nome FIXO: sobrevivem às publicações. Antes o

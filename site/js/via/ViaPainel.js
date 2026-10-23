@@ -18,6 +18,7 @@
  * para um projeto do Treinar (cartão; só com clique).
  */
 
+import { confirmar } from '../components/dialogo.js';
 import { html, useState, useEffect, useRef, Fragment, React } from '../vendor.js';
 import { store, persist } from '../state/store.js';
 import { getOperator, defaultParams } from '../cv/registry.js';
@@ -811,7 +812,7 @@ function Biblioteca({ contexto }) {
                   ? html`<button class="btn tiny accent" onClick=${async () => { try { avisar('✓ ' + await apl.aplicar(c)); } catch (e) { avisar('⚠ ' + e.message); } }}>${typeof apl.rotulo === 'function' ? apl.rotulo(c) : apl.rotulo}</button>`
                   : html`<button class="btn tiny accent" disabled=${!def} onClick=${() => avisar('✓ ' + aplicarNoPipeline(c.op, c.parametro, c.valor, contexto && contexto.op === c.op ? contexto.nodeId : null))}>Aplicar</button>`}
                 <button class="btn tiny" onClick=${async () => avisar((await copiar(c.valor)) ? '✓ copiado' : '⚠ não consegui copiar')}>Copiar</button>
-                <button class="btn tiny via-perigo" onClick=${() => { if (confirm(`Apagar «${c.nome}»?`)) apagarComando(c.id); }}>Apagar</button>
+                <button class="btn tiny via-perigo" onClick=${async () => { if (await confirmar(`Apagar «${c.nome}»?`, { titulo: 'Apagar comando', ok: 'Apagar', cancelar: 'Manter', perigo: true })) apagarComando(c.id); }}>Apagar</button>
               </div>
             </div>`;
         })}
@@ -897,7 +898,7 @@ function Base() {
                 try { await srv.compartilhar(k.id, !k.compartilhado); avisar(k.compartilhado ? 'Deixou de ser compartilhado.' : 'Compartilhado com a equipe.'); carregar(); } catch (e) { avisar('⚠ ' + e.message); }
               }}>${k.compartilhado ? 'Deixar de compartilhar' : 'Compartilhar com a equipe'}</button>`}
               ${(k.meu || (admin && k.compartilhado)) && html`<button class="btn tiny via-perigo" onClick=${async () => {
-                if (!confirm(`Apagar «${k.titulo}» da base?`)) return;
+                if (!(await confirmar(`Apagar «${k.titulo}» da base?`, { titulo: 'Apagar da base', ok: 'Apagar', cancelar: 'Manter', perigo: true }))) return;
                 try { await srv.apagarConhecimento(k.id); avisar('Apagado.'); carregar(); } catch (e) { avisar('⚠ ' + e.message); }
               }}>Apagar</button>`}
             </div>
@@ -916,13 +917,13 @@ function Base() {
               <div key=${v.id} class="via-hist-item">
                 <span><b>${v.titulo || '(sem título)'}</b><i>${dataBR(v.ultima || v.criada_em)} · ${v.mensagens} mensagem(ns)</i></span>
                 <button class="btn tiny via-perigo" onClick=${async () => {
-                  if (!confirm('Apagar esta conversa do servidor?')) return;
+                  if (!(await confirmar('Apagar esta conversa do servidor?', { titulo: 'Apagar conversa', ok: 'Apagar conversa', cancelar: 'Manter', perigo: true }))) return;
                   try { await srv.apagarConversa(v.id); if (conversa.servidorId === v.id) conversa.servidorId = null; carregarHist(); } catch (e) { avisar('⚠ ' + e.message); }
                 }}>Apagar</button>
               </div>`)}
           </div>
           ${hist.total > 0 && html`<div class="row tight"><button class="btn via-perigo" onClick=${async () => {
-            if (!confirm('Apagar TODAS as suas conversas guardadas no servidor? Os itens da base continuam (apague-os acima).')) return;
+            if (!(await confirmar('Apagar TODAS as suas conversas guardadas no servidor? Os itens da base continuam (apague-os acima).', { titulo: 'Apagar todas as conversas', ok: 'Apagar todas', cancelar: 'Manter', perigo: true }))) return;
             try { const r = await srv.apagarTodasConversas(); conversa.servidorId = null; avisar(`${r.apagadas} conversa(s) apagada(s).`); carregarHist(); } catch (e) { avisar('⚠ ' + e.message); }
           }}>Apagar todas as minhas conversas</button></div>`}`}
     </div>

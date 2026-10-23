@@ -14,6 +14,7 @@
  * /api/yt/miniatura/{id}: a página é COEP e só aceita imagem da mesma origem.
  */
 
+import { confirmar } from './dialogo.js';
 import { html, ReactDOM, useState, useEffect, useRef, useMemo } from '../vendor.js';
 import { store, useStore } from '../state/store.js';
 import { baixarBlob } from '../camera/youtube.js';
@@ -287,15 +288,15 @@ export function PlaylistsModal({ onFechar, onAbrir, onTocar, aplicarPreset, pode
     const c = await fazer(() => pl.criarCategoria(nomeCat), (r) => `Categoria «${r.nome}» criada.`);
     if (c) setNomeCat('');
   };
-  const apagarCat = (c) => {
+  const apagarCat = async (c) => {
     const n = d.playlists.reduce((k, p) => k + p.itens.filter((x) => x.categoria === c.id).length, 0);
-    if (!confirm(`Apagar a categoria «${c.nome}»?` + (n ? ` ${n} vídeo(s) passam para «Outros».` : ''))) return;
+    if (!(await confirmar(`Apagar a categoria «${c.nome}»?` + (n ? ` ${n} vídeo(s) passam para «Outros».` : ''), { titulo: 'Apagar categoria', ok: 'Apagar categoria', cancelar: 'Manter', perigo: true }))) return;
     if (catFiltro === c.id) setCatFiltro('');
     fazer(() => pl.apagarCategoria(c.id), `Categoria «${c.nome}» apagada.`);
   };
-  const apagar = () => {
+  const apagar = async () => {
     if (!playlist) return;
-    if (!confirm(`Apagar a playlist «${playlist.nome}» com ${playlist.itens.length} vídeo(s)?`)) return;
+    if (!(await confirmar(`Apagar a playlist «${playlist.nome}» com ${playlist.itens.length} vídeo(s)?`, { titulo: 'Apagar playlist', ok: 'Apagar playlist', cancelar: 'Manter', perigo: true }))) return;
     if (fila.plId === playlist.id) fila.parar();
     fazer(() => pl.apagarPlaylist(playlist.id), `Playlist «${playlist.nome}» apagada.`);
     setSel(TODAS);

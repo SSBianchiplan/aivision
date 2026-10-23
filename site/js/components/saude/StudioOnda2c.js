@@ -9,6 +9,7 @@
 import { html, useState, useEffect, useRef } from '../../vendor.js';
 import { useStore, store } from '../../state/store.js';
 import { FonteStudio, fonteStudioAberta } from '../studio/FonteStudio.js';
+import { FerramentasStudio } from '../studio/FerramentasStudio.js';
 import { instantaneo, assinar, definirStudio, ultimoQuadro, pedir } from '../../cv/runtime/livres-t/canal.js';
 import {
   PRESETS_ONDA2C, AVISO_SAUDE, carregarCss, aplicarPresetOnda2c, opAtivo, relatorioHTML, abrirRelatorio, carimbo, textoPrincipal,
@@ -93,6 +94,7 @@ export function StudioOnda2c({ onClose }) {
         <span class="o2s-titulo">GPlanSiS|Vitais</span>
         ${MODOS.map(([nome, o, rot]) => html`<button key=${o} class="o2s-btn ${op === o ? 'on' : ''}" onClick=${() => ir(nome)}>${rot}</button>`)}
         <${FonteStudio} classeBotao="o2s-btn" />
+        <${FerramentasStudio} classeBotao="o2s-btn" alvo=${cvVid} />
         <span class="o2s-mola"></span>
         <${BotaoVia} modulo="vitais" classe="o2s-btn" />
         ${comparacao && html`<button class="o2s-btn" onClick=${() => pedir(op, 'iniciar')}>● Iniciar</button><button class="o2s-btn" onClick=${() => pedir(op, 'parar')}>■ Parar</button>`}

@@ -354,6 +354,8 @@ export class FileSource {
   async load(file) {
     this.release();
     this.url = URL.createObjectURL(file);
+    // identidade do arquivo: a calibração da quadra fica salva por fonte (components/calibrar.js)
+    this.nomeArquivo = file && file.name ? `${file.name}|${file.size || 0}` : null;
     if (file.type.startsWith('video/')) {
       this.kind = 'video';
       this.video.src = this.url;

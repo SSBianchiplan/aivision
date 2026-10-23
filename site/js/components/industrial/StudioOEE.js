@@ -24,10 +24,12 @@
  * troca câmera, arquivo, tela ou YouTube sem fechar a tela. Gancho de teste:
  * window.aivOEE.
  */
+import { confirmar } from '../dialogo.js';
 import { html, useState, useEffect, useRef, useCallback } from '../../vendor.js';
 import { useStore, store } from '../../state/store.js';
 import { marcStore } from '../../cv/marcacoes.js';
 import { FonteStudio, fonteStudioAberta } from '../studio/FonteStudio.js';
+import { FerramentasStudio } from '../studio/FerramentasStudio.js';
 import {
   obterMotor, instantaneo, ultimoQuadro, assinar, avisarAgora, definirStudio, recente, novaSessao, normalizar, MOTIVOS_PADRAO,
 } from '../../cv/runtime/livres-o/canal.js';
@@ -181,6 +183,7 @@ export function StudioOEE({ onClose }) {
       <div class="oee-barra">
         <b class="oee-titulo"><span class="oee-marca">iaVision</span> <span class="oee-gp">GPlanSiS<i>|</i></span>OEE</b>
         <${FonteStudio} classeBotao="oee-btn" />
+        <${FerramentasStudio} classeBotao="oee-btn" alvo=${cvVid} />
         <span class="oee-chip" title="Janela do OEE">${janelaTxt}</span>
         <span class=${`oee-chip ${fontePecas ? 'ok' : 'amb'}`} title="De onde vêm as peças">${fontePecas ? `peças: ${fontePecas}` : 'sem fonte de peças'}</span>
         <span class=${`oee-chip ${motor.cfg.cicloIdeal_s > 0 ? 'ok' : 'amb'}`} title="Ciclo ideal (desempenho)">${motor.cfg.cicloIdeal_s > 0 ? `ciclo ${fmt(motor.cfg.cicloIdeal_s, 1)} s` : 'sem ciclo ideal'}</span>
@@ -202,7 +205,7 @@ export function StudioOEE({ onClose }) {
             <button role="menuitem" onClick=${() => exportar('config')}>Configuração (JSON)</button>
           </div>`}
         </span>
-        <button class="oee-btn" onClick=${() => { if (confirm('Começar uma sessão nova? Estados, paradas, motivos e produção desta sessão serão apagados (exporte antes, se precisar).')) { novaSessao(); setSel(null); setMsg('Sessão nova.'); } }}>Nova sessão</button>
+        <button class="oee-btn" onClick=${async () => { if (await confirmar('Começar uma sessão nova? Estados, paradas, motivos e produção desta sessão serão apagados (exporte antes, se precisar).', { titulo: 'Nova sessão', ok: 'Apagar e começar', perigo: true })) { novaSessao(); setSel(null); setMsg('Sessão nova.'); } }}>Nova sessão</button>
         <${BotaoVia} modulo="oee" classe="oee-btn" />
         <button class="oee-btn oee-fechar" onClick=${onClose} aria-label="Fechar a tela OEE">✕</button>
       </div>
@@ -431,7 +434,7 @@ function ConfigOEE({ motor, onFechar, onMsg }) {
         <div class="oee-acoes">
           <button class="oee-btn" onClick=${() => baixar(motor.exportarConfig(), 'oee-config.json', 'application/json')}>Exportar configuração</button>
           <label class="oee-btn">Importar…<input type="file" accept="application/json,.json" class="oee-sr" onChange=${importar} /></label>
-          <button class="oee-btn" onClick=${() => { if (confirm('Voltar a configuração do OEE ao padrão?')) def(normalizar({}), 'Configuração padrão.'); }}>Padrão</button>
+          <button class="oee-btn" onClick=${async () => { if (await confirmar('Voltar a configuração do OEE ao padrão?', { titulo: 'Configuração padrão', ok: 'Voltar ao padrão', perigo: true })) def(normalizar({}), 'Configuração padrão.'); }}>Padrão</button>
         </div>
       </div>
     </aside>

@@ -19,6 +19,7 @@ import { useStore, store, persist } from '../../state/store.js';
 import { defaultParams } from '../../cv/registry.js';
 import { newNodeId } from '../../cv/executor.js';
 import { ESPORTES, NOMES_ESPORTES, medidas, montarCalibracao, linhasNaImagem, num } from '../../cv/runtime/livres-j/quadras.js';
+import { pedirCalibracao } from '../calibrar.js';
 import {
   assinar, instantaneo, obterSessao, zerarSessao, definirPausado, estaPausado, pedirQuadro, ultimoQuadro,
 } from '../../cv/runtime/livres-j/canal.js';
@@ -227,7 +228,8 @@ export function QuadraPanel({ onClose, ...layout }) {
 
       <div class="row tight qd-botoes">
         <button class="btn accent" onClick=${adicionar}>${no ? (no.enabled ? 'No Pipeline ✓' : 'Ligar no Pipeline') : 'Adicionar ao Pipeline'}</button>
-        <button class=${`btn${calibrando ? ' on' : ''}`} onClick=${() => setCalibrando(!calibrando)}>${calibrando ? 'Fechar calibração' : `Calibrar (${pares.length}/4+)`}</button>
+        <button class="btn accent cal-btn" onClick=${() => pedirCalibracao('quadra.analise')} title="Escolher o esporte e arrastar os 4 cantos da quadra no vídeo">⚙ Calibrar quadra</button>
+        <button class=${`btn${calibrando ? ' on' : ''}`} onClick=${() => setCalibrando(!calibrando)} title="Pontos extras: linhas, aro">${calibrando ? 'Fechar pontos' : `Pontos (${pares.length}/4+)`}</button>
       </div>
       ${aviso && html`<p class="hint tight qd-ok">✓ ${aviso}</p>`}
 
@@ -275,7 +277,8 @@ export function QuadraPanel({ onClose, ...layout }) {
       </div>
 
       <div class="qd-radar-topo">
-        <span class="cfg-sub">Radar${calibrada ? '' : ' (sem calibração: posições da imagem)'}</span>
+        ${calibrada ? html`<span class="cfg-sub">Radar (calibrado: ${esp.nome})</span>`
+          : html`<button class="cal-cta" onClick=${() => pedirCalibracao('quadra.analise')}>Radar sem calibração — clique para calibrar</button>`}
         <select class="qd-sel qd-sel-mini" value=${calor} onChange=${(e) => setCalor(e.target.value)} aria-label="Mapa de calor">
           <option value="nenhum">sem mapa de calor</option>
           <option value="todos">calor: todos</option>

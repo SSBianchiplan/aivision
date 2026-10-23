@@ -9,6 +9,7 @@
  * quem está logado). O vídeo nunca passa pelo servidor.
  */
 
+import { confirmar } from './dialogo.js';
 import { html, useState, useEffect, useRef } from '../vendor.js';
 import { store } from '../state/store.js';
 import {
@@ -468,7 +469,7 @@ function Quadros({ yt, ativo }) {
         <div class="row">
           <button class="btn" onClick=${baixarZip} title="ZIP com os JPEGs dos quadros">Baixar ZIP</button>
           <button class="btn accent" onClick=${() => setEnviar(!enviar)}>Enviar ao Treinar</button>
-          <button class="btn" onClick=${() => { if (confirm('Descartar os ' + lista.length + ' quadros?')) quadros.limpar(); }}>Limpar</button>
+          <button class="btn" onClick=${async () => { if (await confirmar('Descartar os ' + lista.length + ' quadros?', { titulo: 'Descartar quadros', ok: 'Descartar', cancelar: 'Manter', perigo: true })) quadros.limpar(); }}>Limpar</button>
         </div>
       `}
       ${enviar && lista.length > 0 && html`<${EnviarTreino} lista=${lista} onFechar=${() => setEnviar(false)} />`}

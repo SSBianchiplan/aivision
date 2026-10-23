@@ -8,6 +8,8 @@
    Nada é baixado da internet pelo servidor: toda imagem sai do navegador. */
 'use strict';
 const $ = (s, r = document) => r.querySelector(s);
+/* modais do sistema (js/components/dialogo.js) no lugar de confirm/prompt do navegador; import() porque este é script clássico */
+const modais = () => import('/js/components/dialogo.js');
 const h = (tag, attrs = {}, ...kids) => {
   const e = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs || {})) {
@@ -287,7 +289,7 @@ function cartaoImagem(im, onclick, ...extra) {
   const img = h('img', { alt: im.nome, loading: 'lazy' });
   const o = im.origem; const selo = o && o.fonte === 'print' ? (/^câmera /.test(o.origem || '') ? '📷 câmera' : '📋 print') : o && o.fonte === 'youtube' ? '▶ YouTube' : '';
   const card = h('div', { class: 'im' + (onclick ? '' : ' nc'), onclick, title: o ? textoOrigem(o) : null }, img, ...extra, selo ? h('span', { class: 'fo' }, selo) : '',
-    h('button', { class: 'x', title: 'Apagar imagem', onclick: async (e) => { e.stopPropagation(); if (!confirm('Apagar ' + im.nome + '?')) return; await api(`/projetos/${S.proj}/imagens/${encodeURIComponent(im.nome)}`, { method: 'DELETE' }); await carregarProjetos(); abaImagens(); } }, '×'));
+    h('button', { class: 'x', title: 'Apagar imagem', onclick: async (e) => { e.stopPropagation(); if (!(await (await modais()).confirmar('Apagar ' + im.nome + '?', { titulo: 'Apagar imagem', ok: 'Apagar imagem', cancelar: 'Manter', perigo: true }))) return; await api(`/projetos/${S.proj}/imagens/${encodeURIComponent(im.nome)}`, { method: 'DELETE' }); await carregarProjetos(); abaImagens(); } }, '×'));
   new IntersectionObserver((en, ob) => { if (en[0].isIntersecting) { ob.disconnect(); imgURL(im.nome).then((u) => { img.src = u; }); } }).observe(card);
   return card;
 }
@@ -419,7 +421,7 @@ async function importar(f) {
 }
 async function baixar(path, nome) { const r = await api(path); const b = await r.blob(); const a = h('a', { href: URL.createObjectURL(b), download: nome }); document.body.append(a); a.click(); a.remove(); }
 async function editarClasses() {
-  const p = projAtual(); const v = prompt('Classes (separe por vírgula). Você pode renomear ou acrescentar no fim; remover não é permitido para não bagunçar os rótulos.', p.classes.join(', '));
+  const p = projAtual(); const v = await (await modais()).perguntar('Classes (separe por vírgula). Você pode renomear ou acrescentar no fim; remover não é permitido para não bagunçar os rótulos.', { titulo: 'Editar classes', padrao: p.classes.join(', '), ok: 'Salvar classes' });
   if (!v) return; try { await api(`/projetos/${S.proj}`, { method: 'PATCH', body: JSON.stringify({ classes: v.split(',').map((s) => s.trim()).filter(Boolean) }) }); await carregarProjetos(); render(); } catch (e) { toast(e.message); }
 }
 
@@ -657,10 +659,10 @@ function detalhe(t) {
   const bar = h('div', { class: 'bar' });
   bar.append(h('button', { class: 'btn', onclick: () => renomear(t) }, '✏️ Renomear / nota'),
     h('button', { class: 'btn', onclick: () => { S.form = { cfg: { ...t.cfg }, nome: t.nome + ' (cópia)', nota: t.nota, dup: t.nome }; S.formAberto = true; S.aberto = null; abaTreinar().then(() => { const d = $('.novoT'); if (d) { d.open = true; d.scrollIntoView({ behavior: 'smooth' }); } }); } }, '⧉ Duplicar ajustes'));
-  if (ativo) bar.append(h('button', { class: 'btn danger', onclick: async () => { if (!confirm(t.estado === 'fila' ? 'Tirar este treino da fila?' : 'Cancelar este treino?')) return; try { await api(`/projetos/${S.proj}/treinos/${t.id}/cancelar`, { method: 'POST' }); toast('Cancelando…'); setTimeout(abaTreinar, 1500); } catch (e) { toast(e.message); } } }, t.estado === 'fila' ? '⏹ Tirar da fila' : '⏹ Cancelar'));
+  if (ativo) bar.append(h('button', { class: 'btn danger', onclick: async () => { if (!(await (await modais()).confirmar(t.estado === 'fila' ? 'Tirar este treino da fila?' : 'Cancelar este treino?', { titulo: t.estado === 'fila' ? 'Tirar da fila' : 'Cancelar treino', ok: t.estado === 'fila' ? 'Tirar da fila' : 'Cancelar treino', cancelar: 'Continuar', perigo: true }))) return; try { await api(`/projetos/${S.proj}/treinos/${t.id}/cancelar`, { method: 'POST' }); toast('Cancelando…'); setTimeout(abaTreinar, 1500); } catch (e) { toast(e.message); } } }, t.estado === 'fila' ? '⏹ Tirar da fila' : '⏹ Cancelar'));
   if (t.tem_modelo) {
     bar.append(t.publicado
-      ? h('button', { class: 'btn', onclick: async () => { if (!confirm('Despublicar? O modelo some do iaVision (o treino continua aqui).')) return; await api(`/projetos/${S.proj}/treinos/${t.id}/despublicar`, { method: 'POST' }); toast('Despublicado.'); abaTreinar(); } }, '⊘ Despublicar')
+      ? h('button', { class: 'btn', onclick: async () => { if (!(await (await modais()).confirmar('Despublicar? O modelo some do iaVision (o treino continua aqui).', { titulo: 'Despublicar', ok: 'Despublicar', cancelar: 'Manter publicado', perigo: true }))) return; await api(`/projetos/${S.proj}/treinos/${t.id}/despublicar`, { method: 'POST' }); toast('Despublicado.'); abaTreinar(); } }, '⊘ Despublicar')
       : h('button', { class: 'btn pri', onclick: async () => { try { await api(`/projetos/${S.proj}/treinos/${t.id}/publicar`, { method: 'POST' }); toast('Publicado no iaVision.'); abaTreinar(); } catch (e) { toast(e.message); } } }, '⬆ Publicar no iaVision'),
     h('button', { class: 'btn', onclick: () => baixar(`/projetos/${S.proj}/treinos/${t.id}/modelo?fmt=onnx`, `${t.modelo}.onnx`) }, '⬇ ONNX'));
     if (!pc) bar.append(h('button', { class: 'btn', onclick: () => baixar(`/projetos/${S.proj}/treinos/${t.id}/modelo?fmt=pt`, `${t.modelo}${t.cfg.motor === 'rfdetr' ? '.pth' : '.pt'}`) }, '⬇ PyTorch'));
@@ -684,7 +686,7 @@ async function apagarTreino(t) {
     const r = await dialogo('Apagar treino publicado', h('p', {}, `“${t.nome}” está publicado no iaVision. Quer despublicar o modelo também?`),
       [{ t: 'Cancelar', cls: 'ghost', v: null }, { t: 'Apagar e manter publicado', v: 'manter' }, { t: 'Apagar e despublicar', cls: 'danger', v: 'desp' }]);
     if (!r) return; desp = r === 'desp';
-  } else if (!confirm(`Apagar o treino “${t.nome}”? Não dá para desfazer.`)) return;
+  } else if (!(await (await modais()).confirmar(`Apagar o treino “${t.nome}”? Não dá para desfazer.`, { titulo: 'Apagar treino', ok: 'Apagar treino', cancelar: 'Manter', perigo: true }))) return;
   try { await api(`/projetos/${S.proj}/treinos/${t.id}?despublicar=${desp}`, { method: 'DELETE' }); S.comparar.delete(t.id); if (S.aberto === t.id) S.aberto = null; toast('Treino apagado.'); abaTreinar(); } catch (e) { toast(e.message); }
 }
 function comparacao(L) {
@@ -742,7 +744,7 @@ async function abaModelos() {
           ? h('div', { class: 'stats' }, st('AUROC', pct(mt.auroc)), st('acerto boas', pct(mt.acerto_boas)), st('acerto ruins', pct(mt.acerto_ruins)))
           : h('div', { class: 'stats' }, st('mAP50', pct(mt.map50)), st('mAP50-95', pct(mt.map50_95)), m.validacao_onnx ? st('recall no ONNX', pct(m.validacao_onnx.recall)) : ''),
         h('div', { class: 'bar' }, h('button', { class: 'btn', onclick: () => { navigator.clipboard.writeText(m.id).then(() => toast('Identificador copiado.'), () => toast('O navegador não deixou copiar: ' + m.id)); } }, 'Copiar identificador'), h('a', { class: 'btn', href: '/' + m.arquivo, download: m.id + '.onnx' }, '⬇ ONNX'),
-          h('button', { class: 'btn danger', onclick: async () => { if (!confirm('Despublicar ' + m.nome + '? Ele some do iaVision (o treino continua guardado).')) return; await api('/modelos/' + m.id, { method: 'DELETE' }); abaModelos(); } }, 'Despublicar')));
+          h('button', { class: 'btn danger', onclick: async () => { if (!(await (await modais()).confirmar('Despublicar ' + m.nome + '? Ele some do iaVision (o treino continua guardado).', { titulo: 'Despublicar', ok: 'Despublicar', cancelar: 'Manter publicado', perigo: true }))) return; await api('/modelos/' + m.id, { method: 'DELETE' }); abaModelos(); } }, 'Despublicar')));
     }),
     meus.length ? '' : h('div', { class: 'empty' }, 'Nenhum modelo publicado ainda. Treine na aba Treinar.'));
 }

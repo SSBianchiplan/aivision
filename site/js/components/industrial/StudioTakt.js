@@ -24,10 +24,12 @@
  * A fonte é a do app e a barra de vídeo do app continua por cima desta tela
  * (como no Studio BeltScan). Gancho de teste: window.aivTakt.
  */
+import { confirmar } from '../dialogo.js';
 import { html, useState, useEffect, useRef, useCallback } from '../../vendor.js';
 import { useStore, store } from '../../state/store.js';
 import { marcStore, vistaParaFonte, vista } from '../../cv/marcacoes.js';
 import { FonteStudio, fonteStudioAberta } from '../studio/FonteStudio.js';
+import { FerramentasStudio } from '../studio/FerramentasStudio.js';
 import {
   obterMotor, instantaneo, ultimoQuadro, assinar, avisarAgora, definirStudio, recente, novaSessao,
   TEMPOS, TURNOS_EXEMPLO, normalizar, ERRO_MAX_CALIBRACAO_M,
@@ -194,6 +196,7 @@ export function StudioTakt({ onClose }) {
       <div class="tkt-barra">
         <b class="tkt-titulo"><span class="tkt-marca">iaVision</span> <span class="tkt-gp">GPlanSiS<i>|</i></span>Takt</b>
         <${FonteStudio} classeBotao="tkt-btn" />
+        <${FerramentasStudio} classeBotao="tkt-btn" alvo=${cvVid} transformacao=${() => tf.current} />
         <span class="tkt-chip" title="Janela dos KPIs">${janelaTxt}</span>
         <span class=${`tkt-chip ${piso.calibrado ? 'ok' : piso.H ? 'amb' : ''}`} title=${piso.msg}>${piso.calibrado ? `piso ±${fmt(piso.erro, 2)} m` : piso.H ? 'piso: erro alto' : 'piso sem calibração'}</span>
         <span class=${`tkt-chip ${r && r.borrado ? 'ok' : 'erro'}`}>${r && r.borrado ? 'rostos borrados' : 'borrão desligado'}</span>
@@ -211,7 +214,7 @@ export function StudioTakt({ onClose }) {
             <button role="menuitem" onClick=${() => exportar('config')}>Configuração (JSON)</button>
           </div>`}
         </span>
-        <button class="tkt-btn" onClick=${() => { if (confirm('Começar uma sessão nova? Os intervalos, eventos e alarmes desta sessão serão apagados (exporte antes, se precisar).')) { novaSessao(); setMsg('Sessão nova.'); } }}>Nova sessão</button>
+        <button class="tkt-btn" onClick=${async () => { if (await confirmar('Começar uma sessão nova? Os intervalos, eventos e alarmes desta sessão serão apagados (exporte antes, se precisar).', { titulo: 'Nova sessão', ok: 'Apagar e começar', perigo: true })) { novaSessao(); setMsg('Sessão nova.'); } }}>Nova sessão</button>
         <${BotaoVia} modulo="takt" classe="tkt-btn" />
         <button class="tkt-btn tkt-fechar" onClick=${onClose} aria-label="Fechar a tela Takt">✕</button>
       </div>
@@ -420,7 +423,7 @@ function ConfigTakt({ motor, onFechar, onMsg }) {
         <div class="tkt-acoes">
           <button class="tkt-btn" onClick=${() => baixar(motor.exportarConfig(), 'takt-config.json', 'application/json')}>Exportar configuração</button>
           <label class="tkt-btn">Importar…<input type="file" accept="application/json,.json" class="tkt-sr" onChange=${importar} /></label>
-          <button class="tkt-btn" onClick=${() => { if (confirm('Voltar a configuração do Takt ao padrão? A calibração do piso também é apagada.')) def(normalizar({}), 'Configuração padrão.'); }}>Padrão</button>
+          <button class="tkt-btn" onClick=${async () => { if (await confirmar('Voltar a configuração do Takt ao padrão? A calibração do piso também é apagada.', { titulo: 'Configuração padrão', ok: 'Voltar ao padrão', perigo: true })) def(normalizar({}), 'Configuração padrão.'); }}>Padrão</button>
         </div>
       </div>
     </aside>

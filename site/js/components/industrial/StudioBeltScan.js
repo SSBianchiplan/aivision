@@ -38,6 +38,7 @@ import {
 } from './beltscan-comum.js';
 import { BeltScanConfig } from './BeltScanConfig.js';
 import { FonteStudio, fonteStudioAberta } from '../studio/FonteStudio.js';
+import { FerramentasStudio } from '../studio/FerramentasStudio.js';
 import { BotaoVia } from '../../via/BotaoVia.js';   // [VIA] botão «✦ Via» da barra (js/via/)
 
 const ROT_ESTADO = { ATIVO_NR: 'ativo, não reconhecido', ATIVO_R: 'ativo, reconhecido', RTN_NR: 'voltou ao normal' };
@@ -188,6 +189,7 @@ export function StudioBeltScan({ onClose, onPickFile, onResetState }) {
       <div class="bsc-barra">
         <b class="bsc-titulo"><span class="bsc-marca">iaVision</span> <span class="bsc-gp">GPlanSiS<i>|</i></span>BeltScan</b>
         <${FonteStudio} classeBotao="bsc-btn" />
+        <${FerramentasStudio} classeBotao="bsc-btn" alvo=${cvCam} transformacao=${() => tf.current} />
         <select class="bsc-btn" aria-label="Perfil" value=${perfilAtivo()} onChange=${async (e) => { await trocarPerfil(e.target.value); setMsg('Perfil: ' + e.target.selectedOptions[0].text); setV((n) => n + 1); }}>
           ${perfis.map((p) => html`<option key=${p.id} value=${p.id}>${p.nome}</option>`)}
         </select>

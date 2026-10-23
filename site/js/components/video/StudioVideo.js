@@ -52,6 +52,7 @@ import { analisarClipe, keyframesDaAnalise, detectarPessoasNoQuadro, sam2Disponi
 import { montarZip } from './zip.js';
 import { tomarPedido, ultimaGravacao, emitirPrints } from './ponte.js';
 import { FonteStudio, fonteStudioAberta } from '../studio/FonteStudio.js';
+import { FerramentasStudio } from '../studio/FerramentasStudio.js';
 import { BotaoVia } from '../../via/BotaoVia.js';   // [VIA] botão «✦ Via» da barra (js/via/)
 
 /* O CSS desta tela só baixa com ela (o app não paga por quem não edita vídeo). */
@@ -991,6 +992,7 @@ export function StudioVideo({ onClose, source, onPickFile }) {
         ${midia && html`<span class="vde-nome" title=${midia.nome}>${midia.nome}</span>`}
         <button class="vde-btn" onClick=${() => setDialogo('abrir')} title="Abrir outro vídeo, a fonte, uma gravação ou gravar um trecho">📂<span class="vde-rot"> Abrir</span></button>
         <${FonteStudio} classeBotao="vde-btn" semTexto=${true} />
+        <${FerramentasStudio} classeBotao="vde-btn" semTexto=${true} alvo=${visorRef} transformacao=${() => (rep.current && rep.current.geometria ? rep.current.geometria() : null)} />
         <input ref=${arquivoRef} type="file" accept="video/*,.mp4,.mov,.m4v,.webm,.mkv" hidden
                onChange=${(ev) => { abrirArquivo(ev.target.files[0]); ev.target.value = ''; }} />
         <span class="vde-sep"></span>

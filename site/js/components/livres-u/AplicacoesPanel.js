@@ -18,6 +18,7 @@
  * Os operadores publicam em cv/runtime/livres-u/canal.js (chaves u_*); aqui só se lê,
  * exporta e manda comandos (pedir).
  */
+import { confirmar, avisar } from '../dialogo.js';
 import { html, useState, useEffect, useRef } from '../../vendor.js';
 import { Panel } from '../Panel.js';
 import { useStore, store } from '../../state/store.js';
@@ -181,7 +182,7 @@ function SecaoLibras() {
   const [letra, setLetra] = useState('A');
   const arqRef = useRef(null);
   const exportar = () => { try { baixar(`libras_exemplos_${carimbo()}.json`, localStorage.getItem('gplansis.libras.exemplos.v1') || '{}'); } catch (_) { /* sem storage */ } };
-  const importar = async (f) => { if (!f) return; try { pedir('u_libras', { tipo: 'importar', dados: JSON.parse(await f.text()) }); } catch (e) { alert('Arquivo inválido: ' + e.message); } };
+  const importar = async (f) => { if (!f) return; try { pedir('u_libras', { tipo: 'importar', dados: JSON.parse(await f.text()) }); } catch (e) { await avisar('Arquivo inválido: ' + e.message, { titulo: 'Importar exemplos' }); } };
   return html`
     <${Cab} titulo="Libras — soletração" />
     <p class="hint tight lu-aviso">${AVISO_LIBRAS}</p>
@@ -227,7 +228,7 @@ function SecaoGabarito({ nodes }) {
     <${Cab} titulo="Gabarito (OMR)">
       <button class="btn tiny" disabled=${!d.folhas.length} onClick=${baixarCsv}>CSV</button>
       <button class="btn tiny" onClick=${() => pedir('u_gabarito', { tipo: 'registrar' })} title="Registrar a leitura atual mesmo sem repetição">Registrar agora</button>
-      <button class="btn tiny" onClick=${() => confirm('Apagar as folhas lidas?') && zerar('u_gabarito')}>Zerar</button>
+      <button class="btn tiny" onClick=${async () => (await confirmar('Apagar as folhas lidas?', { ok: 'Apagar folhas', perigo: true })) && zerar('u_gabarito')}>Zerar</button>
     <//>
     <div class="med-acoes lu-linha">
       <input class="lu-in" value=${titulo} onInput=${(e) => setTitulo(e.target.value)} aria-label="Título da folha" />
@@ -406,7 +407,7 @@ function SecaoPeso() {
     <div class="med-acoes lu-linha">
       <input class="lu-in lu-num" type="number" min="1" step="0.5" placeholder="kg da balança" value=${kg} onInput=${(e) => setKg(e.target.value)} aria-label="Peso real (kg)" />
       <button class="btn tiny" disabled=${!d.m2 || !(+kg > 0)} onClick=${() => { pedir('u_peso', { tipo: 'calibrar', kg: +kg }); setKg(''); }}>Usar para calibrar</button>
-      <button class="btn tiny" disabled=${!d.pares.length} onClick=${() => confirm('Apagar a calibração?') && pedir('u_peso', { tipo: 'limparCalibracao' })}>Limpar calibração</button>
+      <button class="btn tiny" disabled=${!d.pares.length} onClick=${async () => (await confirmar('Apagar a calibração?', { ok: 'Apagar calibração', perigo: true })) && pedir('u_peso', { tipo: 'limparCalibracao' })}>Limpar calibração</button>
     </div>
     <div class="med-acoes lu-linha">
       <input class="lu-in" placeholder="brinco / lote" value=${animal} onInput=${(e) => setAnimal(e.target.value)} aria-label="Identificação do animal" />

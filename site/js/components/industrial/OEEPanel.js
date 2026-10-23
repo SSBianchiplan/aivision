@@ -7,6 +7,7 @@
  * CSVs. Linha do tempo, classificação de paradas, Pareto, turnos e
  * configuração estão na tela cheia GPlanSiS|OEE (StudioOEE.js).
  */
+import { confirmar } from '../dialogo.js';
 import { html, useState, useEffect } from '../../vendor.js';
 import { Panel } from '../Panel.js';
 import { useStore, store } from '../../state/store.js';
@@ -73,7 +74,7 @@ export function OEEPanel({ onClose, ...layout }) {
         <button class="btn tiny" onClick=${() => baixar(motor.intervalosCSV(), `oee_${carimbo()}_estados.csv`, 'text/csv')}>Estados CSV</button>
         <button class="btn tiny" onClick=${() => baixar(motor.paradasCSV(), `oee_${carimbo()}_paradas.csv`, 'text/csv')}>Paradas CSV</button>
         <button class="btn tiny" onClick=${() => baixar(motor.turnosCSV(), `oee_${carimbo()}_turnos.csv`, 'text/csv')}>OEE por turno CSV</button>
-        <button class="btn tiny" onClick=${() => { if (confirm('Começar uma sessão nova do OEE?')) { novaSessao(); msg('Sessão nova.'); } }}>Nova sessão</button>
+        <button class="btn tiny" onClick=${async () => { if (await confirmar('Começar uma sessão nova do OEE?', { titulo: 'Nova sessão', ok: 'Começar sessão nova', perigo: true })) { novaSessao(); msg('Sessão nova.'); } }}>Nova sessão</button>
       </div>
       <p class="hint tight">${G ? `Planejado ${hm(G.planejado)} · operando ${hm(G.operando)} · parada ${hm(G.seg.PARADA)} · setup ${hm(G.seg.SETUP)}.` : ''}</p>
     <//>

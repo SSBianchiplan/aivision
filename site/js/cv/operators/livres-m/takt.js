@@ -39,6 +39,8 @@ import { KP_LIGACOES } from '../livres-a/pose.js';
 import { obterMotor, publicar, tempoDaFonte, studioAberto, COR_ESTADO, ROTULO, centroVertices } from '../../runtime/livres-m/canal.js';
 import { obterPoses, regioesDasPoses } from './privacidade.js';
 import { borrarRegioes } from '../../runtime/livres-m/takt-nucleo.js';
+import { registrarRegiao, regioesMudaram } from '../../regioes.js';
+import { assinar as assinarTakt, avisarAgora as avisarTakt } from '../../runtime/livres-m/canal.js';
 
 const G = 'CV-39';
 export const FUNCAO_POSTO = 'takt_posto';
@@ -62,6 +64,7 @@ export const taktPosto = {
   op: 'takt.posto',
   label: 'Takt — tempo de posto',
   group: G,
+  calibravel: { rotulo: 'Calibrar piso (Studio Takt)' },
   // muda os pixels quando "Borrar rostos" está ligado (o padrão): o vídeo exibido é o quadro processado
   overlayOnly: false,
   desc: 'Tempo de posto (porte do GPlanSiS|Takt): para cada área marcada com a função "Takt · posto", associa as ' +
@@ -240,5 +243,22 @@ function desenhar(ctx, postos, pessoas, poses, esqueleto, ts, w, h) {
               label: `${a.id} · ${Math.round(a.act * 100)}%` });
   }
 }
+
+// marcos do piso (calibração em metros), arrastáveis no vídeo (cv/regioes.js); fonte 0–1
+registrarRegiao('takt.posto', {
+  chave: 'piso', nome: 'Takt · marcos do piso', tipo: 'poligono', cor: '#a78bfa', espaco: 'fonte', ferramentas: ['poligono'],
+  ler() {
+    const pts = obterMotor().cfg.piso.pts;
+    return pts.length >= 3 ? pts.map((q) => [q.u, q.v]) : null;
+  },
+  gravar(p, pts) {
+    const m = obterMotor(), ant = m.cfg.piso.pts;
+    const novos = pts.map(([u, v], i) => ({ u: Math.round(u * 1e4) / 1e4, v: Math.round(v * 1e4) / 1e4, x: ant[i] ? ant[i].x : null, y: ant[i] ? ant[i].y : null }));
+    m.definir({ piso: { ...m.cfg.piso, pts: novos } });
+    avisarTakt();
+    return null;
+  },
+});
+if (typeof window !== 'undefined') assinarTakt(() => regioesMudaram());
 
 export default [taktPosto];
