@@ -836,6 +836,21 @@ let ultimoLentoMs = 0;
 let ultimoLentoFim = -Infinity;
 let relogio = null;
 
+/*
+ * ECONOMIA (arquivo e YouTube com sincronia): o WASM com 4 threads a ~95% do tempo deixava o
+ * processo em 400–490% de CPU, e a captura da aba caía para 13–22 fps num Mac carregado. Com a
+ * imagem atrasada pela sincronia, inferir um pouco menos não aparece no desenho (ele é
+ * interpolado): depois de cada execução em WASM o worker descansa `economia` × a duração dela
+ * (0,5 → no máximo ~2/3 do tempo ocupado). WebGPU e câmera ao vivo não descansam.
+ */
+let economia = 0;
+let descansoAte = -Infinity;
+/** Fração de descanso após cada inferência WASM (0 desliga). Chamado pelo Viewport. */
+export function definirEconomia(f) {
+  economia = Math.max(0, Math.min(2, Number(f) || 0));
+  if (!economia) descansoAte = -Infinity;
+}
+
 /** Classe de fila de um modelo: 'rapida' ou 'lenta'. */
 function classeDe(id) {
   const spec = specOf(id);
@@ -868,6 +883,10 @@ function despachar() {
   if (ocupado) return;
   if (relogio) { clearTimeout(relogio); relogio = null; }
   const agora = performance.now();
+  if (agora < descansoAte && (filaRapida.length || filaLenta.length)) {
+    relogio = setTimeout(despachar, Math.max(1, descansoAte - agora + 1));
+    return;
+  }
   let tarefa = null;
   if (filaLenta.length) {
     // a pausa conta do fim do último lento (o primeiro lento entra direto)
@@ -902,6 +921,7 @@ function concluir(tarefa, ini, ok) {
   else if (tarefa.classe === 'lenta') { ultimoLentoMs = dur; ultimoLentoFim = fim; }
   if (ok && tarefa.id) {
     const s = sessions.get(tarefa.id);
+    if (economia && s && s.ep === 'wasm') descansoAte = fim + dur * economia;
     if (s) {
       s.nRun = (s.nRun || 0) + 1;
       // média móvel exponencial; a 1ª execução (aquecimento) é descartada

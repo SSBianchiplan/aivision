@@ -200,7 +200,9 @@ export class YouTubeSource {
    * escala é o próprio Chrome (ver QUALIDADES).
    */
   _fatorQualidade(w, h) {
-    const curto = (QUALIDADES[this.qualidade] || QUALIDADES.auto).curto;
+    // Automática capturando: o player do tamanho da captura (CURTO_AUTO). Sem isso, num Mac com
+    // DPR 2 o YouTube decodificava 1440p60 para uma captura de 1080p — CPU/GPU gastos à toa
+    const curto = (QUALIDADES[this.qualidade] || QUALIDADES.auto).curto || (this.stream ? CURTO_AUTO : 0);
     if (!curto || !w || !h || !suporte().captura) return 1;
     const fisico = Math.min(w, h) * (window.devicePixelRatio || 1);
     let k = curto / fisico;

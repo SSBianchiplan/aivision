@@ -31,6 +31,7 @@ import {
   desenharMarcacoes, ponteiroDown, ponteiroMove, ponteiroUp, duploClique, saiu as ponteiroSaiu,
 } from './marcacoes-vista.js';
 import { AtrasoQuadros, sincroniaLigada } from './video/sincronia.js';
+import { definirEconomia } from '../cv/runtime/onnx.js';
 
 /** YT.PlayerState em que o quadro capturado não anda: terminado, pausado, carregando, carregado sem tocar. */
 const YT_PARADO = new Set([0, 2, 3, 5]);
@@ -468,6 +469,9 @@ export function Viewport({ source, executor, snapshotRef, hideIdle, ring, canvas
       const sincOn = mode !== 'passthrough' && !held && !fonteParada
         && sincroniaLigada((noModo && noModo.params.sincronizar) || 'auto', st.sourceKind);
       const perto = active.some((n) => n.op === 'motion3d.captura');
+      // economia de CPU do WASM só com a imagem atrasada (arquivo/YouTube); Motion 3D quer toda pose
+      const eco = sincOn && !perto && (st.sourceKind === 'file' || st.sourceKind === 'youtube') ? 0.5 : 0;
+      if (eco !== sc.eco) { sc.eco = eco; definirEconomia(eco); }
       let quadroExib = null, quadroOut = null;
       if (sincOn) {
         // pixels: o quadro processado é guardado depois da cadeia; o de exibir sai dos já guardados

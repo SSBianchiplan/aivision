@@ -290,7 +290,7 @@ export function FerramentasMouse({ onSnapshot }) {
     { id: 'desfazer', nome: 'Desfazer', tecla: 'Ctrl/⌘+Z', icon: 'desfazer', disabled: !m.podeDesfazer, onClick: desfazer },
     { id: 'refazer', nome: 'Refazer', tecla: 'Ctrl/⌘+Y', icon: 'refazer', disabled: !m.podeRefazer, onClick: refazer },
     { id: 'visivel', nome: m.visivel ? 'Ocultar marcações' : 'Mostrar marcações', tecla: '⇧H', icon: m.visivel ? 'olho' : 'olhoFechado', on: !m.visivel, onClick: () => setVisivel(!m.visivel) },
-    { id: 'limpar', nome: 'Limpar tudo', tecla: '', icon: 'limpar', disabled: !m.n, onClick: () => { const n = m.n; limparTudo(); anunciar(n === 1 ? '1 marcação apagada' : `${n} marcações apagadas`, { acao: 'Desfazer', onAcao: () => { if (!marcStore.get().itens.length) desfazer(); } }); } },
+    { id: 'limpar', nome: 'Limpar tudo', tecla: '', icon: 'limpar', disabled: !m.n, onClick: async () => { const n = m.n; if (!(await confirmar(n === 1 ? 'Apagar a marcação da imagem?' : `Apagar as ${n} marcações da imagem?`, { titulo: 'Limpar tudo', ok: 'Apagar tudo', cancelar: 'Manter', perigo: true }))) return; limparTudo(); anunciar(n === 1 ? '1 marcação apagada' : `${n} marcações apagadas`, { acao: 'Desfazer', onAcao: () => { if (!marcStore.get().itens.length) desfazer(); } }); } },
     { id: 'lista', nome: 'Lista de marcações', tecla: '⇧K', icon: 'lista', on: lista, badge: m.n || null, onClick: () => setLista((v) => !v) },
     { id: 'capturar', nome: 'Capturar PNG com as marcações', tecla: 'S', icon: 'capturar', onClick: () => onSnapshot && onSnapshot() },
     ...(nEx ? [{ id: 'salvarEx', nome: `+Projeto: salvar estes exemplos (${nEx}) como print rotulado`, tecla: '', icon: 'salvarEx', badge: nEx, onClick: salvarExemplos }] : []),

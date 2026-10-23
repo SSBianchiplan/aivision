@@ -24,7 +24,7 @@
  * ========================================================================
  */
 
-const VERSION = 'iav-v107-vps';   // 23/10/2026: Vídeo fluido com sincronia: fila de exibição em sequência e atraso suave (compartilhar aba/arquivo)
+const VERSION = 'iav-v108-vps';   // 23/10/2026: Economia de CPU do WASM com sincronia, Automática do YouTube no tamanho da captura, Limpar tudo com modal
 const SHELL = `${VERSION}-shell`;
 /*
  * Pesos dos modelos num cache de nome FIXO: sobrevivem às publicações. Antes o
