@@ -23,3 +23,15 @@ export function carimboAtual(ctx) {
   const c = ctx && ctx.detectionsCarimbo;
   return c && c.lista === ctx.detections ? c : null;
 }
+
+/**
+ * Relógio do quadro em execução (ms, o mesmo de ctx.tQuadro), mantido pelo executor durante a
+ * cadeia. É o carimbo padrão de quem agenda inferência (opkit.schedule) sem passar o instante: o
+ * preparo da entrada roda dentro do apply, então o quadro inferido é o deste relógio.
+ */
+export const relogio = { tQuadro: NaN };
+
+/** Para quem guarda o resultado fora do `state` do nó: o desenho deste quadro é do instante `t`. */
+export function carimbarDesenho(ctx, t) {
+  if (ctx && Number.isFinite(t)) ctx.tResultado = t;
+}

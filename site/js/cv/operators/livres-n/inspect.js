@@ -26,6 +26,7 @@ import { rodarFerramenta, FERRAMENTAS, FAIXAS_HSV, labMediana } from '../../runt
 import { cinza, recorte } from '../../runtime/livres-n/visao.js';
 import * as canal from '../../runtime/livres-n/canal.js';
 import { numBR } from '../../numfmt.js';
+import { carimbarDesenho } from '../../runtime/tempo-real/carimbo.js';
 
 const G = 'CV-40';
 const AREAS = new Set(['retangulo', 'poligono', 'elipse']);
@@ -99,7 +100,7 @@ export const programa = {
       ctx.metrics['Inspeção'] = 'erro: ' + (e && e.message ? e.message : e);
       return clone(src);
     }
-    if (rec) state.tRec = performance.now();
+    if (rec) { state.tRec = performance.now(); state.tRes = ctx.tQuadro; }
     const prog = canal.programaAtivo();
     const gi = canal.infoGatilho();
     const ult = canal.ultimo();
@@ -112,7 +113,7 @@ export const programa = {
       }
       // resultado da última peça enquanto ela está na ROI (ou por 2,5 s)
       const fresco = ult && ult.W && ((gi && gi.estado !== 'vazio') || performance.now() - (state.tRec || 0) < 2500);
-      if (fresco && state.tRec) desenharResultados(ov, ult.resultados, src.width / ult.W);
+      if (fresco && state.tRec) { desenharResultados(ov, ult.resultados, src.width / ult.W); carimbarDesenho(ctx, state.tRes); }
       if (prog) {
         const e = canal.estatisticas();
         const v = ult ? `#${ult.id} ${ult.final}` : 'aguardando peça';
@@ -171,6 +172,8 @@ function opFerramenta({ op, tipo, label, desc, params, spec, preparar }) {
       const parado = ctx.fonteParada && state.res && state.mq === mq;
       if (!parado && (!state.t || agora - state.t >= p.intervalo || state.mq !== mq)) {
         state.t = agora; state.mq = mq;
+        // carimbo: o resultado é DESTE quadro e fica na tela até a próxima medida (sincronia, ver executor)
+        state.tRes = ctx.tQuadro;
         const full = ctx.grabFull ? ctx.grabFull(p.largura) : null;
         const img = full && full.width >= src.width ? full : src;
         const e = mq && mq.escala;
@@ -193,6 +196,7 @@ function opFerramenta({ op, tipo, label, desc, params, spec, preparar }) {
         state.esc = src.width / img.width;
       }
       const res = state.res || [];
+      carimbarDesenho(ctx, state.tRes);
       // para os operadores seguintes (midia.tempo_tela): o veredito de cada ferramenta avulsa
       ctx.inspecao = (ctx.inspecao || []).concat(res.map((r) => ({ op: def.op, nome: r.nome, status: r.status, value: r.value })));
       if (p.desenhar) {

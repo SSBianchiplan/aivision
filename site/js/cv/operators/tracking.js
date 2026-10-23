@@ -170,6 +170,8 @@ export const byteTrack = {
   op: 'track.bytetrack',
   label: 'Tracking com IDs (ByteTrack)',
   group: G, overlayOnly: true,
+  // desenha a trilha prevista para ctx.tExibir: o executor não re-sincroniza (tempo-real/sincronizar.js)
+  sincroniza: true,
   desc: 'IDs estáveis para os objetos do detector anterior na cadeia, rastro e ' +
         'contagem por linha. Sem modelo: IoU + Kalman de velocidade no tempo, em duas ' +
         'passadas (alta e baixa confiança), como o ByteTrack. A caixa desenhada é a ' +

@@ -7,6 +7,7 @@
 import { MODELS, loadModel, isReady, run, makeTensor, modelStates } from './onnx.js';
 import { letterbox, unletterbox, toTensorData, decodeYolox } from './tensor.js';
 import { COCO_CLASSES } from './labels.js';
+import { relogio } from './tempo-real/carimbo.js';
 
 export function ensure(id, state, ctx) {
   if (isReady(id)) return true;
@@ -43,7 +44,8 @@ export function schedule(state, minIntervalMs, prep, infer, tCaptura) {
   try { input = prep(); } catch (err) { state.error = String(err.message || err); return; }
   if (!input) return;
   state.busy = true; state.lastStart = now;
-  const tCap = Number.isFinite(tCaptura) ? tCaptura : now;
+  // carimbo: o instante do quadro inferido — o pedido, ou o relógio do quadro em execução
+  const tCap = Number.isFinite(tCaptura) ? tCaptura : Number.isFinite(relogio.tQuadro) ? relogio.tQuadro : now;
   Promise.resolve().then(() => infer(input))
     .then((res) => {
       state.results = res; state.inferMs = performance.now() - now; state.error = null;

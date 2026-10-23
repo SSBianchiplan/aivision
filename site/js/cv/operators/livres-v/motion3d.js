@@ -85,6 +85,8 @@ export const motion3dCaptura = {
   model: 'pose',
   needs: ['yolox'],
   overlayOnly: true,
+  // desenha a pose do instante do quadro exibido (canal.poseEm(ctx.tExibir)): o executor não re-sincroniza
+  sincroniza: true,
   desc: 'Captura de movimento 3D ao vivo de uma câmera ou vídeo: BlazePose com os 33 pontos 3D do mundo, suavização ' +
         'One Euro (GPlanSiS|ROBO), taxa e latência, gravação de tomadas para o Motion 3D Studio (esqueleto 2D e 3D, ' +
         'retarget, BVH/GLB/JSON/CSV). Tudo no aparelho. 3D de uma câmera é estimado (escala e profundidade aproximadas).',

@@ -145,9 +145,11 @@ export const scanCode = {
       const img = cheio || copyOf(src);
       const w = base.width, h = base.height;
       state.scanPx = `${w}×${h}` + (cheio ? '' : ' (pipeline)');
+      const tCap = Number.isFinite(ctx.tQuadro) ? ctx.tQuadro : agora;   // carimbo (sincronia, ver executor)
 
       readCodes(img)
         .then((found) => {
+          state.resultsT = tCap;
           state.results = found.map((f) => ({
             text: f.text,
             format: f.format,

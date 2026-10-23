@@ -152,7 +152,7 @@ export function Viewport({ source, executor, snapshotRef, hideIdle, ring, canvas
    * (ctx.sincronia) do quadro anterior.
    */
   const sincRef = useRef(null);
-  if (!sincRef.current) sincRef.current = { buf: new AtrasoQuadros(), atrasoMs: 0 };
+  if (!sincRef.current) sincRef.current = { buf: new AtrasoQuadros(), bufOut: new AtrasoQuadros({ maxBytes: 48e6 }), atrasoMs: 0 };
 
   if (!workRef.current) {
     workRef.current = document.createElement('canvas');
@@ -453,18 +453,37 @@ export function Viewport({ source, executor, snapshotRef, hideIdle, ring, canvas
         : Boolean(src && src.kind === 'youtube' && YT_PARADO.has(src.estado));
       heldAnt.current = held;
 
-      // sincronia: só no caminho overlay, ao vivo (não no histórico), com rastreio ou captura de
-      // movimento (motion3d.captura: a pose é desenhada no quadro dela, no app e no Studio) na cadeia
+      /*
+       * SINCRONIA (components/video/sincronia.js + cv/runtime/tempo-real/sincronizar.js): em arquivo
+       * e YouTube, a imagem exibida é a do instante dos resultados desenhados. O executor carimba o
+       * desenho de cada nó com o quadro de onde ele saiu e pede um atraso (latência + período dos
+       * nós assíncronos, com teto); o Viewport mostra o quadro de L ms atrás e o executor monta o
+       * overlay para o instante dele. Vale para TODOS os operadores (antes só com rastreio na
+       * cadeia), nos dois caminhos (overlay e pixels). Câmera e streams ao vivo: imagem no ritmo
+       * real, desenho mais recente, com a idade dele carimbada na tela. `sincronizar` de um nó
+       * (ByteTrack, Motion 3D) ainda manda: 'nunca' desliga, 'sempre' liga até ao vivo.
+       */
       const sc = sincRef.current;
-      const noTrack = mode === 'overlay' && !held ? active.find((n) => n.op === 'track.bytetrack' || n.op === 'motion3d.captura') : null;
-      const sincOn = Boolean(noTrack) && sincroniaLigada((noTrack.params && noTrack.params.sincronizar) || 'auto', st.sourceKind);
-      let quadroExib = null;
+      const noModo = !held ? active.find((n) => n.params && typeof n.params.sincronizar === 'string') : null;
+      const sincOn = mode !== 'passthrough' && !held && !fonteParada
+        && sincroniaLigada((noModo && noModo.params.sincronizar) || 'auto', st.sourceKind);
+      const perto = active.some((n) => n.op === 'motion3d.captura');
+      let quadroExib = null, quadroOut = null;
       if (sincOn) {
-        sc.buf.guardar(el, c, mirror, tQ, dw, dh, sc.atrasoMs);
-        if (sc.atrasoMs > 0) quadroExib = noTrack.op === 'motion3d.captura' ? sc.buf.escolherPerto(tQ - sc.atrasoMs) : sc.buf.escolher(tQ - sc.atrasoMs);
-      } else if (sc.buf.tamanho || sc.atrasoMs) {
-        sc.buf.limpar(); sc.atrasoMs = 0;
+        // pixels: o quadro processado é guardado depois da cadeia; o de exibir sai dos já guardados
+        if (mode === 'overlay' || st.compare) sc.buf.guardar(el, c, mirror, tQ, dw, dh, sc.atrasoMs);
+        if (sc.atrasoMs > 0) {
+          if (mode === 'overlay') quadroExib = perto ? sc.buf.escolherPerto(tQ - sc.atrasoMs) : sc.buf.escolher(tQ - sc.atrasoMs);
+          else {
+            quadroOut = sc.bufOut.escolher(tQ - sc.atrasoMs);
+            if (quadroOut && st.compare) quadroExib = sc.buf.escolherPerto(quadroOut.t);
+          }
+        }
+      } else if (sc.buf.tamanho || sc.bufOut.tamanho || sc.atrasoMs) {
+        sc.buf.limpar(); sc.bufOut.limpar(); sc.atrasoMs = 0;
       }
+      if (mode === 'overlay' || !sincOn) sc.bufOut.limpar();
+      const tExib = quadroOut ? quadroOut.t : quadroExib ? quadroExib.t : tQ;
 
       const result = executor.current.run(frame, st.nodes, frameIdx.current++, {
         grabFull, fonteParada,
@@ -481,12 +500,18 @@ export function Viewport({ source, executor, snapshotRef, hideIdle, ring, canvas
         marcacoes: paraQuadro(procW, procH),
         tQuadro: tQ,
         // instante do quadro que vai para a tela (sincronia); sem ela, o próprio quadro
-        tExibir: quadroExib ? quadroExib.t : tQ,
+        tExibir: tExib,
+        // overlay montado para tExibir (sincronia ligada) ou o mais recente de cada nó
+        sincronizar: sincOn,
       });
-      sc.atrasoMs = sincOn && result.sincronia ? Math.max(0, result.sincronia.atrasoMs || 0) : 0;
-      // quem copia este canvas (Motion 3D Studio) desenha a pose do instante do quadro exibido
+      {
+        // atraso: sobe na hora (a imagem espera o resultado), desce devagar (sem pular quadros à vista)
+        const alvo = sincOn && result.sincronia ? Math.max(0, result.sincronia.atrasoMs || 0) : 0;
+        sc.atrasoMs = alvo >= sc.atrasoMs ? alvo : Math.max(alvo, sc.atrasoMs - 3);
+      }
+      // quem copia este canvas (Motion 3D Studio, Studios) desenha no instante do quadro exibido
       display.tQuadro = tQ;
-      display.tExibir = quadroExib ? quadroExib.t : tQ;
+      display.tExibir = tExib;
       overlay = result.overlay;
       metrics = result.metrics;
       timings = result.timings;
@@ -509,6 +534,12 @@ export function Viewport({ source, executor, snapshotRef, hideIdle, ring, canvas
         }
         out.getContext('2d').putImageData(result.image, 0, 0);
         free(result.image);
+        // sincronia nos pixels: guarda o processado (no tamanho do pipeline: barato) e exibe o de tExib
+        let outExib = out;
+        if (sincOn) {
+          sc.bufOut.guardar(out, { sx: 0, sy: 0, sw: procW, sh: procH }, false, tQ, procW, procH, sc.atrasoMs);
+          if (quadroOut) outExib = quadroOut.canvas;
+        }
 
         // LGPD: com borrão de rostos ativo, a metade "ORIGINAL" mostraria rostos sem borrão —
         // o Comparar fica desligado nesse caso e a tela inteira mostra o processado
@@ -517,18 +548,19 @@ export function Viewport({ source, executor, snapshotRef, hideIdle, ring, canvas
           || (n.op === 'epi.monitor' && (!n.params || n.params.borrar !== false))));
         if (st.compare && !privado) {
           const cut = Math.round(dw * splitRef.current);
-          drawSource(dctx, el, mirror, dx, dy, dw, dh, c);
+          if (quadroExib) dctx.drawImage(quadroExib.canvas, dx, dy, dw, dh);
+          else drawSource(dctx, el, mirror, dx, dy, dw, dh, c);
           dctx.save();
           dctx.beginPath();
           dctx.rect(dx + cut, dy, dw - cut, dh);
           dctx.clip();
-          dctx.drawImage(out, 0, 0, procW, procH, dx, dy, dw, dh);
+          dctx.drawImage(outExib, 0, 0, outExib.width, outExib.height, dx, dy, dw, dh);
           dctx.restore();
           drawSplitter(dctx, dx + cut, dy, dh, dpr);
           label(dctx, 'ORIGINAL', dx + 10 * dpr, dy + 22 * dpr, dpr);
           label(dctx, 'PROCESSADO', dx + dw - 10 * dpr, dy + 22 * dpr, dpr, 'right');
         } else {
-          dctx.drawImage(out, 0, 0, procW, procH, dx, dy, dw, dh);
+          dctx.drawImage(outExib, 0, 0, outExib.width, outExib.height, dx, dy, dw, dh);
           if (st.compare && privado) label(dctx, 'COMPARAR DESLIGADO · ROSTOS BORRADOS (LGPD)', dx + 10 * dpr, dy + 22 * dpr, dpr);
         }
       }
@@ -536,7 +568,9 @@ export function Viewport({ source, executor, snapshotRef, hideIdle, ring, canvas
 
       drawOverlay(dctx, overlay, dx, dy, ovScale, dpr);
       if (held) label(dctx, `HISTÓRICO −${r.behindSeconds.toFixed(1)}s`, dx + 10 * dpr, dy + dh - 12 * dpr, dpr);
-      else if (quadroExib && tQ - quadroExib.t > 1) label(dctx, `SINCRONIA −${Math.round(tQ - quadroExib.t)} ms`, dx + 10 * dpr, dy + dh - 12 * dpr, dpr);
+      else if (tExib < tQ - 1) label(dctx, `SINCRONIA −${Math.round(tQ - tExib)} ms`, dx + 10 * dpr, dy + dh - 12 * dpr, dpr);
+      // ao vivo (sem atrasar a imagem): o carimbo do resultado mais velho que está na tela
+      else if (!sincOn && result.idadeMs > 150) label(dctx, `RESULTADO −${Math.round(result.idadeMs)} ms`, dx + 10 * dpr, dy + dh - 12 * dpr, dpr);
       lastOverlay.current = overlay;
       commit(procMs, metrics, timings, st);
       autoQuality(procMs, st);

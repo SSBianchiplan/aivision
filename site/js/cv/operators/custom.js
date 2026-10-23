@@ -78,6 +78,7 @@ export const customDetect = {
     if (!state.busy && !(state.last && now - state.last < p.everyMs)) {
       state.busy = true; state.last = now;
       const lb = letterbox(src, S, S); const w = src.width, h = src.height;
+      const tCap = Number.isFinite(ctx.tQuadro) ? ctx.tQuadro : now;   // carimbo (sincronia, ver executor)
       Promise.resolve().then(async () => {
         const out = await run(id, await makeTensor(toTensorData(lb.data, spec), spec.input));
         const d = out[Object.keys(out)[0]].data; const res = [];
@@ -85,7 +86,7 @@ export const customDetect = {
           const o = i * 6; if (d[o + 4] < p.conf) break;
           res.push({ x1: ((d[o] - lb.dx) / lb.scale) / w, y1: ((d[o + 1] - lb.dy) / lb.scale) / h, x2: ((d[o + 2] - lb.dx) / lb.scale) / w, y2: ((d[o + 3] - lb.dy) / lb.scale) / h, score: d[o + 4], cls: Math.round(d[o + 5]) });
         }
-        state.results = res; state.ms = performance.now() - now; state.error = null;
+        state.results = res; state.resultsT = tCap; state.ms = performance.now() - now; state.error = null;
       }).catch((e) => { state.error = String(e && e.message ? e.message : e); }).finally(() => { state.busy = false; });
     }
     const res = state.results || [];

@@ -18,7 +18,7 @@
  */
 
 export class AtrasoQuadros {
-  constructor({ maxBytes = 64e6, maxQuadros = 48 } = {}) {
+  constructor({ maxBytes = 192e6, maxQuadros = 100 } = {}) {
     this.maxBytes = maxBytes;
     this.maxQuadros = maxQuadros;
     this.anel = [];          // [{ canvas, t }] do mais velho para o mais novo
@@ -27,7 +27,18 @@ export class AtrasoQuadros {
 
   /** Guarda o quadro atual (recorte `c` da fonte, já espelhado se for o caso) no tamanho lw×lh. */
   guardar(el, c, mirror, t, lw, lh, atrasoMs) {
-    lw = Math.max(16, Math.round(lw)); lh = Math.max(16, Math.round(lh));
+    /*
+     * Tamanho guardado: o de exibição, mas nunca acima do recorte da fonte (não há o que ganhar) e,
+     * com atraso longo (detector lento: RF-DETR small passa de 1 s), reduzido até caber no orçamento
+     * os quadros que o atraso pede — antes o teto de memória cortava o anel e o atraso não era cumprido.
+     */
+    const sw = c && c.sw ? c.sw : lw;
+    let k = Math.min(1, sw / lw);
+    const quer = Math.ceil(((atrasoMs || 0) + 300) / 30) + 2;
+    const bytes = lw * lh * 4 * k * k;
+    if (bytes * quer > this.maxBytes) k *= Math.sqrt(this.maxBytes / (bytes * quer));
+    k = Math.max(k, Math.min(1, 480 / lw));
+    lw = Math.max(16, Math.round(lw * k)); lh = Math.max(16, Math.round(lh * k));
     const cap = Math.max(2, Math.min(this.maxQuadros, Math.floor(this.maxBytes / (lw * lh * 4))));
     // a fonte parou (pausa, busca, aba em segundo plano): o que está guardado é de antes
     const ult = this.anel[this.anel.length - 1];
