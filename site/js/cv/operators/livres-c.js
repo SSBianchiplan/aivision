@@ -14,7 +14,7 @@
  * PatchCore · entrada [1,3,S,S] esticada, ImageNet. Saídas "mapa" [1,1,S,S] (distância de cada ponto ao
  *   vizinho mais próximo no banco de peças boas) e "nota" [1] (máximo do mapa). nota ≥ limiar = anomalia.
  */
-import { clone, alloc } from '../core.js';
+import { clone, camadaNova, camadaPintar, camadaPor, usarCamada } from '../core.js';
 import { MODELS, run, makeTensor } from '../runtime/onnx.js';
 import { stretch, toTensorData } from '../runtime/tensor.js';
 import { ensure, schedule, bilinear, colorFor, nmsBoxes, sigmoid } from '../runtime/opkit.js';
@@ -170,6 +170,7 @@ export const patchcoreInspecao = {
   op: 'livres.patchcore',
   label: 'Inspeção de anomalia (PatchCore)',
   group: G,
+  overlayOnly: true,   // nota em banner e mapa de calor numa camada sobre o vídeo nítido
   desc: 'Compara a imagem com o “banco” de peças boas aprendido em “Treinar modelos” (projeto de ' +
         'anomalia). Pinta o mapa de calor onde a peça foge do normal, mostra a nota e OK/REPROVADO ' +
         'pelo limiar calibrado no treino (ajuste com o fator). Enquadre a peça como nas fotos do treino.',
@@ -221,24 +222,23 @@ export const patchcoreInspecao = {
     const lo = Math.min(m.mapa_lo != null ? m.mapa_lo : lim * 0.5, lim * 0.9);
     const span = Math.max(1e-6, lim - lo);
     const so = p.modo === 'só onde passa do limiar';
-    const out = alloc(w, h);
-    const od = out.data, sd = src.data;
-    const kx = R.W / w, ky = R.H / h;
-    for (let y = 0; y < h; y++) {
-      const fy = (y + 0.5) * ky - 0.5;
-      for (let x = 0; x < w; x++) {
-        const q = (y * w + x) * 4;
-        const t = (bilinear(R.d, R.W, R.H, (x + 0.5) * kx - 0.5, fy) - lo) / span;
-        let a = 0, c = null;
-        if (so) { if (t >= 1) { a = p.alpha; c = RAMPA[4]; } }
-        else if (t > 0.35) { a = p.alpha * Math.min(1, (t - 0.35) / 0.4); c = corCalor((t - 0.35) / 0.75); }
-        if (c) {
-          od[q] = sd[q] * (1 - a) + c[0] * a; od[q + 1] = sd[q + 1] * (1 - a) + c[1] * a; od[q + 2] = sd[q + 2] * (1 - a) + c[2] * a;
-        } else { od[q] = sd[q]; od[q + 1] = sd[q + 1]; od[q + 2] = sd[q + 2]; }
-        od[q + 3] = 255;
+    // camada do mapa: uma vez por resultado
+    const prim = camadaPor(state, [R, w, h, p.alpha, so, lo, span], () => {
+      const L = camadaNova(w, h), od = L.data;
+      const kx = R.W / w, ky = R.H / h;
+      for (let y = 0; y < h; y++) {
+        const fy = (y + 0.5) * ky - 0.5;
+        for (let x = 0; x < w; x++) {
+          const t = (bilinear(R.d, R.W, R.H, (x + 0.5) * kx - 0.5, fy) - lo) / span;
+          let a = 0, c = null;
+          if (so) { if (t >= 1) { a = p.alpha; c = RAMPA[4]; } }
+          else if (t > 0.35) { a = p.alpha * Math.min(1, (t - 0.35) / 0.4); c = corCalor((t - 0.35) / 0.75); }
+          if (c) camadaPintar(od, (y * w + x) * 4, c[0], c[1], c[2], a);
+        }
       }
-    }
-    return out;
+      return L;
+    });
+    return usarCamada(src, ctx, prim);
   },
 };
 

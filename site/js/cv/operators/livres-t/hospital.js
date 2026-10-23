@@ -68,6 +68,8 @@ export const quedaHospital = {
   op: 'hospital.queda',
   label: 'Queda de paciente (hospital/ILPI), só esqueleto',
   group: G,
+  // «só esqueleto» troca a imagem por fundo escuro (privacidade); «vídeo normal» só desenha
+  overlayOnly: (p) => p.privacidade !== 'só esqueleto',
   desc: 'O detector de queda e imobilidade do CV-43 (seguranca.queda, importado sem mudança) com os ajustes de quarto ' +
         '(alarme de pessoa no chão em 10 s, imobilidade em 60 s) e o modo "só esqueleto": o vídeo vira fundo escuro e ' +
         'fica só a pose — sem rosto, sem imagem do paciente. Coloque a Pose multi-pessoa (RTMO) antes. Indicador de apoio ' +

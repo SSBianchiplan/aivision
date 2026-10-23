@@ -24,6 +24,7 @@ export const corteCena = {
   op: 'midia.corte_cena',
   label: 'Corte de cena automático',
   group: G,
+  overlayOnly: true,   // só desenha por cima: devolve o quadro sem alteração (vídeo nítido)
   desc: 'Acha os cortes secos de cena enquanto o vídeo toca (histograma de cor + diferença de quadro, limiar ' +
         'adaptativo, cena mínima) e manda os instantes como marcadores para o editor GPlanSiS|Vídeo. Para varrer ' +
         'um arquivo inteiro mais rápido, use «Varrer arquivo» no painel. Fusões lentas não contam como corte.',
@@ -55,6 +56,7 @@ export const miniatura = {
   op: 'midia.miniatura',
   label: 'Melhor quadro para miniatura',
   group: G,
+  overlayOnly: true,   // só desenha por cima: devolve o quadro sem alteração (vídeo nítido)
   desc: 'Dá nota a cada quadro (nitidez, rosto bem enquadrado e de olhos abertos pelo «Malha do rosto», exposição) e ' +
         'guarda os melhores, a pelo menos 1 s um do outro. No painel: baixar JPEG em resolução plena ou abrir o editor ' +
         'GPlanSiS|Vídeo naquele instante.',

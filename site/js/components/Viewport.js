@@ -7,13 +7,18 @@
  *                exibição, em resolução plena. Zero getImageData, zero cópia.
  *
  *   overlay      só operadores que desenham por cima (detecção, pose, OCR,
- *                cantos, blobs). O pipeline roda em procWidth para CALCULAR,
+ *                cantos, blobs — e máscaras, mapas de calor e fundos
+ *                escurecidos, que vão como CAMADA de imagem: cv/core.js ›
+ *                camadaPrimitiva). O pipeline roda em procWidth para CALCULAR,
  *                mas o que aparece é o vídeo em resolução PLENA com o overlay
- *                por cima. Caixa nítida sobre imagem nítida.
+ *                por cima. Caixa nítida sobre imagem nítida. Quem decide é
+ *                registry.soDesenha (overlayOnly booleano ou função dos params).
  *
- *   pixels       algum operador altera os pixels (blur, canny, segmentação).
+ *   pixels       algum operador altera os pixels (blur, canny, borrão LGPD).
  *                Aí não tem escapatória: exibe o resultado processado,
- *                reescalado pela GPU a partir de procWidth.
+ *                reescalado pela GPU a partir de procWidth — que, neste
+ *                caminho, a qualidade automática não deixa cair abaixo de
+ *                PISO_PIXELS.
  *
  * A captura usa requestVideoFrameCallback quando existe: ele dispara uma vez
  * por frame REAL da câmera, em vez das 60 vezes por segundo do
@@ -24,7 +29,7 @@
 import { html, useRef, useEffect, useCallback } from '../vendor.js';
 import { useStore, store } from '../state/store.js';
 import { free } from '../cv/core.js';
-import { getOperator } from '../cv/registry.js';
+import { getOperator, soDesenha } from '../cv/registry.js';
 import { legendaAtual } from '../cv/speech/captions.js';
 import { marcStore, vista, rt, paraQuadro } from '../cv/marcacoes.js';
 import {
@@ -279,14 +284,9 @@ export function Viewport({ source, executor, snapshotRef, hideIdle, ring, canvas
       if (r && !held && st.running) r.push(el, size.width, size.height, st.mirror);
 
       const active = st.nodes.filter((n) => n.enabled);
-      const mode = !active.length
-        ? 'passthrough'
-        : active.every((n) => {
-            const def = getOperator(n.op);
-            return def && def.overlayOnly;
-          })
-          ? 'overlay'
-          : 'pixels';
+      const mode = !active.length ? 'passthrough' : active.every(soDesenha) ? 'overlay' : 'pixels';
+      // para quem mede (testes, telemetria): o caminho do último quadro
+      display.modo = mode;
 
       // ---- geometria de exibição
       const rect = tamCss.current || display.getBoundingClientRect();
@@ -332,6 +332,7 @@ export function Viewport({ source, executor, snapshotRef, hideIdle, ring, canvas
         drawSource(dctx, el, mirror, dx, dy, dw, dh, c);
         lastOverlay.current = [];
         commit(0, {}, [], st);
+        largura(st, mode);
         return;
       }
 
@@ -546,6 +547,23 @@ export function Viewport({ source, executor, snapshotRef, hideIdle, ring, canvas
         if (quadroExib) dctx.drawImage(quadroExib.canvas, dx, dy, dw, dh);
         else drawSource(dctx, el, mirror, dx, dy, dw, dh, c);
         free(result.image);
+        /*
+         * Comparar com camadas (máscara, mapa de calor): a camada vai só na
+         * metade PROCESSADO, como era quando ela alterava os pixels.
+         */
+        if (st.compare && overlay && overlay.some((o) => o.type === 'imagem')) {
+          const cut = Math.round(dw * splitRef.current);
+          dctx.save();
+          dctx.beginPath();
+          dctx.rect(dx + cut, dy, dw - cut, dh);
+          dctx.clip();
+          drawCamadas(dctx, overlay, dx, dy, ovScale);
+          dctx.restore();
+          overlay = overlay.filter((o) => o.type !== 'imagem');
+          drawSplitter(dctx, dx + cut, dy, dh, dpr);
+          label(dctx, 'ORIGINAL', dx + 10 * dpr, dy + 22 * dpr, dpr);
+          label(dctx, 'PROCESSADO', dx + dw - 10 * dpr, dy + 22 * dpr, dpr, 'right');
+        }
       } else {
         // ---- caminho 3: pixels processados
         const out = outRef.current;
@@ -594,7 +612,7 @@ export function Viewport({ source, executor, snapshotRef, hideIdle, ring, canvas
       else if (!sincOn && result.idadeMs > 150) label(dctx, `RESULTADO −${Math.round(result.idadeMs)} ms`, dx + 10 * dpr, dy + dh - 12 * dpr, dpr);
       lastOverlay.current = overlay;
       commit(procMs, metrics, timings, st);
-      autoQuality(procMs, st);
+      autoQuality(procMs, st, mode, dw);
     }
 
     function commit(procMs, metrics, timings, st) {
@@ -633,17 +651,33 @@ export function Viewport({ source, executor, snapshotRef, hideIdle, ring, canvas
 
     /*
      * Qualidade adaptativa: mantém o custo de processamento dentro do orçamento
-     * do fps alvo mexendo na largura de trabalho. Sobe devagar e desce rápido —
-     * o usuário perdoa perder nitidez, não perdoa engasgo.
+     * do fps alvo mexendo na largura de trabalho. Desce rápido quando aperta e
+     * volta rápido quando sobra — antes subia só 12% a cada 1,2 s, e uma
+     * máquina que passou por um aperto ficava em 160 px (e a imagem do caminho
+     * pixels, borrada) muito depois de a carga ter ido embora.
+     *
+     * O valor que ELA escolhe é marcado (procWidthAuto) e não é o que se grava
+     * (state/store.js › persist): ao reabrir, volta a largura do usuário
+     * (procWidthUsuario, 480 por padrão), não a do último aperto.
+     *
+     * Piso por caminho: no overlay a imagem é a da fonte e 160 px só afeta o
+     * cálculo; no caminho pixels é o que aparece na tela, então não desce de
+     * PISO_PIXELS (e sobe até ele ao entrar nesse caminho) — nem acima da
+     * largura em que a imagem é exibida (`dw`, já limitada por dprCanvas):
+     * processar mais largo que a tela não deixa nada mais nítido.
      */
-    function autoQuality(procMs, st) {
+    function autoQuality(procMs, st, mode, dw) {
       if (!st.autoQuality) return;
       const q = qualityRef.current;
+      const piso = mode === 'pixels'
+        ? Math.max(160, Math.min(PISO_PIXELS, usuarioDe(st), Math.ceil((dw || PISO_PIXELS) / 40) * 40))
+        : 160;
+      if (st.procWidth < piso) { q.samples.length = 0; q.t0 = performance.now(); definir(st, piso); return; }
       q.samples.push(procMs);
-      if (q.samples.length < 20) return;
+      if (q.samples.length < 12) return;
 
       const now = performance.now();
-      if (now - q.t0 < 1200) { q.samples.length = 0; return; }
+      if (now - q.t0 < 700) { q.samples.length = 0; return; }
       q.t0 = now;
 
       const sorted = q.samples.slice().sort((a, b) => a - b);
@@ -653,9 +687,36 @@ export function Viewport({ source, executor, snapshotRef, hideIdle, ring, canvas
       const budget = 1000 / (st.targetFps || 30);
       const cur = st.procWidth;
       let next = cur;
-      if (p80 > budget * 1.15) next = Math.max(160, Math.round(cur * 0.82 / 40) * 40);
-      else if (p80 < budget * 0.5) next = Math.min(960, Math.round(cur * 1.12 / 40) * 40);
-      if (next !== cur) store.set({ procWidth: next });
+      if (p80 > budget * 1.15) next = Math.max(piso, Math.round(cur * 0.82 / 40) * 40);
+      // folga grande: volta de uma vez (custo ∝ área: 1,4× na largura ≈ 2× no custo)
+      else if (p80 < budget * 0.3) next = Math.min(960, Math.max(cur + 40, Math.round(cur * 1.4 / 40) * 40));
+      else if (p80 < budget * 0.5) next = Math.min(960, Math.max(cur + 40, Math.round(cur * 1.12 / 40) * 40));
+      // no caminho pixels, subir além da largura exibida só gasta CPU
+      if (mode === 'pixels' && next > cur && dw) next = Math.max(cur, Math.min(next, Math.ceil(dw / 40) * 40));
+      if (next !== cur) definir(st, next);
+    }
+
+    /**
+     * Largura que o usuário escolheu: a atual, se não foi a qualidade
+     * automática que a pôs; senão a guardada na primeira mudança automática.
+     */
+    function usuarioDe(st) {
+      return st.procWidth !== st.procWidthAuto ? st.procWidth : st.procWidthUsuario || 480;
+    }
+    function definir(st, w) {
+      store.set({ procWidth: w, procWidthAuto: w, procWidthUsuario: usuarioDe(st) });
+    }
+
+    /*
+     * Sem operador nada é processado, a qualidade automática não mede e a
+     * largura rebaixada ficaria parada (a Telemetria mostrava «160» sem nada
+     * ligado). Volta à do usuário — os operadores ligados depois começam dela.
+     */
+    function largura(st, mode) {
+      if (mode !== 'passthrough' || !st.autoQuality) return;
+      if (st.procWidth === st.procWidthAuto && st.procWidth !== usuarioDe(st)) {
+        store.set({ procWidth: usuarioDe(st), procWidthAuto: null });
+      }
     }
 
     function detectBlack(frame, st) {
@@ -946,6 +1007,13 @@ export function Viewport({ source, executor, snapshotRef, hideIdle, ring, canvas
   `;
 }
 
+/**
+ * Piso da largura de trabalho no caminho pixels com qualidade automática: ali
+ * o quadro processado É a imagem da tela (esticado de procWidth até o canvas),
+ * e 160 px numa tela de 1000+ px é borrão. 480 é o padrão do app.
+ */
+const PISO_PIXELS = 480;
+
 /** Cores do palco conforme o tema (css/app.css e css/theme.css: --stage-bg, --accent). */
 const palco = { fundo: '#02302C', texto: '#FFD84D' };
 function lerPalco() {
@@ -1091,9 +1159,25 @@ function drawCaption(canvas) {
 
 // ---------------------------------------------------------------- overlay
 
+/**
+ * Camadas de imagem do overlay (máscaras, mapas de calor, fundo escurecido),
+ * esticadas pela GPU sobre o vídeo nítido. Vão ANTES das formas vetoriais,
+ * para caixas e textos ficarem por cima.
+ */
+function drawCamadas(ctx, shapes, dx, dy, scale) {
+  for (const sh of shapes) {
+    if (sh.type !== 'imagem' || !sh.fonte) continue;
+    ctx.imageSmoothingEnabled = sh.suave !== false;
+    ctx.imageSmoothingQuality = 'high';
+    try { ctx.drawImage(sh.fonte, dx + sh.x * scale, dy + sh.y * scale, sh.w * scale, sh.h * scale); } catch (_) { /* camada inválida: segue */ }
+  }
+  ctx.imageSmoothingEnabled = true;
+}
+
 function drawOverlay(ctx, shapes, dx, dy, scale, dpr) {
   if (!shapes || !shapes.length) return;
   ctx.save();
+  drawCamadas(ctx, shapes, dx, dy, scale);
   // alinhamento explícito: sem isto o texto herdava o 'center' de outro desenho e os banners saíam cortados à esquerda
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';

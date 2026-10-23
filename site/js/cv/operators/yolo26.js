@@ -17,7 +17,7 @@
  * ocupa 40 linhas aqui vira um laço com break antecipado.
  */
 
-import { clone, alloc } from '../core.js';
+import { clone, alloc, camadaNova, camadaPintar, camadaPor, usarCamada } from '../core.js';
 import {
   AGPL_MODELS, loadModel, isReady, run, makeTensor, modelStates, agplAccepted,
 } from '../runtime/onnx.js';
@@ -233,6 +233,7 @@ export const y26segment = {
   desc: 'Segmentação de INSTÂNCIAS nas 80 classes: cada objeto ganha máscara ' +
         'própria. A máscara sai do produto dos 32 coeficientes pelos protótipos ' +
         '32×160×160. É o que o PP-HumanSeg não faz (ele só separa pessoa/fundo).',
+  overlayOnly: true,   // máscaras numa camada sobre o vídeo nítido (cv/core.js › camadaPrimitiva)
   params: {
     conf: { type: 'float', min: 0.05, max: 0.9, step: 0.05, default: 0.4, label: 'Confiança' },
     maxDet: { type: 'int', min: 1, max: 30, step: 1, default: 10, label: 'Máx. instâncias' },
@@ -297,9 +298,6 @@ export const y26segment = {
     }
 
     const { w, h } = ctx;
-    const out = alloc(w, h);
-    out.data.set(src.data);
-    const od = out.data;
     const { lb } = R;
 
     // amostragem bilinear do logit no espaço do protótipo; borda suave em
@@ -315,28 +313,33 @@ export const y26segment = {
     const kx = (src.width * lb.scale) * (P / S) / w, ky = (src.height * lb.scale) * (P / S) / h;
     const ox = lb.dx * (P / S), oy = lb.dy * (P / S);
 
-    R.insts.forEach((inst, idx) => {
-      // cor por INSTÂNCIA: duas camas ou dois cachorros não podem sair iguais
-      const col = hexToRgb(colorFor(idx));
-      // só a região da caixa (com 2% de folga), não o frame inteiro
-      const bx0 = Math.max(0, (((inst.box[0] - lb.dx) / lb.scale / src.width) * w - 2) | 0);
-      const by0 = Math.max(0, (((inst.box[1] - lb.dy) / lb.scale / src.height) * h - 2) | 0);
-      const bx1 = Math.min(w, (((inst.box[2] - lb.dx) / lb.scale / src.width) * w + 3) | 0);
-      const by1 = Math.min(h, (((inst.box[3] - lb.dy) / lb.scale / src.height) * h + 3) | 0);
-      for (let y = by0; y < by1; y++) {
-        const my = y * ky + oy;
-        for (let x = bx0; x < bx1; x++) {
-          const lg = amostra(inst.logit, x * kx + ox, my);
-          // sigmoid(lg) > 0,5 é a fronteira; a rampa de ±1,2 no logit vira
-          // anti-serrilhado: meio pixel de transição em vez de degrau
-          const a = Math.min(1, Math.max(0, lg / 2.4 + 0.5));
-          if (a <= 0.02) continue;
-          const q = (y * w + x) * 4, k = a * p.alpha;
-          od[q] = od[q] * (1 - k) + col[0] * k;
-          od[q + 1] = od[q + 1] * (1 - k) + col[1] * k;
-          od[q + 2] = od[q + 2] * (1 - k) + col[2] * k;
+    // camada das máscaras: montada uma vez por resultado (as caixas vão a cada quadro)
+    const prim = camadaPor(state, [R, w, h, p.alpha], () => {
+      const L = camadaNova(w, h), od = L.data;
+      R.insts.forEach((inst, idx) => {
+        // cor por INSTÂNCIA: duas camas ou dois cachorros não podem sair iguais
+        const col = hexToRgb(colorFor(idx));
+        // só a região da caixa (com 2% de folga), não o frame inteiro
+        const bx0 = Math.max(0, (((inst.box[0] - lb.dx) / lb.scale / src.width) * w - 2) | 0);
+        const by0 = Math.max(0, (((inst.box[1] - lb.dy) / lb.scale / src.height) * h - 2) | 0);
+        const bx1 = Math.min(w, (((inst.box[2] - lb.dx) / lb.scale / src.width) * w + 3) | 0);
+        const by1 = Math.min(h, (((inst.box[3] - lb.dy) / lb.scale / src.height) * h + 3) | 0);
+        for (let y = by0; y < by1; y++) {
+          const my = y * ky + oy;
+          for (let x = bx0; x < bx1; x++) {
+            const lg = amostra(inst.logit, x * kx + ox, my);
+            // sigmoid(lg) > 0,5 é a fronteira; a rampa de ±1,2 no logit vira
+            // anti-serrilhado: meio pixel de transição em vez de degrau
+            const a = Math.min(1, Math.max(0, lg / 2.4 + 0.5));
+            if (a <= 0.02) continue;
+            camadaPintar(od, (y * w + x) * 4, col[0], col[1], col[2], a * p.alpha);
+          }
         }
-      }
+      });
+      return L;
+    });
+    const saida = usarCamada(src, ctx, prim);
+    R.insts.forEach((inst, idx) => {
       // contorno da caixa por cima, com o rótulo
       const bx = (inst.box[0] - lb.dx) / lb.scale / src.width;
       const by = (inst.box[1] - lb.dy) / lb.scale / src.height;
@@ -350,7 +353,7 @@ export const y26segment = {
       });
     });
     ctx.metrics['instâncias'] = R.insts.length;
-    return out;
+    return saida;
   },
 };
 
@@ -558,6 +561,7 @@ export const y26semantic = {
   agpl: true,
   desc: 'Segmentação semântica Cityscapes (19 classes: estrada, prédio, ' +
         'pessoa, carro…). Cada pixel recebe uma classe. Entrada 1024².',
+  overlayOnly: true,   // cores das classes numa camada sobre o vídeo nítido
   params: {
     alpha: { type: 'float', min: 0.1, max: 1, step: 0.05, default: 0.55, label: 'Opacidade' },
     everyMs: { type: 'int', min: 200, max: 5000, step: 100, default: 900, label: 'Intervalo (ms)' },
@@ -581,26 +585,25 @@ export const y26semantic = {
     if (!R) return clone(src);
 
     const { w, h } = ctx;
-    const out = alloc(w, h);
-    const s = src.data, od = out.data;
     const M = R.size;
-    const seen = new Set();
-    for (let y = 0; y < h; y++) {
-      const my = Math.min(M - 1, ((y * M) / h) | 0) * M;
-      for (let x = 0; x < w; x++) {
-        const cls = Math.round(R.map[my + Math.min(M - 1, ((x * M) / w) | 0)]);
-        const col = CITY_COLORS[cls] || [0, 0, 0];
-        seen.add(cls);
-        const q = (y * w + x) * 4;
-        od[q] = s[q] * (1 - p.alpha) + col[0] * p.alpha;
-        od[q + 1] = s[q + 1] * (1 - p.alpha) + col[1] * p.alpha;
-        od[q + 2] = s[q + 2] * (1 - p.alpha) + col[2] * p.alpha;
-        od[q + 3] = 255;
+    // camada das classes (vizinho mais próximo, como antes): uma vez por resultado
+    const prim = camadaPor(state, [R, w, h, p.alpha], () => {
+      const L = camadaNova(w, h), od = L.data;
+      const seen = new Set();
+      for (let y = 0; y < h; y++) {
+        const my = Math.min(M - 1, ((y * M) / h) | 0) * M;
+        for (let x = 0; x < w; x++) {
+          const cls = Math.round(R.map[my + Math.min(M - 1, ((x * M) / w) | 0)]);
+          const col = CITY_COLORS[cls] || [0, 0, 0];
+          seen.add(cls);
+          camadaPintar(od, (y * w + x) * 4, col[0], col[1], col[2], p.alpha);
+        }
       }
-    }
-    ctx.metrics['classes'] = Array.from(seen).slice(0, 4)
-      .map((c) => CITYSCAPES[c] || c).join(', ');
-    return out;
+      state.classes = Array.from(seen).slice(0, 4).map((c) => CITYSCAPES[c] || c).join(', ');
+      return L;
+    });
+    ctx.metrics['classes'] = state.classes || '';
+    return usarCamada(src, ctx, prim);
   },
 };
 

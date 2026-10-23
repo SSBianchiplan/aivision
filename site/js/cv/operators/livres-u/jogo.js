@@ -55,6 +55,8 @@ export const camera = {
   op: 'jogo.camera',
   label: 'Câmera de jogo (segue a jogada)',
   group: G,
+  // reenquadrado, o quadro sai ampliado (pixels); senão só o retângulo da jogada por cima
+  overlayOnly: (p) => !p.reenquadrar,
   desc: 'Reenquadramento automático ao vivo para jogo amador filmado com câmera fixa: o recorte segue a bola e os ' +
         'jogadores (detector antes na cadeia; com a Quadra, os mesmos) com a suavização do «Seguir sujeito» do editor. ' +
         'O quadro sai ampliado (gravável). Com vídeo em arquivo, o painel aplica a trajetória no editor GPlanSiS|Vídeo ' +

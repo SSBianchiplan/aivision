@@ -37,6 +37,7 @@ export const trajetoria = {
   op: 'fisica.trajetoria',
   label: 'Laboratório de física (trajetória)',
   group: G,
+  overlayOnly: true,   // só desenha por cima: devolve o quadro sem alteração (vídeo nítido)
   desc: 'Segue um objeto (SAM 2, detector ou cor) e registra posição × tempo em metros pela régua calibrada: ' +
         'velocidade, aceleração, ajuste de parábola e g estimado (queda livre, lançamento), período do pêndulo ' +
         'e aceleração no plano inclinado. Tabela, gráfico e CSV no painel Aplicações.',

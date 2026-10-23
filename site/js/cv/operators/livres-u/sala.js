@@ -20,6 +20,7 @@ export const gabarito = {
   op: 'educacao.gabarito',
   label: 'Correção de gabarito (OMR)',
   group: G,
+  overlayOnly: true,   // só desenha por cima: devolve o quadro sem alteração (vídeo nítido)
   desc: 'Corrige folhas-resposta impressas pelo painel (botão «Folha-modelo»): acha os 4 cantos pretos, lê cada bolha, ' +
         'aponta branco, dupla marcação e marca incerta, lê a matrícula e dá a nota contra a chave. Cada folha entra na ' +
         'lista quando a leitura se repete; CSV no painel. Marque a área «Gabarito · folha» ou use o quadro inteiro.',
@@ -96,6 +97,7 @@ export const maosLevantadas = {
   op: 'educacao.maos_levantadas',
   label: 'Mãos levantadas (sala)',
   group: G,
+  overlayOnly: true,   // só desenha por cima: devolve o quadro sem alteração (vídeo nítido)
   desc: 'Conta as mãos levantadas na sala pela pose (punho acima da cabeça, cotovelo alto), com tempo mínimo para ' +
         'confirmar. Só contagem: ninguém é identificado e nada da imagem é guardado. Máximo e série por segundo no painel.',
   params: {

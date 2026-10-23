@@ -21,6 +21,7 @@ export const soletrar = {
   op: 'libras.soletrar',
   label: 'Libras — soletração (alfabeto manual)',
   group: G,
+  overlayOnly: true,   // só desenha por cima: devolve o quadro sem alteração (vídeo nítido)
   desc: 'Reconhece letras do alfabeto manual da Libras com a mão parada (21 pontos do «Mãos e gestos») e monta o ' +
         'texto. Regras prontas para 13 letras (prévia) e exemplos gravados por você (poucos por letra, kNN). ' + AVISO_LIBRAS,
   params: {

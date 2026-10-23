@@ -31,7 +31,7 @@
  *   threads     crossOriginIsolated (WASM multi-thread) e núcleos
  */
 
-import { getOperator } from '../registry.js';
+import { soDesenha } from '../registry.js';
 import { store } from '../../state/store.js';
 import { modelStates, getSpec, estadoFila, isIsolated } from './onnx.js';
 
@@ -216,14 +216,12 @@ let tAnt = 0;
 let obsLongas = null, longasJanela = 0;
 // rVFC próprio na fonte: quadros apresentados (metadata.presentedFrames) e callbacks vistos
 const vfc = { el: null, h: 0, apresentados: null, vistos: 0, apresentados0: null, vistos0: 0, perdidos0: null };
-let trabalhoMax = 0, autoAnt = null;
 const sincAnt = { buf: null, rep: 0, sal: 0 };
 
 function ligar() {
   tel.ativo = true;
   tAnt = performance.now();
   quadrosJanela = 0; somaMsJanela = 0; nMsJanela = 0; nTempo = 0; iTempo = 0;
-  trabalhoMax = 0; autoAnt = null;
   relogio = setInterval(amostrar, PERIODO_MS);
   if (typeof PerformanceObserver !== 'undefined') {
     try {
@@ -267,7 +265,8 @@ function seguirVfc(el) {
 function modoDe(st) {
   const ativos = (st.nodes || []).filter((n) => n.enabled);
   if (!ativos.length) return { modo: 'passthrough', forca: '' };
-  const forcam = ativos.filter((n) => { const d = getOperator(n.op); return !(d && d.overlayOnly); });
+  // a mesma regra do Viewport: overlayOnly booleano ou função dos parâmetros (registry.soDesenha)
+  const forcam = ativos.filter((n) => !soDesenha(n));
   if (!forcam.length) return { modo: 'overlay', forca: '' };
   const nomes = forcam.map((n) => n.op.split('.').pop());
   return { modo: 'pixels', forca: nomes.slice(0, 2).join(', ') + (nomes.length > 2 ? ` +${nomes.length - 2}` : '') };
@@ -345,14 +344,11 @@ function amostrar() {
     const z = (st.zoom && st.zoom.z) || 1;
     const larguraFonte = a.fonteW ? a.fonteW / z : Infinity;
     a.trabalho = Math.max(64, Math.min(st.procWidth, Math.round(larguraFonte)));
-    // qualidade automática: o maior procWidth visto com ela ligada é a referência do «baixou»
-    if (st.autoQuality) {
-      if (autoAnt === false) trabalhoMax = 0;
-      trabalhoMax = Math.max(trabalhoMax, st.procWidth);
-      a.autoBaixou = st.procWidth < trabalhoMax;
-      a.trabalhoMax = trabalhoMax;
-    } else trabalhoMax = 0;
-    autoAnt = Boolean(st.autoQuality);
+    // qualidade automática: «baixou» = a largura atual foi posta por ela (procWidthAuto) e está
+    // abaixo da escolhida pelo usuário (procWidthUsuario, 480 por padrão) — ver Viewport › autoQuality
+    const usuario = st.procWidthUsuario || 480;
+    a.autoBaixou = Boolean(st.autoQuality) && st.procWidth === st.procWidthAuto && st.procWidth < usuario;
+    a.trabalhoMax = usuario;
   }
 
   // ---- sincronia: atraso e repetidos/saltados da fila de reprodução

@@ -13,7 +13,7 @@
  * Diferente dos outros operadores de cena, este PINTA a imagem (o calor
  * vai junto na gravação e no PNG); "Borrar rostos" pode vir depois.
  */
-import { clone } from '../../core.js';
+import { clone, camadaNova, camadaPor, usarCamada } from '../../core.js';
 import { publicar, conferirGeracao, tempoDe } from '../../runtime/livres-oa/canal.js';
 
 const G = 'CV-37';
@@ -43,6 +43,7 @@ export const mapaCalor = {
   op: 'cena.mapa_calor',
   label: 'Mapa de calor (permanência)',
   group: G,
+  overlayOnly: true,   // o calor vai numa camada do tamanho da grade, esticada pela GPU sobre o vídeo nítido
   desc: 'Acumula onde os objetos da cadeia (pessoas do detector, poses…) passam o tempo, numa grade sobre a imagem, ' +
         'e pinta o calor por cima do vídeo — o mapa de calor da Quadra fora da quadra (loja, fila, corredor, galpão). ' +
         'Segundos de presença por célula, meia-vida opcional, PNG e CSV no painel Medições.',
@@ -100,27 +101,22 @@ export const mapaCalor = {
     ctx.metrics['calor máx. (s)'] = max.toFixed(1);
     publicar('mapa_calor', { gx, gy, m, max, total: state.total, w, h });
     if (!p.mostrar || max <= 0 || p.opacidade <= 0) return clone(src);
-    // pinta: bilinear da grade para o quadro, alfa ∝ calor
-    const out = clone(src), d = out.data;
-    const cor = new Float32Array(gx * gy * 4);
-    for (let i = 0; i < m.length; i++) { const c = corCalor(Math.sqrt(m[i] / max)); cor[i * 4] = c[0]; cor[i * 4 + 1] = c[1]; cor[i * 4 + 2] = c[2]; cor[i * 4 + 3] = c[3] * p.opacidade; }
-    const sx = gx / w, sy = gy / h;
-    for (let y = 0; y < h; y++) {
-      const fy = Math.min(gy - 1.001, Math.max(0, (y + 0.5) * sy - 0.5)), y0 = fy | 0, ty = fy - y0;
-      for (let x = 0; x < w; x++) {
-        const fx = Math.min(gx - 1.001, Math.max(0, (x + 0.5) * sx - 0.5)), x0 = fx | 0, tx = fx - x0;
-        const i00 = (y0 * gx + x0) * 4, i10 = i00 + 4, i01 = i00 + gx * 4, i11 = i01 + 4;
-        const w00 = (1 - tx) * (1 - ty), w10 = tx * (1 - ty), w01 = (1 - tx) * ty, w11 = tx * ty;
-        const a = cor[i00 + 3] * w00 + cor[i10 + 3] * w10 + cor[i01 + 3] * w01 + cor[i11 + 3] * w11;
-        if (a < 0.01) continue;
-        const q = (y * w + x) * 4;
-        for (let k = 0; k < 3; k++) {
-          const c = cor[i00 + k] * w00 + cor[i10 + k] * w10 + cor[i01 + k] * w01 + cor[i11 + k] * w11;
-          d[q + k] = d[q + k] * (1 - a) + c * a;
-        }
+    /*
+     * Camada do tamanho da GRADE (40×23 por padrão), não do quadro: a GPU a
+     * estica com interpolação bilinear — a mesma que era feita aqui pixel a
+     * pixel. Remontada só quando o calor muda (há objetos ou meia-vida).
+     */
+    if (dt > 0 || !state.versao) state.versao = (state.versao | 0) + 1;
+    const prim = camadaPor(state, [state.versao, m, max, p.opacidade, w, h], () => {
+      const L = camadaNova(gx, gy), cd = L.data;
+      for (let i = 0; i < m.length; i++) {
+        const c = corCalor(Math.sqrt(m[i] / max));
+        cd[i * 4] = c[0]; cd[i * 4 + 1] = c[1]; cd[i * 4 + 2] = c[2]; cd[i * 4 + 3] = c[3] * p.opacidade * 255;
       }
-    }
-    return out;
+      return L;
+    });
+    if (prim) { prim.w = w; prim.h = h; }
+    return usarCamada(src, ctx, prim);
   },
 };
 

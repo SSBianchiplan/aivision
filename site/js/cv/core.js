@@ -62,6 +62,112 @@ export function clone(src) {
   return out;
 }
 
+// ---------------------------------------------------------------- camada
+
+/*
+ * CAMADA DE IMAGEM NO OVERLAY. Quem pinta uma máscara, um mapa de calor ou
+ * um fundo escurecido POR CIMA do vídeo não precisa devolver os pixels: o
+ * Viewport só fica no caminho «overlay» (vídeo em resolução plena) quando
+ * nenhum nó altera a imagem. A camada é um RGBA transparente no tamanho do
+ * pipeline (procWidth), montada só quando o resultado muda e desenhada pela
+ * GPU sobre o vídeo nítido — a máscara sai na resolução dela, a imagem por
+ * baixo continua na da fonte.
+ *
+ *   const L = camadaNova(w, h);            // transparente
+ *   camadaPintar(L.data, q, r, g, b, k);   // mesma conta de od*(1-k)+cor*k
+ *   state.camada = camadaPrimitiva(L);     // uma vez por resultado
+ *   return usarCamada(src, ctx, state.camada);   // a cada quadro
+ *
+ * Cada resultado ganha um canvas PRÓPRIO (nunca reaproveitado): a sincronia
+ * (tempo-real/sincronizar.js) guarda o desenho de quadros passados e precisa
+ * da camada daquele instante, não da mais nova.
+ */
+
+/** Camada RGBA transparente, fora do pool (vira canvas e fica com o resultado). */
+export function camadaNova(w, h) {
+  return new ImageData(w, h);
+}
+
+/**
+ * Compõe a cor (r,g,b) com opacidade k (0..1) sobre o pixel q da camada
+ * («source-over» em RGBA não pré-multiplicado). Sobre o vídeo, o resultado é
+ * o mesmo de misturar direto nos pixels: v*(1-k) + cor*k.
+ */
+export function camadaPintar(d, q, r, g, b, k) {
+  if (!(k > 0)) return;
+  if (k > 1) k = 1;
+  const a0 = d[q + 3] / 255;
+  if (a0 === 0) { d[q] = r; d[q + 1] = g; d[q + 2] = b; d[q + 3] = k * 255 + 0.5; return; }
+  const f = a0 * (1 - k), a = k + f;
+  d[q] = (r * k + d[q] * f) / a;
+  d[q + 1] = (g * k + d[q + 1] * f) / a;
+  d[q + 2] = (b * k + d[q + 2] * f) / a;
+  d[q + 3] = a * 255 + 0.5;
+}
+
+function canvasDe(img) {
+  let c = null;
+  if (typeof OffscreenCanvas !== 'undefined') c = new OffscreenCanvas(img.width, img.height);
+  else if (typeof document !== 'undefined') { c = document.createElement('canvas'); c.width = img.width; c.height = img.height; }
+  if (!c) return null;
+  c.getContext('2d').putImageData(img, 0, 0);
+  return c;
+}
+
+/**
+ * Primitiva de overlay { type: 'imagem' } com a camada, cobrindo o quadro do
+ * pipeline (coordenadas de procWidth, como as caixas). `suave` = falso desenha
+ * sem interpolação (classes por pixel). Sem canvas (teste fora do navegador),
+ * guarda só o ImageData e usarCamada compõe nos pixels.
+ */
+export function camadaPrimitiva(img, opts) {
+  return {
+    type: 'imagem', fonte: canvasDe(img), img,
+    x: 0, y: 0, w: (opts && opts.w) || img.width, h: (opts && opts.h) || img.height,
+    suave: !(opts && opts.suave === false),
+  };
+}
+
+/**
+ * Camada guardada no state do nó, remontada só quando a `chave` muda
+ * (resultado novo, tamanho do quadro, parâmetro de cor/opacidade): comparação
+ * rasa, item a item. `montar()` devolve o ImageData da camada (ou null).
+ */
+export function camadaPor(state, chave, montar) {
+  const c = state.camadaChave;
+  let igual = Boolean(c) && c.length === chave.length;
+  for (let i = 0; igual && i < chave.length; i++) if (c[i] !== chave[i]) igual = false;
+  if (!igual) {
+    const img = montar();
+    state.camada = img ? camadaPrimitiva(img) : null;
+    state.camadaChave = chave;
+  }
+  return state.camada;
+}
+
+/**
+ * Entrega a camada deste quadro: põe a primitiva no overlay (objeto novo a
+ * cada quadro — o executor carimba nó e instante nele) e devolve o quadro
+ * SEM alteração. Sem canvas, compõe a camada numa cópia (mesmo resultado).
+ */
+export function usarCamada(src, ctx, prim) {
+  if (!prim) return clone(src);
+  if (prim.fonte) {
+    ctx.overlay.push({ type: 'imagem', fonte: prim.fonte, x: prim.x, y: prim.y, w: prim.w, h: prim.h, suave: prim.suave });
+    return clone(src);
+  }
+  const out = clone(src), od = out.data, L = prim.img.data;
+  if (prim.img.width !== src.width || prim.img.height !== src.height) return out;
+  for (let q = 0; q < od.length; q += 4) {
+    const k = L[q + 3] / 255;
+    if (!k) continue;
+    od[q] = od[q] * (1 - k) + L[q] * k;
+    od[q + 1] = od[q + 1] * (1 - k) + L[q + 1] * k;
+    od[q + 2] = od[q + 2] * (1 - k) + L[q + 2] * k;
+  }
+  return out;
+}
+
 // ---------------------------------------------------------------- gray
 
 /**

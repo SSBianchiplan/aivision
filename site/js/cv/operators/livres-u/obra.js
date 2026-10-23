@@ -22,6 +22,7 @@ export const diario = {
   op: 'obra.diario',
   label: 'Diário de obra (RDO)',
   group: G,
+  overlayOnly: true,   // só desenha por cima: devolve o quadro sem alteração (vídeo nítido)
   desc: 'Conta por hora as pessoas e os equipamentos do canteiro (máximo ao mesmo tempo e entradas pela área ' +
         '«Obra · portão»), guarda uma foto a cada N minutos neste navegador e monta o RDO do dia no painel ' +
         '(HTML para imprimir/PDF). Opcional e só com o seu aceite: a Via redige o resumo com a SUA chave. ' +

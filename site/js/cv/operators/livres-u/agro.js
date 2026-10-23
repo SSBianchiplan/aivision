@@ -9,7 +9,7 @@
  *
  * Todos são INDICADORES de manejo e triagem, não diagnóstico veterinário nem pesagem legal.
  */
-import { clone } from '../../core.js';
+import { clone, camadaNova, camadaPintar, camadaPor, usarCamada } from '../../core.js';
 import { publicar, tomar, tempoDe, conferirGeracao, lerLocal, gravarLocal } from '../../runtime/livres-u/canal.js';
 import { indiceVerde, contarInsetos, escoreLocomocao, areaDorsal, pesoPorArea, ajustarPotencia } from '../../runtime/livres-u/agro.js';
 import { roiDe, mediana } from '../../runtime/livres-u/imagem.js';
@@ -24,6 +24,7 @@ export const verde = {
   op: 'agro.verde',
   label: 'Índice de verde (pasto/lavoura)',
   group: G,
+  overlayOnly: true,   // a máscara do verde vai numa camada sobre o vídeo nítido
   desc: 'Cobertura verde e índice médio pelas cores do pixel (ExG = 2g−r−b ou ExG−ExR, nas cromáticas), em cada área ' +
         '«Agro · área de verde» ou no quadro inteiro. Limiar automático (Otsu) ou fixo, máscara pintada e série no painel. ' +
         'Câmera comum (RGB): não substitui NDVI de sensor multiespectral; sol forte e sombra mudam o valor.',
@@ -52,20 +53,23 @@ export const verde = {
     publicar('u_verde', { areas: res.map((r) => ({ nome: r.nome, cobertura: r.cobertura, media: r.media, mediaVerde: r.mediaVerde, limiar: r.limiar })), serie: state.serie.slice(-600), indice: p.indice });
     for (const r of res) ctx.overlay.push({ type: 'rect', x: r.roi.x, y: r.roi.y, w: r.roi.w, h: r.roi.h, color: '#4ade80', label: `${r.nome}: ${(r.cobertura * 100).toFixed(1)}% verde` });
     if (!p.pintar) return clone(src);
-    const out = clone(src), d = out.data;
-    for (const r of res) {
-      const P = r.passo;
-      for (let gy = 0; gy < r.gh; gy++) for (let gx = 0; gx < r.gw; gx++) {
-        if (!r.mascara[gy * r.gw + gx]) continue;
-        for (let yy = 0; yy < P; yy++) for (let xx = 0; xx < P; xx++) {
-          const x = r.x0 + gx * P + xx, y = r.y0 + gy * P + yy;
-          if (x >= w || y >= h) continue;
-          const q = (y * w + x) * 4;
-          d[q] = d[q] * 0.5 + 255 * 0.5; d[q + 1] = d[q + 1] * 0.5 + 0 * 0.5; d[q + 2] = d[q + 2] * 0.5 + 220 * 0.5;
+    // camada da máscara (magenta a 50%): remontada só quando a avaliação muda (a cada intervaloMs)
+    const prim = camadaPor(state, [res, w, h], () => {
+      const L = camadaNova(w, h), d = L.data;
+      for (const r of res) {
+        const P = r.passo;
+        for (let gy = 0; gy < r.gh; gy++) for (let gx = 0; gx < r.gw; gx++) {
+          if (!r.mascara[gy * r.gw + gx]) continue;
+          for (let yy = 0; yy < P; yy++) for (let xx = 0; xx < P; xx++) {
+            const x = r.x0 + gx * P + xx, y = r.y0 + gy * P + yy;
+            if (x >= w || y >= h) continue;
+            camadaPintar(d, (y * w + x) * 4, 255, 0, 220, 0.5);
+          }
         }
       }
-    }
-    return out;
+      return L;
+    });
+    return usarCamada(src, ctx, prim);
   },
 };
 
@@ -73,6 +77,7 @@ export const armadilha = {
   op: 'agro.armadilha',
   label: 'Insetos em armadilha adesiva',
   group: G,
+  overlayOnly: true,   // só desenha por cima: devolve o quadro sem alteração (vídeo nítido)
   desc: 'Conta os insetos (manchas escuras) em cada área «Agro · armadilha» (cartão amarelo ou azul), sem as linhas da ' +
         'grade impressa; grudados viram vários pela área típica. Tamanho mínimo em mm² com a régua calibrada. Histórico ' +
         'por cartão e CSV no painel. Não identifica a espécie.',
@@ -119,6 +124,7 @@ export const locomocao = {
   op: 'agro.locomocao',
   label: 'Escore de locomoção (bovinos)',
   group: G,
+  overlayOnly: true,   // só desenha por cima: devolve o quadro sem alteração (vídeo nítido)
   desc: 'Para cada animal que atravessa a cena de lado (detector + Tracking com IDs), mede velocidade em corpos/s, ' +
         'regularidade do passo, paradas e o balanço vertical do dorso/cabeça e dá um escore de 1 (normal) a 5. ' +
         AVISO_AGRO + ' Use câmera fixa, de lado, no corredor de saída da ordenha.',
@@ -161,6 +167,7 @@ export const pesoDorsal = {
   op: 'agro.peso_dorsal',
   label: 'Peso estimado pela área dorsal',
   group: G,
+  overlayOnly: true,   // só desenha por cima: devolve o quadro sem alteração (vídeo nítido)
   desc: 'Câmera de cima no corredor/balança: mede a área dorsal do animal na área «Agro · pesagem» (contraste com o ' +
         'piso ou a máscara do BiRefNet) em m² pela régua calibrada e estima kg = a·A^b. Calibre com 3 ou mais pesagens ' +
         'reais no painel (ajuste em log–log). ESTIMATIVA — ' + AVISO_AGRO,

@@ -15,6 +15,7 @@ export const harris = {
   op: 'features.good_features_to_track',
   label: 'Corner Detection',
   group: G,
+  overlayOnly: true,   // só desenha por cima: devolve o quadro sem alteração (vídeo nítido)
   desc: 'Cantos de Harris (R = det − k·tr²) com supressão não-máxima. ' +
         'Saída vai no overlay, não nos pixels.',
   params: {
@@ -93,6 +94,7 @@ export const contours = {
   op: 'imgproc.find_contours',
   label: 'Contours / Blobs',
   group: G,
+  overlayOnly: true,   // só desenha por cima: devolve o quadro sem alteração (vídeo nítido)
   desc: 'Rotula componentes conexos de uma imagem binária e desenha a caixa ' +
         'de cada blob. Encadeie depois de um Threshold.',
   params: {

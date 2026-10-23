@@ -18,7 +18,7 @@
  * (e cortada embaixo). Agora a imagem é reduzida para CABER em 1024×683, pede-se
  * exatamente 683×1024 e a máscara é recortada à área da imagem antes de pintar.
  */
-import { clone, alloc, snapshot } from '../core.js';
+import { clone, snapshot, camadaNova, camadaPintar, camadaPor, usarCamada } from '../core.js';
 import { MODELS, runFeeds, ensureOrt } from '../runtime/onnx.js';
 import { ensure, schedule, colorFor, hexToRgb, detectionsFromCtx, detectYolox, paintMask } from '../runtime/opkit.js';
 
@@ -61,7 +61,8 @@ function recortar(data, mw, nw, nh) {
 export const samObjetos = {
   op: 'sam.mascaras',
   label: 'SAM — Máscaras finas',
-  group: G, model: 'mobilesam-enc', overlayOnly: false,
+  group: G, model: 'mobilesam-enc',
+  overlayOnly: true,   // máscaras (e o fundo escurecido do «só a máscara») numa camada sobre o vídeo nítido
   desc: 'MobileSAM: máscara de alta resolução para cada objeto detectado (prompt = ' +
         'caixa do detector anterior; sem detector, roda o YOLOX) ou para o que está ' +
         'no centro da imagem. Codificador uma vez por frame, decodificador por objeto.',
@@ -126,14 +127,18 @@ export const samObjetos = {
     if (!R || !R.masks.length) { ctx.metrics['máscaras'] = 0; return clone(src); }
 
     const { w, h } = ctx;
-    const out = alloc(w, h);
-    const od = out.data;
-    if (p.soMascara) { for (let i = 0; i < od.length; i += 4) { od[i] = src.data[i] * 0.2; od[i + 1] = src.data[i + 1] * 0.2; od[i + 2] = src.data[i + 2] * 0.2; od[i + 3] = 255; } }
-    else od.set(src.data);
+    // camada: fundo escurecido (só a máscara: preto a 80%) + máscaras; uma vez por resultado
+    const prim = camadaPor(state, [R, w, h, p.alpha, p.soMascara], () => {
+      const L = camadaNova(w, h), od = L.data;
+      if (p.soMascara) for (let i = 0; i < od.length; i += 4) camadaPintar(od, i, 0, 0, 0, 0.8);
+      R.masks.forEach((m, idx) => {
+        const region = m.box ? { x0: (m.box.x1 * w - 4) | 0, y0: (m.box.y1 * h - 4) | 0, x1: (m.box.x2 * w + 5) | 0, y1: (m.box.y2 * h + 5) | 0 } : null;
+        paintMask(od, w, h, m.logit, m.mw, m.mh, hexToRgb(colorFor(idx)), p.soMascara ? 1 : p.alpha, region, true);
+      });
+      return L;
+    });
+    const out = usarCamada(src, ctx, prim);
     R.masks.forEach((m, idx) => {
-      const rgb = hexToRgb(colorFor(idx));
-      const region = m.box ? { x0: (m.box.x1 * w - 4) | 0, y0: (m.box.y1 * h - 4) | 0, x1: (m.box.x2 * w + 5) | 0, y1: (m.box.y2 * h + 5) | 0 } : null;
-      paintMask(od, w, h, m.logit, m.mw, m.mh, rgb, p.soMascara ? 1 : p.alpha, region);
       if (p.caixas && m.box) {
         ctx.overlay.push({ type: 'rect', x: m.box.x1 * w, y: m.box.y1 * h, w: (m.box.x2 - m.box.x1) * w, h: (m.box.y2 - m.box.y1) * h,
                            color: colorFor(idx), label: `${m.name} · iou ${(m.iou * 100) | 0}%` });

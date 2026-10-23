@@ -141,7 +141,7 @@ export const epiMonitor = {
   label: 'EPI — capacete e colete (sem treino)',
   group: G,
   model: 'mclip2-visual',
-  overlayOnly: false,     // devolve o quadro com o rosto borrado quando "Borrar rostos" está ligado
+  overlayOnly: (p) => !p.borrar,     // devolve o quadro com o rosto borrado quando "Borrar rostos" está ligado
   desc: 'Monitor de EPI sem treino: a pose RTMO recorta cabeça e tronco de cada pessoa e o MobileCLIP2 compara com ' +
         'frases (com/sem capacete, com/sem colete — configuráveis); votação no tempo por pessoa rastreada, ' +
         'conformidade por zona (áreas "Zona de contagem"), eventos e rosto borrado (LGPD). "Coletar amostra" e ' +

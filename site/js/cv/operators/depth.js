@@ -7,7 +7,7 @@
  * piscar. Publica ctx.depth para quem vier depois; com detector antes na
  * cadeia, rotula cada objeto como perto / médio / longe pela mediana da caixa.
  */
-import { clone, alloc } from '../core.js';
+import { clone, alloc, camadaNova, camadaPintar, camadaPor, usarCamada } from '../core.js';
 import { MODELS, run, makeTensor } from '../runtime/onnx.js';
 import { stretch, toTensorData } from '../runtime/tensor.js';
 import { ensure, schedule, bilinear, detectionsFromCtx, colorFor } from '../runtime/opkit.js';
@@ -29,6 +29,8 @@ export const depthMap = {
   desc: 'Mapa de profundidade relativa de um só frame, 24,8M parâmetros, int8. ' +
         'Modos: mapa de cor (perto quente, longe frio), cinza, mistura com o vídeo, ' +
         'ou só rotular os objetos detectados como perto/médio/longe.',
+  // «misturar» é uma camada sobre o vídeo nítido e «só objetos» só rotula; os mapas cheios trocam a imagem
+  overlayOnly: (p) => p.modo === 'misturar' || p.modo === 'só objetos',
   params: {
     modo: { type: 'enum', options: ['mapa de cor', 'cinza', 'misturar', 'só objetos'], default: 'misturar', label: 'Modo' },
     alpha: { type: 'float', min: 0.1, max: 1, step: 0.05, default: 0.6, label: 'Opacidade (misturar)' },
@@ -86,6 +88,37 @@ export const depthMap = {
     }
     if (p.modo === 'só objetos') return clone(src);
 
+    const legenda = { type: 'banner', x: 10, y: h - 30, text: p.inverter ? 'frio = perto · quente = longe' : 'quente = perto · frio = longe', color: '#FFD84D' };
+    if (p.modo === 'misturar') {
+      /*
+       * Camada com o mapa de cor a `alpha` sobre o vídeo nítido. Os extremos
+       * andam um pouco a cada quadro (média móvel): remonta quando o
+       * resultado muda ou os extremos andaram mais de 1% da faixa.
+       */
+      const ch = state.camadaChave;
+      const lo0 = ch && ch[0] === R && ch[1] === w && ch[2] === h && ch[3] === p.alpha && ch[4] === p.inverter
+        && Math.abs(ch[5] - lo) < span * 0.01 && Math.abs(ch[6] - state.hi) < span * 0.01 ? ch[5] : lo;
+      const hi0 = lo0 === lo ? state.hi : ch[6];
+      const prim = camadaPor(state, [R, w, h, p.alpha, p.inverter, lo0, hi0], () => {
+        const L = camadaNova(w, h), od = L.data;
+        const kx = W / w, ky = H / h, sp = Math.max(1e-6, hi0 - lo0);
+        for (let y = 0; y < h; y++) {
+          const fy = (y + 0.5) * ky - 0.5;
+          for (let x = 0; x < w; x++) {
+            let t = (bilinear(d, W, H, (x + 0.5) * kx - 0.5, fy) - lo0) / sp;
+            t = Math.min(1, Math.max(0, t));
+            if (p.inverter) t = 1 - t;
+            const [r, g, b] = cor(t);
+            camadaPintar(od, (y * w + x) * 4, r, g, b, p.alpha);
+          }
+        }
+        return L;
+      });
+      const saida = usarCamada(src, ctx, prim);
+      ctx.overlay.push(legenda);
+      return saida;
+    }
+
     const out = alloc(w, h);
     const od = out.data, sd = src.data;
     const kx = W / w, ky = H / h;
@@ -106,7 +139,7 @@ export const depthMap = {
         od[q + 3] = 255;
       }
     }
-    ctx.overlay.push({ type: 'banner', x: 10, y: h - 30, text: p.inverter ? 'frio = perto · quente = longe' : 'quente = perto · frio = longe', color: '#FFD84D' });
+    ctx.overlay.push(legenda);
     return out;
   },
 };

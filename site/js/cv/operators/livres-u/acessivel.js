@@ -46,6 +46,7 @@ export const falarOp = {
   op: 'acessivel.falar',
   label: 'O que tem na minha frente? (voz)',
   group: G,
+  overlayOnly: true,   // só desenha por cima: devolve o quadro sem alteração (vídeo nítido)
   desc: 'Descreve em voz alta, em português, o que a cadeia vê: objetos agrupados e a posição (à esquerda, à frente, ' +
         'à direita, bem perto), os textos lidos pelo OCR e os códigos. Fala ao mudar a cena, a cada N segundos ou pelo ' +
         'botão grande do painel. Síntese de voz do próprio navegador (voz local quando existe).',
@@ -93,6 +94,7 @@ export const mouseCabeca = {
   op: 'acessivel.mouse_cabeca',
   label: 'Mouse por cabeça e piscada',
   group: G,
+  overlayOnly: true,   // só desenha por cima: devolve o quadro sem alteração (vídeo nítido)
   desc: 'Move um cursor dentro do iaVision com a cabeça (orientação do rosto.malha) e clica com uma piscada longa dos ' +
         'dois olhos; olhos fechados por 2 s pausam/retomam. Calibração de 5 posições no painel. Precisa do «Malha do ' +
         'rosto» antes na cadeia. Só funciona nesta página (fora dela precisa de app nativo).',

@@ -18,7 +18,7 @@
  * corretos se a largura de processamento mudar entre a inferência e o desenho.
  */
 
-import { clone, alloc, toGray, snapshot } from '../core.js';
+import { clone, alloc, toGray, snapshot, camadaNova, camadaPintar, camadaPor, usarCamada } from '../core.js';
 import {
   MODELS, loadModel, isReady, run, makeTensor, modelStates,
 } from '../runtime/onnx.js';
@@ -260,7 +260,9 @@ export const segmentPerson = {
   group: 'CV-05',
   model: 'pphumanseg',
   desc: 'PP-HumanSeg: máscara pessoa/fundo em 192×192, reescalada e composta ' +
-        'sobre o frame. Diferente dos outros modelos, este ALTERA os pixels.',
+        'sobre o frame (camada por cima do vídeo nítido; «só máscara» troca a imagem).',
+  // destaque, fundo escuro e croma são uma camada sobre o vídeo; «só máscara» substitui a imagem
+  overlayOnly: (p) => p.mode !== 'só máscara',
   params: {
     mode: { type: 'enum', options: ['destaque', 'fundo escuro', 'só máscara', 'croma'], default: 'destaque', label: 'Modo' },
     thresh: { type: 'float', min: 0.1, max: 0.9, step: 0.05, default: 0.5, label: 'Limiar' },
@@ -291,46 +293,59 @@ export const segmentPerson = {
     if (!mask) return clone(src);
 
     const { w, h } = ctx;
-    const out = alloc(w, h);
-    const s = src.data, o = out.data;
-    let fg = 0;
-
     // A máscara é 192×192 e o frame é maior: amostrar por vizinho mais
     // próximo dava blocos de vários pixels na borda. Bilinear + uma rampa
     // de 6% em volta do limiar dá borda suave que acompanha a pessoa.
     const kx = S / w, ky = S / h;
-    for (let y = 0; y < h; y++) {
+    const alfaEm = (x, y) => {
       const fy = Math.min(S - 1.001, Math.max(0, (y + 0.5) * ky - 0.5));
       const yi = fy | 0, ty = fy - yi, row = yi * S;
-      for (let x = 0; x < w; x++) {
-        const fx = Math.min(S - 1.001, Math.max(0, (x + 0.5) * kx - 0.5));
-        const xi = fx | 0, tx = fx - xi, i00 = row + xi;
-        const m = (mask[i00] * (1 - tx) + mask[i00 + 1] * tx) * (1 - ty)
-                + (mask[i00 + S] * (1 - tx) + mask[i00 + S + 1] * tx) * ty;
-        const a = Math.min(1, Math.max(0, (m - p.thresh) / 0.12 + 0.5));   // 0..1, suave
-        const on = a >= 0.5;
-        if (on) fg++;
-        const q = (y * w + x) * 4;
+      const fx = Math.min(S - 1.001, Math.max(0, (x + 0.5) * kx - 0.5));
+      const xi = fx | 0, tx = fx - xi, i00 = row + xi;
+      const m = (mask[i00] * (1 - tx) + mask[i00 + 1] * tx) * (1 - ty)
+              + (mask[i00 + S] * (1 - tx) + mask[i00 + S + 1] * tx) * ty;
+      return Math.min(1, Math.max(0, (m - p.thresh) / 0.12 + 0.5));   // 0..1, suave
+    };
 
-        if (p.mode === 'só máscara') {
-          const v = (a * 255) | 0;
-          o[q] = v; o[q + 1] = v; o[q + 2] = v;
-        } else if (p.mode === 'croma') {
-          o[q] = s[q] * a; o[q + 1] = s[q + 1] * a + 200 * (1 - a); o[q + 2] = s[q + 2] * a;
-        } else if (p.mode === 'fundo escuro') {
-          const k = 0.18 + 0.82 * a;
-          o[q] = s[q] * k; o[q + 1] = s[q + 1] * k; o[q + 2] = s[q + 2] * k;
-        } else {
-          // destaque: mantém tudo, tinge o primeiro plano
-          o[q] = Math.min(255, s[q] * (1 - 0.25 * a) + 64 * a);
-          o[q + 1] = s[q + 1] * (1 - 0.25 * a);
-          o[q + 2] = s[q + 2] * (1 - 0.25 * a);
+    if (p.mode === 'só máscara') {
+      const out = alloc(w, h);
+      const o = out.data;
+      let fg = 0;
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const a = alfaEm(x, y);
+          if (a >= 0.5) fg++;
+          const q = (y * w + x) * 4, v = (a * 255) | 0;
+          o[q] = v; o[q + 1] = v; o[q + 2] = v; o[q + 3] = 255;
         }
-        o[q + 3] = 255;
       }
+      ctx.metrics['pessoa'] = ((fg / (w * h)) * 100).toFixed(1) + '%';
+      return out;
     }
-    ctx.metrics['pessoa'] = ((fg / (w * h)) * 100).toFixed(1) + '%';
-    return out;
+
+    /*
+     * Os outros modos são uma CAMADA sobre o vídeo (o mesmo resultado da
+     * mistura nos pixels): destaque = vermelho a 25%·a, fundo escuro = preto
+     * a 82%·(1−a), croma = verde (0,200,0) a (1−a). Montada uma vez por máscara.
+     */
+    const prim = camadaPor(state, [mask, w, h, p.mode, p.thresh], () => {
+      const L = camadaNova(w, h), o = L.data;
+      let fg = 0;
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const a = alfaEm(x, y);
+          if (a >= 0.5) fg++;
+          const q = (y * w + x) * 4;
+          if (p.mode === 'croma') camadaPintar(o, q, 0, 200, 0, 1 - a);
+          else if (p.mode === 'fundo escuro') camadaPintar(o, q, 0, 0, 0, 0.82 * (1 - a));
+          else camadaPintar(o, q, 255, 0, 0, 0.25 * a);   // destaque: tinge o primeiro plano
+        }
+      }
+      state.fg = fg / (w * h);
+      return L;
+    });
+    ctx.metrics['pessoa'] = ((state.fg || 0) * 100).toFixed(1) + '%';
+    return usarCamada(src, ctx, prim);
   },
 };
 

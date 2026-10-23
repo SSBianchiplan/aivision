@@ -103,6 +103,8 @@ export const store = createStore({
 
   // processamento
   procWidth: 480,              // largura de trabalho: o gargalo real do FPS
+  procWidthAuto: null,         // última largura posta pela qualidade automática (Viewport › autoQuality)
+  procWidthUsuario: null,      // a escolhida pelo usuário, para onde a automática volta (null = 480)
   running: true,
   nodes: [],                   // cadeia de operadores
   // zoom digital da fonte: z = ampliação (1–8), cx/cy = centro do recorte (0–1, como o usuário VÊ a imagem)
@@ -212,7 +214,12 @@ export function persist() {
   try {
     localStorage.setItem(PERSIST_KEY, JSON.stringify({
       nodes: s.nodes,
-      procWidth: s.procWidth,
+      /*
+       * A largura que a qualidade automática baixou num aperto NÃO é gravada:
+       * gravada, o app reabria em 160 px (borrado no caminho pixels) e só
+       * voltava aos poucos. Grava-se a do usuário.
+       */
+      procWidth: s.autoQuality && s.procWidth === s.procWidthAuto ? s.procWidthUsuario || 480 : s.procWidth,
       mirror: s.mirror,
       resolution: s.resolution,
       panels: s.panels,

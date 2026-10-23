@@ -8,6 +8,7 @@ import { MODELS, loadModel, isReady, run, makeTensor, modelStates } from './onnx
 import { letterbox, unletterbox, toTensorData, decodeYolox } from './tensor.js';
 import { COCO_CLASSES } from './labels.js';
 import { relogio } from './tempo-real/carimbo.js';
+import { camadaPintar } from '../core.js';
 
 export function ensure(id, state, ctx) {
   if (isReady(id)) return true;
@@ -124,8 +125,12 @@ export function bilinear(m, W, H, fx, fy) {
   return (m[i] * (1 - tx) + m[i + 1] * tx) * (1 - ty) + (m[i + W] * (1 - tx) + m[i + W + 1] * tx) * ty;
 }
 
-/** Pinta uma máscara de logits (Wm×Hm, cobrindo o frame inteiro) com borda suave. */
-export function paintMask(od, w, h, logit, Wm, Hm, rgb, alpha, region) {
+/**
+ * Pinta uma máscara de logits (Wm×Hm, cobrindo o frame inteiro) com borda suave.
+ * `camada` = verdadeiro: `od` é uma camada RGBA transparente (cv/core.js ›
+ * camadaNova) e a cor entra com alfa, para ir por cima do vídeo nítido.
+ */
+export function paintMask(od, w, h, logit, Wm, Hm, rgb, alpha, region, camada) {
   const kx = Wm / w, ky = Hm / h;
   const x0 = region ? Math.max(0, region.x0) : 0, y0 = region ? Math.max(0, region.y0) : 0;
   const x1 = region ? Math.min(w, region.x1) : w, y1 = region ? Math.min(h, region.y1) : h;
@@ -136,6 +141,7 @@ export function paintMask(od, w, h, logit, Wm, Hm, rgb, alpha, region) {
       const a = Math.min(1, Math.max(0, lg / 2.4 + 0.5));
       if (a <= 0.02) continue;
       const q = (y * w + x) * 4, k = a * alpha;
+      if (camada) { camadaPintar(od, q, rgb[0], rgb[1], rgb[2], k); continue; }
       od[q] = od[q] * (1 - k) + rgb[0] * k;
       od[q + 1] = od[q + 1] * (1 - k) + rgb[1] * k;
       od[q + 2] = od[q + 2] * (1 - k) + rgb[2] * k;

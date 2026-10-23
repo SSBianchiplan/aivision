@@ -24,7 +24,7 @@
  * ========================================================================
  */
 
-const VERSION = 'iav-v110-vps';   // 23/10/2026: Telemetria nova: rodapé de monitoramento, métricas liga/desliga, Copiar relatório, Gravar 30 s
+const VERSION = 'iav-v111-vps';   // 23/10/2026: Nitidez: largura de trabalho não fica presa em 160, 14 operadores só desenham, máscaras/mapas como camada sobre o vídeo nítido
 const SHELL = `${VERSION}-shell`;
 /*
  * Pesos dos modelos num cache de nome FIXO: sobrevivem às publicações. Antes o

@@ -66,7 +66,8 @@ export const taktPosto = {
   group: G,
   calibravel: { rotulo: 'Calibrar piso (Studio Takt)' },
   // muda os pixels quando "Borrar rostos" está ligado (o padrão): o vídeo exibido é o quadro processado
-  overlayOnly: false,
+  // só mexe nos pixels com o borrão LGPD ligado; sem ele, o vídeo segue nítido (caminho overlay)
+  overlayOnly: (p) => !p.borrarRostos,
   desc: 'Tempo de posto (porte do GPlanSiS|Takt): para cada área marcada com a função "Takt · posto", associa as ' +
         'pessoas (pose multi-pessoa + IDs), mede a atividade (mãos na área, movimento dos punhos, orientação) e ' +
         'decide produtivo, ocioso no posto, vago, pausa programada ou não observado, com histerese e tempos ' +

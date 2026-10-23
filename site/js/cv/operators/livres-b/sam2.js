@@ -23,7 +23,7 @@
  * Como a imagem é esticada (não letterbox), a máscara 256² cobre o quadro
  * inteiro e vai direto para o paintMask.
  */
-import { clone, alloc } from '../../core.js';
+import { clone, camadaNova, camadaPor, usarCamada } from '../../core.js';
 import { MODELS, runFeeds, ensureOrt } from '../../runtime/onnx.js';
 import { stretch, toTensorData } from '../../runtime/tensor.js';
 import { ensure, schedule, colorFor, hexToRgb, detectionsFromCtx, paintMask, bilinear, normalizar } from '../../runtime/opkit.js';
@@ -108,7 +108,7 @@ function contorno(od, w, h, logit, rgb, region) {
       if (!dentro[i]) continue;
       if (dentro[i - 1] && dentro[i + 1] && dentro[i - rw] && dentro[i + rw]) continue;
       for (const q of [(y * w + x) * 4, (y * w + x - 1) * 4, ((y - 1) * w + x) * 4]) {
-        od[q] = rgb[0]; od[q + 1] = rgb[1]; od[q + 2] = rgb[2];
+        od[q] = rgb[0]; od[q + 1] = rgb[1]; od[q + 2] = rgb[2]; od[q + 3] = 255;   // opaco (também na camada)
       }
     }
   }
@@ -117,7 +117,8 @@ function contorno(od, w, h, logit, rgb, region) {
 export const sam2Seguir = {
   op: 'sam2.seguir',
   label: 'SAM 2 — seguir objeto',
-  group: G, model: 'sam2-enc', overlayOnly: false,
+  group: G, model: 'sam2-enc',
+  overlayOnly: true,   // máscara e contorno numa camada sobre o vídeo nítido
   desc: 'SAM 2.1 tiny (Apache-2.0): marque um objeto — pela classe de uma detecção ' +
         'anterior na cadeia (ou do RF-DETR embutido) ou por um ponto — e ele é ' +
         'seguido com máscara e contorno: a cada quadro o prompt é a caixa da máscara ' +
@@ -278,14 +279,19 @@ export const sam2Seguir = {
     ctx.metrics['máscaras'] = visiveis.length;
     if (!visiveis.length) return clone(src);
 
-    const out = alloc(w, h);
-    const od = out.data;
-    od.set(src.data);
+    // camada das máscaras (e contornos): uma vez por resultado
+    const prim = camadaPor(state, [R, w, h, p.alpha, p.contorno, visiveis.length], () => {
+      const L = camadaNova(w, h), od = L.data;
+      visiveis.forEach((m, idx) => {
+        const rgb = hexToRgb(colorFor(idx));
+        const region = { x0: (m.box.x1 * w - 3) | 0, y0: (m.box.y1 * h - 3) | 0, x1: (m.box.x2 * w + 4) | 0, y1: (m.box.y2 * h + 4) | 0 };
+        paintMask(od, w, h, m.logit, M, M, rgb, p.alpha, region, true);
+        if (p.contorno) contorno(od, w, h, m.logit, rgb, region);
+      });
+      return L;
+    });
+    const out = usarCamada(src, ctx, prim);
     visiveis.forEach((m, idx) => {
-      const rgb = hexToRgb(colorFor(idx));
-      const region = { x0: (m.box.x1 * w - 3) | 0, y0: (m.box.y1 * h - 3) | 0, x1: (m.box.x2 * w + 4) | 0, y1: (m.box.y2 * h + 4) | 0 };
-      paintMask(od, w, h, m.logit, M, M, rgb, p.alpha, region);
-      if (p.contorno) contorno(od, w, h, m.logit, rgb, region);
       ctx.overlay.push({ type: 'rect', x: m.box.x1 * w, y: m.box.y1 * h, w: (m.box.x2 - m.box.x1) * w, h: (m.box.y2 - m.box.y1) * h,
                          color: colorFor(idx), label: `${m.name} · ${(m.iou * 100) | 0}%` });
     });

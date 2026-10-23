@@ -494,7 +494,12 @@ export function App({ sessao = null }) {
       }
       store.set({
         nodes: Array.isArray(saved.nodes) ? saved.nodes : [],
-        procWidth: saved.procWidth || 480,
+        /*
+         * Com a qualidade automática ligada, não reabre abaixo de 480: versões
+         * antigas gravavam a largura rebaixada num aperto (160 px) e o app
+         * ficava borrado entre uma sessão e outra. Ela desce de novo se precisar.
+         */
+        procWidth: saved.autoQuality !== false ? Math.max(480, saved.procWidth || 480) : saved.procWidth || 480,
         mirror: saved.mirror !== undefined ? saved.mirror : true,
         resolution: saved.resolution || { width: 640, height: 480 },
         panels: { ...base.panels, ...(saved.panels || {}) },

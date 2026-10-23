@@ -294,4 +294,18 @@ export function coerceParams(op, params) {
   return out;
 }
 
+/**
+ * O nó só DESENHA por cima (não altera os pixels)? Decide o caminho do
+ * Viewport: com todos os nós ativos assim, o vídeo vai em resolução plena e o
+ * overlay por cima. `overlayOnly` é booleano ou uma função dos parâmetros
+ * (já normalizados) — p. ex. o EPI só mexe nos pixels com «Borrar rostos».
+ */
+export function soDesenha(node) {
+  const def = node && getOperator(node.op);
+  if (!def) return false;
+  const o = def.overlayOnly;
+  if (typeof o !== 'function') return Boolean(o);
+  try { return Boolean(o(coerceParams(node.op, node.params))); } catch (_) { return false; }
+}
+
 export const OPERATOR_COUNT = ALL.length;
