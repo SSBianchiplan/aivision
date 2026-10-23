@@ -209,7 +209,7 @@ export function PipelineConteudo({ onResetState, presetsPrimeiro = null }) {
           </button>
         </div>
         <details class="presets-mais">
-          <summary>Trocar por um preset</summary>
+          <summary>Presets: trocar ou somar</summary>
           <${PresetPicker} primeiro=${presetsPrimeiro} />
         </details>
       `}
@@ -374,7 +374,45 @@ function presetsVisiveis() {
     .filter(([, l]) => l.length > 0);
 }
 
+/*
+ * Somar um preset ao Pipeline (em vez de trocar): os nós do preset que já existem na cadeia
+ * (mesmo operador — detector, rastreio, pose…) são REAPROVEITADOS com os parâmetros atuais;
+ * os que faltam entram no fim, na ordem do preset (consumidores depois de quem produz).
+ */
+// operadores que fazem o MESMO papel na cadeia: somar não põe um segundo (ex.: Quadra com RF-DETR
+// + Contagem com YOLOX ficaria com dois detectores de caixas brigando pelas mesmas detecções)
+const FAMILIA_OP = { 'dnn.detect': 'det', 'rfdetr.detect': 'det', 'yolo26.detect': 'det' };
+const papel = (op) => FAMILIA_OP[op] || op;
+function somarSpecs(nodes, specs) {
+  const tem = new Set(nodes.map((n) => papel(n.op)));
+  const novos = [], reaproveitados = [];
+  for (const sp of specs) { if (tem.has(papel(sp[0]))) reaproveitados.push(sp[0]); else { novos.push(sp); tem.add(papel(sp[0])); } }
+  return { nodes: [...nodes, ...chain(novos)], novos: novos.map(([op]) => op), reaproveitados };
+}
+
+function aplicarNoPipeline(p, g, somar) {
+  const st = store.get();
+  const painel = PAINEL_DO_PRESET[p.nome] || PAINEL_DO_GRUPO[g];
+  let nodes, aviso = null;
+  if (somar && st.nodes.length) {
+    const r = somarSpecs(st.nodes, p.specs);
+    nodes = r.nodes;
+    const rot = (op) => (getOperator(op) ? getOperator(op).label : op);
+    aviso = r.novos.length
+      ? `«${p.nome}» somado: +${r.novos.length} nó(s) (${r.novos.map(rot).join(', ')})${r.reaproveitados.length ? ` · reaproveitados: ${r.reaproveitados.map(rot).join(', ')}` : ''}.`
+      : `«${p.nome}» já está todo no Pipeline (nada a somar).`;
+  } else nodes = chain(p.specs);
+  store.set({ nodes, ...(painel ? { panels: { ...st.panels, [painel]: true } } : {}), ...(aviso ? { notice: aviso } : {}) });
+  persist();
+  criarMarcacoesModelo(p.nome); criarMarcacoesModeloOnda2b(p.nome); criarMarcacoesOnda2c(p.nome); criarMarcacoesModeloOnda2a(p.nome); criarMarcacoesModeloOnda2d(p.nome);
+}
+
+function lerModoPreset() { try { return localStorage.getItem('iav.presets.modo') === 'somar' ? 'somar' : 'trocar'; } catch (_) { return 'trocar'; } }
+
 function PresetPicker({ primeiro = null }) {
+  const [modo, setModoBruto] = useState(lerModoPreset);
+  const setModo = (m) => { setModoBruto(m); try { localStorage.setItem('iav.presets.modo', m); } catch (_) { /* sem armazenamento */ } };
+  const temNos = store.get().nodes.length > 0;
   let grupos = presetsVisiveis();
   if (primeiro) {
     const ordem = (g) => { const i = primeiro.indexOf(g); return i < 0 ? primeiro.length : i; };
@@ -382,18 +420,19 @@ function PresetPicker({ primeiro = null }) {
   }
   return html`
     <div class="presets-grp">
+      ${temNos && html`
+        <div class="presets-modo" role="radiogroup" aria-label="Ao escolher um preset">
+          <button class=${`btn tiny ${modo === 'trocar' ? 'on' : ''}`} role="radio" aria-checked=${modo === 'trocar'} onClick=${() => setModo('trocar')} title="O preset substitui o Pipeline atual">Trocar</button>
+          <button class=${`btn tiny ${modo === 'somar' ? 'on' : ''}`} role="radio" aria-checked=${modo === 'somar'} onClick=${() => setModo('somar')} title="O preset entra junto com o que já está (detector, rastreio e pose em comum são reaproveitados)">＋ Somar ao Pipeline</button>
+          <small>Shift+clique também soma.</small>
+        </div>`}
       ${grupos.map(([g, lista]) => html`
         <div key=${g} class="presets-g">
           <div class="presets-t">${g}</div>
           <span class="presets">
             ${lista.map((p) => html`
               <button key=${p.nome} class="btn tiny" title=${(p.desc ? p.desc + '\n\n' : '') + p.specs.map(([op]) => getOperator(op).label).join(' → ')}
-                onClick=${() => {
-                  const painel = PAINEL_DO_PRESET[p.nome] || PAINEL_DO_GRUPO[g];
-                  store.set(painel ? { nodes: chain(p.specs), panels: { ...store.get().panels, [painel]: true } } : { nodes: chain(p.specs) });
-                  persist();
-                  criarMarcacoesModelo(p.nome); criarMarcacoesModeloOnda2b(p.nome); criarMarcacoesOnda2c(p.nome); criarMarcacoesModeloOnda2a(p.nome); criarMarcacoesModeloOnda2d(p.nome);
-                }}>
+                onClick=${(e) => aplicarNoPipeline(p, g, modo === 'somar' || e.shiftKey)}>
                 ${p.nome}${p.agpl ? html` <i class="presets-agpl">AGPL</i>` : ''}
               </button>
             `)}
@@ -408,12 +447,13 @@ function PresetPicker({ primeiro = null }) {
  * Aplica um preset pelo nome (playlists do YouTube: categoria → módulo) e abre
  * o Pipeline e o painel do módulo. false se o preset não existe ou falta operador.
  */
-export function aplicarPreset(nome, painel = null) {
+export function aplicarPreset(nome, painel = null, opc = {}) {
   for (const [, lista] of presetsVisiveis()) {
     const p = lista.find((x) => x.nome === nome);
     if (!p) continue;
     const st = store.get();
-    store.set({ nodes: chain(p.specs), panels: { ...st.panels, pipeline: true, ...(painel ? { [painel]: true } : {}) } });
+    const nodes = opc.somar && st.nodes.length ? somarSpecs(st.nodes, p.specs).nodes : chain(p.specs);
+    store.set({ nodes, panels: { ...st.panels, pipeline: true, ...(painel ? { [painel]: true } : {}) } });
     persist();
     criarMarcacoesModelo(nome); criarMarcacoesModeloOnda2b(nome); criarMarcacoesOnda2c(nome); criarMarcacoesModeloOnda2a(nome); criarMarcacoesModeloOnda2d(nome);
     return true;

@@ -1229,3 +1229,7 @@ html, body { overflow-x: hidden; max-width: 100%; }
 
 /* linha de atalhos: uma linha só (quebrada, a segunda linha passava por baixo das colunas) */
 .hotkeys { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100vw - 28px); }
+/* presets: trocar ou somar ao Pipeline */
+.presets-modo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.presets-modo .btn.on { background: var(--signal, #FFD84D); color: var(--signal-ink, #1a1a1a); border-color: transparent; }
+.presets-modo small { color: var(--ink-3); font-size: 10.5px; }

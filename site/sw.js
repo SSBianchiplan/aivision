@@ -24,7 +24,7 @@
  * ========================================================================
  */
 
-const VERSION = 'iav-v102-vps';   // 23/10/2026: Motion 3D: botão Pipeline (popover) no cabeçalho; barra lateral sem cortar textos
+const VERSION = 'iav-v103-vps';   // 23/10/2026: Pipeline: somar presets (reaproveita detector/rastreio/pose em comum) além de trocar
 const SHELL = `${VERSION}-shell`;
 /*
  * Pesos dos modelos num cache de nome FIXO: sobrevivem às publicações. Antes o
