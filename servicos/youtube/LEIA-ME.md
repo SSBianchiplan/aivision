@@ -24,11 +24,11 @@ Caddy.
 
 ## Por que yt-dlp só na busca
 
-O IP da vps2 recebe «Sign in to confirm you're not a bot» quando abre a página de um
+O IP do servidor recebe «Sign in to confirm you're not a bot» quando abre a página de um
 vídeo. A página de resultados e o oEmbed continuam funcionando. Não use yt-dlp aqui
 para extrair stream ou metadados de um vídeo só.
 
-## Implantação (vps2)
+## Implantação
 
 ```
 /opt/aivision/yt/  app.py  Dockerfile  docker-compose.yml  requirements.txt

@@ -1,4 +1,4 @@
-# aivision-via — memória da Via (vps2, /opt/aivision/via)
+# aivision-via — memória da Via (/opt/aivision/via)
 
 Conversas e base de conhecimento (RAG) da Via, a assistente de IA do iaVision. Só texto e metadados:
 a chave da Anthropic e as imagens nunca chegam aqui. Documentação completa: `docs/via.md` e `docs/servicos.md`.

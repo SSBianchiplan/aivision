@@ -1,6 +1,6 @@
 # Servidor e serviços
 
-Produção: **https://aivision.gplansis.com** na vps2, servido por Caddy (`/etc/caddy/aivision.caddy`) a partir de `/opt/aivision/site`.
+Produção: **https://aivision.gplansis.com** no servidor, servido por Caddy (`/etc/caddy/aivision.caddy`) a partir de `/opt/aivision/site`.
 
 ## Rotas do Caddy
 
@@ -70,4 +70,4 @@ Autenticação: repassa o cookie para `/aivision-api/api/me` e exige sessão vá
 
 ## Código-fonte AGPL
 
-`/codigo-fonte/` serve `aivision-fonte.tar.gz` (site + serviço de treino + serviço de busca + memória da Via, sem pesos, `.env` e dados), regenerado na vps2 a cada publicação. Ver [deploy-e-testes.md](deploy-e-testes.md).
+`/codigo-fonte/` serve `aivision-fonte.tar.gz` (site + serviço de treino + serviço de busca + memória da Via, sem pesos, `.env` e dados), regenerado no servidor a cada publicação. Ver [deploy-e-testes.md](deploy-e-testes.md).

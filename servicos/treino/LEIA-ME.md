@@ -1,4 +1,4 @@
-# iaVision · treino de modelos (vps2)
+# iaVision · treino de modelos
 
 Serviço que treina modelos a partir das fotos enviadas em https://aivision.gplansis.com/treino/ e publica o ONNX
 em `/opt/aivision/site/models/custom/` (+ `index.json`), de onde os operadores do iaVision carregam no navegador.
@@ -22,7 +22,7 @@ As variantes RF-DETR XL/2XL (licença PML) e de segmentação não são oferecid
 | Interface | `../aivision-site/treino/` → `/opt/aivision/site/treino/` |
 | Caddy | `/etc/caddy/aivision.caddy` (`/api/treino/*` → 127.0.0.1:8996) |
 
-Atualizar: `scp *.py Dockerfile docker-compose.yml vps2:/opt/aivision/treino/ && ssh vps2 'cd /opt/aivision/treino && docker compose up -d --build'`.
+Atualizar: `scp *.py Dockerfile docker-compose.yml $HOST:/opt/aivision/treino/ && ssh $HOST 'cd /opt/aivision/treino && docker compose up -d --build'`.
 
 ## Origem das imagens (2.2.0)
 Prints, arquivos e quadros do YouTube chegam pelo upload de sempre (`POST /projetos/{p}/imagens`), feitos no

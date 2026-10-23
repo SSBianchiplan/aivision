@@ -1,4 +1,4 @@
-# Serviço de treino do iaVision (vps2, /opt/aivision/treino). A senha fica em .env (AIV_TREINO_SENHA).
+# Serviço de treino do iaVision (/opt/aivision/treino). A senha fica em .env (AIV_TREINO_SENHA).
 services:
   treino:
     build: .

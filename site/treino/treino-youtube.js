@@ -2,7 +2,7 @@
    Mesmo mecanismo da fonte YouTube do app (js/camera/youtube-nucleo.js): o vídeo toca no player OFICIAL
    (IFrame API, youtube-nocookie, iframe credentialless) e o navegador captura a PRÓPRIA ABA, recortada no
    elemento do player (Element Capture; Region Capture como reserva). Nada é baixado do YouTube — nem pelo
-   servidor (a vps2 é bloqueada pelo YouTube) nem pelo navegador: os quadros são fotos da tela, tiradas aqui.
+   servidor (a servidor é bloqueada pelo YouTube) nem pelo navegador: os quadros são fotos da tela, tiradas aqui.
    Busca, título/canal (oEmbed) e miniaturas vêm do serviço aivision-yt (/api/yt/*, sessão do iaVision).
    Safari/Firefox (sem iframe credentialless): o player toca numa JANELA PRÓPRIA (/yt/player.html, sem
    isolamento), comandada por BroadcastChannel com a mesma interface do YT.Player (PlayerJanela), e a

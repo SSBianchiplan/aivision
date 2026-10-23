@@ -59,9 +59,9 @@ Vídeo apagado assim que o job termina (sucesso, falha ou cancelamento); artefat
 2. Um `iavision-adaptador.json` nesse diretório com o comando FIXO e a conversão para o JSON do Studio
    (formato em `motores.py`). O cliente nunca manda comando, caminho ou argumento.
 3. No compose: montar `/opt/motores:/motores:ro`, `AIV_MOTION_GVHMR_DIR=/motores/gvhmr` e
-   `AIV_MOTION_GVHMR_LICENCA=aceita`. Uma GPU exige `deploy.resources.reservations.devices` (nvidia) — a vps2 não tem GPU.
+   `AIV_MOTION_GVHMR_LICENCA=aceita`. Uma GPU exige `deploy.resources.reservations.devices` (nvidia) — a servidor não tem GPU.
 
-## Implantação (vps2) — NÃO FEITA
+## Implantação — NÃO FEITA
 ```
 /opt/aivision/motion/  app.py motores.py Dockerfile docker-compose.yml requirements.txt
 cd /opt/aivision/motion && docker compose up -d --build        # 127.0.0.1:8988 (confirme que está livre)

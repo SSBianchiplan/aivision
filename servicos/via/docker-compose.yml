@@ -1,4 +1,4 @@
-# Memória da Via do iaVision (vps2, /opt/aivision/via): conversas e base de conhecimento (RAG).
+# Memória da Via do iaVision (/opt/aivision/via): conversas e base de conhecimento (RAG).
 # O Caddy (/etc/caddy/aivision.caddy) repassa /api/via/* para 127.0.0.1:8989 (8992 é do papo).
 # Segredo do banco em .env (VIA_DB_SENHA, gerado no servidor). Admins da base em .env (AIV_VIA_ADMINS).
 services:

@@ -157,4 +157,4 @@ As versões seguem o `VERSION` do service worker (`site/sw.js`).
 - Slogan "na tela e na palma da sua mão" e nome GPlanSiS|iaVision em todas as páginas; seção de funcionalidades; widget de Modelos (empilhamento, contador, **Carregar todos**); controles de vídeo menores; barra do topo que se ajusta; presets do Pipeline para todos os módulos; Config › Modelos livres.
 
 ## Migração — 2026-10-19/20
-- iaVision migrado da hospedagem compartilhada para a vps2 (Caddy), login PHP mantido na hospedagem gplansis.com via proxy, módulo **Treinar** (YOLO26) e código-fonte AGPL publicado.
+- iaVision migrado da hospedagem compartilhada para um servidor próprio (Caddy), login PHP mantido na hospedagem gplansis.com via proxy, módulo **Treinar** (YOLO26) e código-fonte AGPL publicado.

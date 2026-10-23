@@ -1,4 +1,4 @@
-/* iaVision · Treinar modelos. Fala com /api/treino (serviço na vps2). Sem dependências.
+/* iaVision · Treinar modelos. Fala com /api/treino (serviço no servidor). Sem dependências.
    Três caminhos: detector RF-DETR (Apache-2.0, recomendado), detector YOLO26 (AGPL-3.0) e anomalia PatchCore
    (Apache-2.0, só peças boas). Cada projeto tem vários treinos com nome, que entram numa fila.
    Entrada: primeiro tenta a conta do iaVision (POST /api/treino/sessao — o SERVIDOR confere se o e-mail é de

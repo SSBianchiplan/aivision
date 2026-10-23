@@ -15,7 +15,7 @@ O QUE ESTE SERVIÇO FAZ (E O QUE NÃO FAZ)
   COEP require-corp (threads do ONNX Runtime). Uma <img> de i.ytimg.com sem
   Cross-Origin-Resource-Policy é bloqueada; servida daqui, é same-origin.
 
-  Por que yt-dlp só na BUSCA: o IP da vps2 recebe «confirm you're not a bot»
+  Por que yt-dlp só na BUSCA: o IP do servidor recebe «confirm you're not a bot»
   ao abrir a página de um vídeo, mas a página de resultados e o oEmbed passam.
   Nada aqui extrai stream nem baixa mídia.
 

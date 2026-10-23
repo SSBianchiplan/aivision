@@ -1,4 +1,4 @@
-"""GPlanSiS|iaVision · serviço de treino de modelos (vps2).
+"""GPlanSiS|iaVision · serviço de treino de modelos.
 
 v2.2: origem de cada imagem (print, arquivo, quadro do YouTube) em origens.json, deduplicação por sha256 no
 envio e GET /projetos/{p}/origens (json/csv/md). O serviço não baixa nada da internet.

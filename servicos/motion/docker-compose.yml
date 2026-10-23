@@ -1,6 +1,6 @@
-# Conectores de servidor do Motion 3D Studio (CV-88) do iaVision — vps2, /opt/aivision/motion.
+# Conectores de servidor do Motion 3D Studio (CV-88) do iaVision — servidor, /opt/aivision/motion.
 # O Caddy (/etc/caddy/aivision.caddy) repassa /api/v1/motion/* para 127.0.0.1:8988, ANTES do /api/*
-# (login PHP), com request_body { max_size 320MB } nessa rota. Confira na vps2 que a 8988 está livre.
+# (login PHP), com request_body { max_size 320MB } nessa rota. Confira no servidor que a 8988 está livre.
 # Publicado em 22/10/2026 (porta 8988; a 8997 é do mesa).
 services:
   motion:

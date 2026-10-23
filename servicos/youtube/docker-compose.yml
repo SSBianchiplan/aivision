@@ -1,4 +1,4 @@
-# Busca do YouTube para a fonte "YouTube" do iaVision (vps2, /opt/aivision/yt).
+# Busca do YouTube para a fonte "YouTube" do iaVision (/opt/aivision/yt).
 # O Caddy (/etc/caddy/aivision.caddy) repassa /api/yt/* para 127.0.0.1:8994 (8995 já é do /opt/roadmap).
 services:
   yt:
