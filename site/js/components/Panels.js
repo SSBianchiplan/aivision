@@ -16,6 +16,11 @@ import { toGraph, fromGraph, newNodeId } from '../cv/executor.js';
 import { RESOLUTIONS, FPS_OPCOES, fpsPreferido, definirFps, cameraAtual } from '../camera/device.js';
 import { disponivel as telaDisponivel } from '../camera/screen.js';
 import { YouTubeSection } from './YouTubeSource.js';
+import { usePrefsTelemetria, useAmostraTelemetria } from './RodapeTelemetria.js';
+import {
+  METRICAS as METRICAS_TEL, definirPrefsTelemetria, relatorioTelemetria, gravarTelemetria,
+} from '../cv/runtime/telemetria.js';
+import { anunciar } from './dialogo.js';
 import { SeletorCamera, tipoDaCamera } from './SeletorCamera.js';
 import { acharUltima, textoSettings, ICONE_IP, ICONE_BT } from '../camera/seletor.js';
 import { PRESETS_ONDA1A, criarMarcacoesModelo } from './presets-onda1a.js';
@@ -1026,6 +1031,8 @@ export function StatsPanel({ onClose, ...layout }) {
         <div class="kpi"><b>${s.procWidth}</b><em>px trabalho</em></div>
       </div>
 
+      <${MonitoramentoTelemetria} />
+
       ${Object.keys(s.metrics).length > 0 && html`
         <div class="metrics">
           ${Object.entries(s.metrics).map(([k, v]) => html`
@@ -1050,6 +1057,87 @@ export function StatsPanel({ onClose, ...layout }) {
           `)}
     <//>
   `;
+}
+
+/*
+ * Monitoramento (cv/runtime/telemetria.js): cada métrica com o valor de agora
+ * e um clique que liga/desliga ela no rodapé; a chave geral do rodapé; o
+ * relatório para o suporte e a gravação de 30 s em CSV. Montado = coletor
+ * ligado (o painel aberto já é «alguém olhando»).
+ */
+function MonitoramentoTelemetria() {
+  const prefs = usePrefsTelemetria();
+  const a = useAmostraTelemetria(true);
+  const [grav, setGrav] = useState(null);   // null | 0–1 (progresso)
+
+  const copiar = async () => {
+    const txt = await relatorioTelemetria();
+    try {
+      await navigator.clipboard.writeText(txt);
+      anunciar('Relatório de telemetria copiado — cole no suporte.');
+    } catch (_) {
+      // sem permissão de área de transferência (iframe, http): entrega o arquivo
+      baixarTexto(`iavision-telemetria-${carimbo()}.txt`, txt, 'text/plain');
+      anunciar('Não deu para copiar: o relatório foi baixado como .txt.');
+    }
+  };
+  const gravar = async () => {
+    if (grav !== null) return;
+    setGrav(0);
+    const csv = await gravarTelemetria(30, (f) => setGrav(f));
+    setGrav(null);
+    baixarTexto(`iavision-telemetria-30s-${carimbo()}.csv`, csv, 'text/csv');
+  };
+
+  return html`
+    <div class="tel-mon">
+      <label class="ctl ctl-bool tel-chave">
+        <input type="checkbox" checked=${prefs.rodape}
+               onChange=${(e) => definirPrefsTelemetria({ rodape: e.target.checked })} />
+        <span>Rodapé de monitoramento</span>
+      </label>
+      ${prefs.rodape && html`
+        <label class="ctl ctl-bool tel-chave tel-sub">
+          <input type="checkbox" checked=${prefs.celular}
+                 onChange=${(e) => definirPrefsTelemetria({ celular: e.target.checked })} />
+          <span>também no celular (≤ 600 px)</span>
+        </label>`}
+      <p class="hint tight">Clique numa métrica para mostrá-la ou escondê-la no rodapé.</p>
+      <div class="tel-lista" role="list">
+        ${METRICAS_TEL.map((m) => {
+          let f = null;
+          try { f = a ? m.fmt(a) : null; } catch (_) { f = null; }
+          const on = Boolean(prefs.mostrar[m.id]);
+          return html`
+            <button key=${m.id} role="listitem" class=${'tel-m' + (on ? ' on' : '')} aria-pressed=${on}
+                    title=${m.desc} onClick=${() => definirPrefsTelemetria({ mostrar: { [m.id]: !on } })}>
+              <i aria-hidden="true"></i>
+              <span>${m.rotulo}</span>
+              <b class=${f && f.n ? f.n : ''}>${f ? f.t : '—'}</b>
+            </button>`;
+        })}
+      </div>
+      <div class="tel-acoes">
+        <button class="btn tiny" onClick=${copiar} title="Texto com todas as métricas, o navegador e a GPU — para colar no suporte">Copiar relatório</button>
+        <button class="btn tiny" onClick=${gravar} disabled=${grav !== null}
+                title="Grava 30 s de amostras (4 por segundo) e baixa um CSV">
+          ${grav === null ? 'Gravar 30 s' : `Gravando… ${Math.round(grav * 30)} s`}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function carimbo() {
+  const d = new Date(), z = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}${z(d.getSeconds())}`;
+}
+
+function baixarTexto(nome, texto, mime) {
+  const url = URL.createObjectURL(new Blob([texto], { type: mime + ';charset=utf-8' }));
+  const el = document.createElement('a');
+  el.href = url; el.download = nome; el.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 // =============================================================== Exportar

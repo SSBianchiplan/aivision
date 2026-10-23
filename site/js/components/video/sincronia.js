@@ -24,6 +24,8 @@ export class AtrasoQuadros {
     this.anel = [];          // [{ canvas, t }] do mais velho para o mais novo
     this.livres = [];        // canvases para reaproveitar
     this.mostrado = null;    // t do último quadro entregue por proximo() (fila de reprodução)
+    this.repetidos = 0;      // proximo() entregou o mesmo quadro de novo (telemetria)
+    this.saltos = 0;         // proximo() pulou quadros guardados (telemetria)
   }
 
   /** Guarda o quadro atual (recorte `c` da fonte, já espelhado se for o caso) no tamanho lw×lh. */
@@ -100,11 +102,11 @@ export class AtrasoQuadros {
     const a = this.anel;
     if (!a.length) return null;
     const u = this.mostrado;
-    let e = null;
+    let e = null, seg = null;
     if (u !== null) {
       let i = 0;
       while (i < a.length && a[i].t <= u) i++;
-      const seg = i < a.length ? a[i] : null;
+      seg = i < a.length ? a[i] : null;
       const ant = i > 0 && a[i - 1].t === u ? a[i - 1] : null;
       if (seg && seg.t >= tAlvo - folga && seg.t <= tAlvo + folga) e = seg;   // o seguinte, na hora
       else if (seg && seg.t > tAlvo + folga) e = ant;                         // adiantado: segura o último
@@ -112,6 +114,11 @@ export class AtrasoQuadros {
     }
     // começo, ficou para trás ou o último saiu do anel: volta ao relógio
     if (!e) e = this.escolher(tAlvo);
+    // contadores da telemetria: o mesmo quadro de novo, ou um pulo além do seguinte guardado
+    if (u !== null) {
+      if (e.t === u) this.repetidos++;
+      else if (seg && e !== seg && e.t > seg.t) this.saltos++;
+    }
     this.mostrado = e.t;
     return e;
   }

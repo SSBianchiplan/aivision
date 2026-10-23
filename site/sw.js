@@ -24,7 +24,7 @@
  * ========================================================================
  */
 
-const VERSION = 'iav-v109-vps';   // 23/10/2026: Teto de área nos canvases de vídeo (tela grande/Retina), Motion 3D procura pessoa a cada 250 ms
+const VERSION = 'iav-v110-vps';   // 23/10/2026: Telemetria nova: rodapé de monitoramento, métricas liga/desliga, Copiar relatório, Gravar 30 s
 const SHELL = `${VERSION}-shell`;
 /*
  * Pesos dos modelos num cache de nome FIXO: sobrevivem às publicações. Antes o

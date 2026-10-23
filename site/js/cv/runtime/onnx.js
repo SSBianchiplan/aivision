@@ -851,6 +851,14 @@ export function definirEconomia(f) {
   if (!economia) descansoAte = -Infinity;
 }
 
+/** Leitura (só leitura) das filas e da economia, para a telemetria (cv/runtime/telemetria.js). */
+export function estadoFila() {
+  return {
+    rapida: filaRapida.length, lenta: filaLenta.length, total: filaRapida.length + filaLenta.length,
+    ocupado, economia, descansando: performance.now() < descansoAte,
+  };
+}
+
 /** Classe de fila de um modelo: 'rapida' ou 'lenta'. */
 function classeDe(id) {
   const spec = specOf(id);

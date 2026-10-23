@@ -49,6 +49,7 @@ import { ConfigPanel, preloadSalvos } from './components/ConfigPanel.js';
 import { CoisasPanel } from './components/CoisasPanel.js';
 import { VideoControls } from './components/VideoControls.js';
 import { FerramentasMouse } from './components/FerramentasMouse.js';
+import { RodapeTelemetria } from './components/RodapeTelemetria.js';
 import { CodePanel } from './components/CodePanel.js';
 import { codeLog } from './cv/operators/code.js';
 import { FrameRing } from './cv/ringbuffer.js';
@@ -946,6 +947,8 @@ export function App({ sessao = null }) {
       onTidy=${tidy}
       onLogout=${doLogout}
       session=${session} />
+
+    <${RodapeTelemetria} />
 
     <div class="hotkeys">
       <b>espaço</b> pausar · <b>c</b> comparar · <b>s</b> capturar · <b>o</b> organizar ·

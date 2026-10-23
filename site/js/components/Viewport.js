@@ -33,6 +33,7 @@ import {
 import { AtrasoQuadros, sincroniaLigada } from './video/sincronia.js';
 import { definirEconomia } from '../cv/runtime/onnx.js';
 import { dprCanvas } from './escala-canvas.js';
+import { tel, quadro as telQuadro } from '../cv/runtime/telemetria.js';
 
 /** YT.PlayerState em que o quadro capturado não anda: terminado, pausado, carregando, carregado sem tocar. */
 const YT_PARADO = new Set([0, 2, 3, 5]);
@@ -608,6 +609,8 @@ export function Viewport({ source, executor, snapshotRef, hideIdle, ring, canvas
       const disp = displayRef.current;
       if (disp) desenharMarcacoes(disp.getContext('2d', { alpha: false, desynchronized: true }));
       drawCaption(disp);
+      // telemetria (rodapé / painel): só com alguém olhando; o resto é lido a 4 Hz pelo coletor
+      if (tel.ativo) telQuadro(procMs, disp, source.current, sincRef.current, st);
 
       const f = fpsRef.current;
       f.frames++;
