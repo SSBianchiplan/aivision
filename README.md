@@ -29,7 +29,7 @@
 
 O **GPlanSiS|iaVision** é uma plataforma de **visão computacional em tempo real que roda inteira no navegador**, no computador ou no celular. Uma câmera (ou um arquivo, a tela, uma câmera RTMP/IP ou um vídeo do YouTube) entra num **pipeline de operadores encadeáveis**: do processamento clássico (Canny, limiar, morfologia) aos modelos de deep learning (detecção, segmentação, pose, OCR, vocabulário aberto, profundidade), com **Studios** em tela cheia para a indústria e para o esporte.
 
-- **84 módulos, 151 operadores, 38 modelos**, com o catálogo gerado do código em [docs/modulos.md](docs/modulos.md).
+- **84 módulos, 151 operadores, 42 modelos**, com o catálogo gerado do código em [docs/modulos.md](docs/modulos.md).
 - **Tudo no dispositivo:** os modelos rodam com ONNX Runtime Web, na placa de vídeo (WebGPU) quando o aparelho permite e em WASM com threads nos demais. Nenhum quadro de vídeo vai para o servidor durante a análise.
 - **Sem build:** ES modules servidos como estão, React UMD + htm. Clonou, baixou os `.wasm`, rodou.
 - **Código aberto** sob AGPL-3.0, em português.
@@ -76,8 +76,9 @@ Câmera do aparelho, câmeras USB e Continuidade, câmeras Wi-Fi/IP (WHEP), arqu
 
 | | |
 |---|---|
-| <img src=".github/telas/pagina-principal.jpg" alt="Página principal do iaVision"><br><sub>Página principal</sub> | <img src=".github/telas/sistema.jpg" alt="Sistema com os painéis Módulos, Modelos, Configurações, Fonte e Pipeline"><br><sub>O sistema: painéis, barra e Pipeline</sub> |
-| <img src=".github/telas/studio-countervision.jpg" alt="Studio CounterVision contando peças por cor numa esteira"><br><sub>Studio CounterVision com o vídeo de exemplo</sub> | <img src=".github/telas/studio-bike-fit.jpg" alt="Seção de esportes da página principal com o Studio Bike Fit"><br><sub>Esportes: Studio Bike Fit e módulos de biomecânica (página principal)</sub> |
+| <img src=".github/telas/pagina-principal.jpg" alt="Página principal do iaVision"><br><sub>Página principal</sub> | <img src=".github/telas/sistema.jpg" alt="Quadra de padel com detecção, rastreio, Pipeline, Telemetria e o rodapé de monitoramento"><br><sub>O sistema: quadra com RF-DETR + ByteTrack, Pipeline, Telemetria e rodapé de monitoramento</sub> |
+| <img src=".github/telas/calibrar-quadra.jpg" alt="Assistente Calibrar quadra com os 4 cantos arrastáveis sobre a quadra de padel"><br><sub>⚙ Calibrar quadra: 4 cantos arrastados sobre o vídeo</sub> | <img src=".github/telas/studio-motion3d.jpg" alt="Motion 3D Studio com vídeo, esqueleto, World Outliner e ângulos das articulações"><br><sub>Motion 3D Studio: vídeo → esqueleto 3D</sub> |
+| <img src=".github/telas/studio-countervision.jpg" alt="Studio CounterVision contando peças por cor numa esteira"><br><sub>Studio CounterVision com o vídeo de exemplo</sub> | <img src=".github/telas/studio-bike-fit.jpg" alt="Studio Bike Fit com ângulos, curvas e recomendações"><br><sub>Studio Bike Fit: ângulos, curvas por pedalada e recomendações</sub> |
 
 ## Arquitetura
 
