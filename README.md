@@ -78,7 +78,7 @@ Câmera do aparelho, câmeras USB e Continuidade, câmeras Wi-Fi/IP (WHEP), arqu
 |---|---|
 | <img src=".github/telas/pagina-principal.jpg" alt="Página principal do iaVision"><br><sub>Página principal</sub> | <img src=".github/telas/sistema.jpg" alt="Quadra de padel com detecção, rastreio, Pipeline, Telemetria e o rodapé de monitoramento"><br><sub>O sistema: quadra com RF-DETR + ByteTrack, Pipeline, Telemetria e rodapé de monitoramento</sub> |
 | <img src=".github/telas/calibrar-quadra.jpg" alt="Assistente Calibrar quadra com os 4 cantos arrastáveis sobre a quadra de padel"><br><sub>⚙ Calibrar quadra: 4 cantos arrastados sobre o vídeo</sub> | <img src=".github/telas/studio-motion3d.jpg" alt="Motion 3D Studio com vídeo, esqueleto, World Outliner e ângulos das articulações"><br><sub>Motion 3D Studio: vídeo → esqueleto 3D</sub> |
-| <img src=".github/telas/studio-countervision.jpg" alt="Studio CounterVision contando peças por cor numa esteira"><br><sub>Studio CounterVision com o vídeo de exemplo</sub> | <img src=".github/telas/studio-bike-fit.jpg" alt="Studio Bike Fit com ângulos, curvas e recomendações"><br><sub>Studio Bike Fit: ângulos, curvas por pedalada e recomendações</sub> |
+| <img src=".github/telas/studio-countervision.jpg" alt="Studio CounterVision contando peças por cor numa esteira"><br><sub>Studio CounterVision com o vídeo de exemplo</sub> | <img src=".github/telas/studio-bike-fit.jpg" alt="Studio Bike Fit analisando uma ciclista em vista lateral numa bike indoor"><br><sub>Studio Bike Fit com vídeo lateral do YouTube: ângulos, curvas por pedalada e recomendações (vídeo: <a href="https://www.youtube.com/watch?v=6w9fyUIGaek">Ana Tholl</a>)</sub> |
 
 ## Arquitetura
 
