@@ -24,7 +24,7 @@
  * ========================================================================
  */
 
-const VERSION = 'iav-v103-vps';   // 23/10/2026: Pipeline: somar presets (reaproveita detector/rastreio/pose em comum) além de trocar
+const VERSION = 'iav-v104-vps';   // 23/10/2026: Motion 3D Studio com botão próprio na barra (ao lado de Esportes); saiu do hub Esportes
 const SHELL = `${VERSION}-shell`;
 /*
  * Pesos dos modelos num cache de nome FIXO: sobrevivem às publicações. Antes o

@@ -36,7 +36,8 @@
 import { html, useState, useEffect, useRef, useCallback, useLayoutEffect } from '../vendor.js';
 import { useStore, store, persist } from '../state/store.js';
 import { useNarrow } from '../state/breakpoint.js';
-import { OPERATOR_COUNT } from '../cv/registry.js';
+import { OPERATOR_COUNT, defaultParams } from '../cv/registry.js';
+import { newNodeId } from '../cv/executor.js';
 
 const POS_KEY = 'gplansis.menubar.pos';
 
@@ -111,6 +112,7 @@ const GRUPOS = [
   { id: 'dominios', rotulo: 'Domínios', itens: [
     { id: 'coisas',   icon: 'tag',    label: 'Coisas' },
     { id: 'esportes', icon: 'trofeu', label: 'Esportes' },
+    { id: 'motion3d', icon: 'motion', label: 'Motion 3D', studio: true },   // abre o Motion 3D Studio (CV-88), não um painel
     { id: 'bikefit',  icon: 'bike',   label: 'Bike Fit' },
     ...(INDUSTRIAL_PRONTO ? [{ id: 'industrial', icon: 'fabrica', label: 'Industrial' }] : []),
   ] },
@@ -131,6 +133,16 @@ const CONTA = [
 ];
 
 const comTecla = (b) => (b.tecla ? `${b.label} (${b.tecla})` : b.label);
+
+/** Motion 3D Studio: garante o nó de captura no Pipeline e abre o Studio em tela cheia. */
+function abrirMotion3D() {
+  const st = store.get();
+  if (!st.nodes.some((n) => n.op === 'motion3d.captura')) {
+    store.set({ nodes: [...st.nodes, { id: newNodeId(), op: 'motion3d.captura', params: defaultParams('motion3d.captura'), enabled: true }] });
+    persist();
+  }
+  store.set({ studioMotion3D: true });
+}
 
 /** Iniciais para o avatar: «Stéfano Bianchi» → SB; só e-mail → a primeira letra. */
 function iniciais(u) {
@@ -183,6 +195,7 @@ export function MenuBar({ onSnapshot, onToggleRun, onToggleCompare, onTidy, onLo
     panels: st.panels,
     running: st.running,
     compare: st.compare,
+    motion3d: Boolean(st.studioMotion3D),
     nodeCount: st.nodes.filter((n) => n.enabled).length,
     floatingCount: Object.keys(st.floating || {}).length,
     ferramentas: st.ferramentas !== false,
@@ -394,6 +407,7 @@ export function MenuBar({ onSnapshot, onToggleRun, onToggleCompare, onTidy, onLo
   }, [dragging, endDrag]);
 
   const toggle = (id) => {
+    if (id === 'motion3d') { abrirMotion3D(); return; }
     store.set((st) => ({ panels: { ...st.panels, [id]: !st.panels[id] } }));
     persist();
   };
@@ -608,10 +622,10 @@ export function MenuBar({ onSnapshot, onToggleRun, onToggleCompare, onTidy, onLo
   const botao = (b) => html`
     <button
       key=${b.id}
-      class="mb-btn ${s.panels[b.id] ? 'on' : ''}"
+      class="mb-btn ${(b.studio ? s[b.id] : s.panels[b.id]) ? 'on' : ''}"
       onClick=${() => toggle(b.id)}
-      title=${comTecla(b)}
-      aria-pressed=${!!s.panels[b.id]}
+      title=${b.studio ? 'Abrir o Motion 3D Studio (captura de movimento 3D)' : comTecla(b)}
+      aria-pressed=${!!(b.studio ? s[b.id] : s.panels[b.id])}
     >
       ${icon(b.icon)}
       <span>${b.label}</span>
@@ -763,6 +777,7 @@ const PATHS = {
   grid: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
   tag: 'M3 12V4h8l9 9-8 8-9-9zM7.5 8.5h.01',
   trofeu: 'M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0V4zM7 6H4a3 3 0 003 4M17 6h3a3 3 0 01-3 4',
+  motion: 'M13 4a2 2 0 100 .01M9 21l2.5-6 2.5 2.5V21M7 11l3-3 4 1 3 3M14.5 9.5L12 15l-4 1',
   bike: 'M5.5 17.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7zM18.5 17.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7zM5.5 14l4-6h6l3 6M9.5 8L12 14h-6.5M15 5h2.5l1 3M9 5h2',
   chip: 'M7 7h10v10H7zM9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3',
   chain: 'M9 7H7a5 5 0 000 10h2M15 7h2a5 5 0 010 10h-2M8 12h8',
