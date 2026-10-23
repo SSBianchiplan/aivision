@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>GPlanSiS|iaVision — visão computacional em tempo real, na tela e na palma da sua mão</title>
-<meta name="description" content="GPlanSiS|iaVision: visão computacional em tempo real, na tela e na palma da sua mão. 84 módulos e 151 operadores, Studios industriais (BeltScan, CounterVision, Takt, Inspect, OEE) e de esporte (Bike Fit, Ergonomia, Corrida, VBT), treino de modelos próprios e inferência no próprio dispositivo — nenhum quadro sai.">
+<meta name="description" content="GPlanSiS|iaVision: visão computacional em tempo real, na tela e na palma da sua mão. 84 módulos e 151 operadores, Motion 3D Studio (vídeo → 3D, até 4 atores), Studios industriais (BeltScan, CounterVision, Takt, Inspect, OEE) e de esporte (Bike Fit, Ergonomia, Corrida, VBT), calibração de quadra, telemetria ao vivo, treino de modelos próprios e inferência no próprio dispositivo — nenhum quadro sai.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="GPlanSiS|iaVision">
 <meta property="og:url" content="https://aivision.gplansis.com/">
 <meta property="og:title" content="GPlanSiS|iaVision — visão computacional em tempo real, na tela e na palma da sua mão">
-<meta property="og:description" content="84 módulos e 151 operadores rodando no navegador, no computador ou no celular. Studios industriais e de esporte, assistente Via, editor de vídeo e treino de modelos próprios. Nenhum quadro sai do dispositivo.">
+<meta property="og:description" content="84 módulos e 151 operadores rodando no navegador, no computador ou no celular. Motion 3D Studio, Studios industriais e de esporte, assistente Via em todos os módulos, editor de vídeo e treino de modelos próprios. Nenhum quadro sai do dispositivo.">
 <meta property="og:image" content="https://aivision.gplansis.com/icons/icon-512.png">
 <meta property="og:locale" content="pt_BR">
 <meta name="twitter:card" content="summary">
@@ -459,8 +459,8 @@ footer{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-f
 .mc .k{font-family:var(--m);font-size:10px;letter-spacing:.1em;color:var(--sig)}
 .mc .play{position:absolute;right:8px;bottom:8px;font-family:var(--m);font-size:9px;letter-spacing:.1em;opacity:.8;transition:opacity .3s;
   background:var(--bg-d);padding:3px 6px;border:1px solid var(--hair)}
-.mc:hover .play,.mc:focus-within .play,.mc:focus .play{opacity:0}
-@media(hover:none){.mc .play{display:none}}
+.mc:hover .play,.mc:focus-within .play,.mc:focus .play,.mc.live .play{opacity:0}
+@media(hover:none){.mc .play{display:none}.mc canvas{opacity:.92}}
 
 .minis.t5{grid-template-columns:repeat(5,minmax(0,1fr));border-top:1px solid var(--hair)}
 @media(max-width:1100px){.minis.t5{grid-template-columns:repeat(3,minmax(0,1fr))}}
@@ -519,6 +519,18 @@ footer{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-f
 /* números com contagem */
 #facts b{font-feature-settings:"tnum" 1}
 
+/* novidades (v96–v112) */
+.minis.nv{border-top:1px solid var(--hair)}
+.hero-new{display:inline-flex;align-items:baseline;gap:10px;align-self:flex-start;max-width:100%;
+  font-family:var(--m);font-size:11px;letter-spacing:.06em;border-bottom:1px solid var(--hair);padding:2px 0 7px;
+  transition:border-color .35s var(--e)}
+.hero-new b{font-weight:500;color:var(--bg);background:var(--sig);padding:2px 6px;letter-spacing:.1em;flex:0 0 auto}
+.hero-new span{opacity:.88}
+.hero-new i{font-style:normal;transition:transform .35s var(--e)}
+.hero-new:hover,.hero-new:focus-visible{border-color:var(--sig)}
+.hero-new:hover i,.hero-new:focus-visible i{transform:translateX(4px)}
+@media(max-width:520px){.hero-l .hero-k{white-space:normal}}
+
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.001ms!important;transition-duration:.001ms!important}
   .rv,.sg,.sgc>*{opacity:1!important;transform:none!important}
@@ -543,11 +555,12 @@ footer{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-f
 <nav class="nav">
   <a class="brand" href="#hero" data-nav>GPlanSiS|iaVision</a>
   <ul>
+    <li><a href="#motion3d" data-nav>motion 3D</a></li>
+    <li><a href="#novidades" data-nav>novidades</a></li>
     <li><a href="#industrial" data-nav>industrial</a></li>
     <li><a href="#esportes" data-nav>esportes</a></li>
     <li><a href="#ferramentas" data-nav>ferramentas</a></li>
     <li><a href="#pipe" data-nav>pipeline</a></li>
-    <li><a href="#ops" data-nav>operadores</a></li>
     <li><a href="#func" data-nav>módulos</a></li>
     <li><a href="#lab" data-nav>laboratório</a></li>
     <li><a href="#deploy" data-nav>implantação</a></li>
@@ -561,13 +574,14 @@ footer{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-f
   <!-- HERO -->
   <section id="hero">
     <div class="top">
-      <span>GPlanSiS|iaVision</span><span>visão computacional em tempo real, na tela e na palma da sua mão</span><span>2026</span>
+      <span>GPlanSiS|iaVision</span><span>visão computacional em tempo real, na tela e na palma da sua mão</span><span>v112 · 2026</span>
     </div>
     <h1 class="wordmark" id="wordmark" aria-label="GPlanSiS|iaVision">iaVision</h1>
     <div class="foot">
       <div class="hero-l">
         <p class="rv">Uma tela, uma câmera e o pipeline inteiro rodando no próprio dispositivo: no computador ou na palma da mão. Nenhum quadro sai da planta.</p>
-        <p class="hero-k rv"><b>84</b> MÓDULOS · <b>151</b> OPERADORES · NO DISPOSITIVO</p>
+        <p class="hero-k rv"><b>84</b>&nbsp;MÓDULOS · <b>151</b>&nbsp;OPERADORES · <b>42</b>&nbsp;MODELOS · NO&nbsp;DISPOSITIVO</p>
+        <a class="hero-new rv" href="#motion3d"><b>NOVO</b><span>Motion 3D Studio e as novidades até a v112</span><i aria-hidden="true">→</i></a>
       </div>
       <span class="hint">passe o cursor pelas letras</span>
       <div class="hero-cta rv">
@@ -596,14 +610,75 @@ footer{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-f
         <h2 class="h2 rv" style="margin-top:14px">Um Studio<br>para cada <em>chão</em></h2>
       </div>
       <p class="rich rv">Os módulos mais novos ganharam tela própria: um Studio em tela cheia que junta a cadeia,
-        a configuração, os alarmes e o relatório. Do volume na correia transportadora ao ângulo do joelho na
-        pedalada — no mesmo sistema, no mesmo navegador.</p>
+        a configuração, os alarmes e o relatório. Do vídeo que vira esqueleto 3D ao volume na correia
+        transportadora — no mesmo sistema, no mesmo navegador.</p>
+    </div>
+
+    <!-- MOTION 3D (v96–v104) -->
+    <div class="grp" id="motion3d">
+      <div class="grp-h">
+        <span class="lbl">01 — MOTION 3D</span>
+        <h3>Do vídeo<br>ao <em>esqueleto 3D</em></h3>
+        <p>Um vídeo comum vira captura de movimento, sem roupa especial nem marcador. O estúdio tem o leiaute dos
+          editores de jogo — Outliner, viewport, detalhes e linha do tempo — e a Via gera animações a partir de um pedido em texto.</p>
+      </div>
+      <article class="bf sc stg">
+        <div class="sc-v sg"><canvas class="mv" data-v="m3d" data-auto="1" role="img" aria-label="Estúdio Motion 3D com dois atores em 3D sobre o piso, Outliner, painel de detalhes e linha do tempo"></canvas>
+          <span class="sc-tag">CV-88</span><span class="sc-live">STUDIO</span><i class="mira"></i></div>
+        <div class="sc-b sg">
+          <h4>Motion 3D Studio</h4>
+          <p class="sc-s">Captura de movimento 3D a partir de qualquer vídeo</p>
+          <p>Câmera, arquivo ou YouTube: a pose 2D é levantada para 3D osso a osso, com comprimentos fixos, joelho que
+            só dobra para trás, pé travado no chão e pulo medido pela linha do piso. Até quatro atores, cada um na sua
+            posição real; a tomada vai para o seu avatar VRM, GLB ou FBX, anima uma marionete 2D ou sai ao vivo por VMC.
+            Exporta BVH por ator, GLB e MP4.</p>
+          <ul class="chips"><li>VÍDEO → 3D</li><li>ATÉ 4 ATORES</li><li>VRM · GLB · FBX</li><li>VMC · OSC</li><li>BVH · GLB · MP4</li></ul>
+        </div>
+      </article>
+      <div class="minis stg">
+        <div class="mc sg" tabindex="0"><div class="mv-w"><canvas class="mv" data-v="atores" aria-hidden="true"></canvas><i class="mira"></i><span class="play">▶ PASSE O CURSOR</span></div>
+          <div class="mc-b"><span class="k">CV-88 · ATORES</span><h5>Até quatro atores</h5><p>Vagas estáveis de Ator 1 a 4, cada um com cor, posição real no piso e avatar próprio. BVH por ator e GLB com todos.</p></div></div>
+        <div class="mc sg" tabindex="0"><div class="mv-w"><canvas class="mv" data-v="avatar" aria-hidden="true"></canvas><i class="mira"></i><span class="play">▶ PASSE O CURSOR</span></div>
+          <div class="mc-b"><span class="k">AVATAR</span><h5>VRM, GLB e FBX</h5><p>Retarget direto: repouso em T ou A corrigido sozinho, dedos pelos 21 pontos da mão e expressões pela malha do rosto.</p></div></div>
+        <div class="mc sg" tabindex="0"><div class="mv-w"><canvas class="mv" data-v="marionete" aria-hidden="true"></canvas><i class="mira"></i><span class="play">▶ PASSE O CURSOR</span></div>
+          <div class="mc-b"><span class="k">MARIONETE 2D</span><h5>Uma imagem vira boneco</h5><p>Recorte, esqueleto arrastável e malha que se deforma com a fonte ou com a tomada. PNG com alfa e MP4.</p></div></div>
+        <div class="mc sg" tabindex="0"><div class="mv-w"><canvas class="mv" data-v="vmc" aria-hidden="true"></canvas><i class="mira"></i><span class="play">▶ PASSE O CURSOR</span></div>
+          <div class="mc-b"><span class="k">VMC · OSC</span><h5>Estúdio ao vivo</h5><p>Câmera virtual, fundo HDRI ou croma, janela limpa para o OBS e saída VMC para VTuber e motores de jogo.</p></div></div>
+      </div>
+    </div>
+
+    <!-- NOVIDADES (v99–v112) -->
+    <div class="grp" id="novidades">
+      <div class="grp-h">
+        <span class="lbl">02 — NOVIDADES · ATÉ A v112</span>
+        <h3>Mais exato,<br>mais <em>leve</em></h3>
+        <p>As últimas versões puseram a caixa em cima do objeto, deixaram cada região editável com o mouse e tiraram
+          peso do processador — com um rodapé de telemetria para conferir tudo ao vivo.</p>
+      </div>
+      <div class="minis nv stg">
+        <div class="mc sg" tabindex="0"><div class="mv-w"><canvas class="mv" data-v="viaprop" aria-hidden="true"></canvas><i class="mira"></i><span class="play">▶ PASSE O CURSOR</span></div>
+          <div class="mc-b"><span class="k">VIA · EM TODOS OS MÓDULOS</span><h5>A Via propõe, você confirma</h5><p>Botão Via em todos os painéis e Studios: monta a cadeia do problema que você descreve e gera animações para o Motion 3D. Nada entra sem o seu clique.</p></div></div>
+        <div class="mc sg" tabindex="0"><div class="mv-w"><canvas class="mv" data-v="somar" aria-hidden="true"></canvas><i class="mira"></i><span class="play">▶ PASSE O CURSOR</span></div>
+          <div class="mc-b"><span class="k">PIPELINE</span><h5>Trocar ou somar presets</h5><p>Um preset novo substitui a cadeia ou soma-se a ela, reaproveitando os operadores que já estão lá.</p></div></div>
+        <div class="mc sg" tabindex="0"><div class="mv-w"><canvas class="mv" data-v="sincro" aria-hidden="true"></canvas><i class="mira"></i><span class="play">▶ PASSE O CURSOR</span></div>
+          <div class="mc-b"><span class="k">SINCRONIA</span><h5>A caixa fica no objeto</h5><p>Cada desenho leva o instante do quadro de origem e a imagem espera por ele. Na quadra, o erro caixa↔objeto caiu de 72,8 para 21 px.</p></div></div>
+        <div class="mc sg" tabindex="0"><div class="mv-w"><canvas class="mv" data-v="calib" aria-hidden="true"></canvas><i class="mira"></i><span class="play">▶ PASSE O CURSOR</span></div>
+          <div class="mc-b"><span class="k">⚙ CALIBRAR QUADRA</span><h5>Quatro cantos, radar em metros</h5><p>Padel, tênis, vôlei, basquete, futsal e beach tennis: arraste os 4 cantos sobre o vídeo; a calibração fica salva por fonte.</p></div></div>
+        <div class="mc sg" tabindex="0"><div class="mv-w"><canvas class="mv" data-v="regioes" aria-hidden="true"></canvas><i class="mira"></i><span class="play">▶ PASSE O CURSOR</span></div>
+          <div class="mc-b"><span class="k">REGIÕES · FERRAMENTAS</span><h5>Tudo editável com o mouse</h5><p>Quadra, linhas, zonas e ROIs dos pipelines ajustados na tela, com setas, Desfazer e Travar. O widget 🛠 Ferramentas está nos 10 Studios, e os avisos usam modais do próprio sistema.</p></div></div>
+        <div class="mc sg" tabindex="0"><div class="mv-w"><canvas class="mv" data-v="retina" aria-hidden="true"></canvas><i class="mira"></i><span class="play">▶ PASSE O CURSOR</span></div>
+          <div class="mc-b"><span class="k">DESEMPENHO</span><h5>Fluido até em tela 6K</h5><p>Vídeo sem quadros repetidos com a sincronia, menos CPU com arquivo e YouTube e teto de área nos canvases: num Retina 6K, 13 → 21 fps e 54 → 7 ms por quadro.</p></div></div>
+        <div class="mc sg" tabindex="0"><div class="mv-w"><canvas class="mv" data-v="nitidez" aria-hidden="true"></canvas><i class="mira"></i><span class="play">▶ PASSE O CURSOR</span></div>
+          <div class="mc-b"><span class="k">NITIDEZ</span><h5>Máscara por cima, vídeo nítido</h5><p>Máscaras, mapas de calor e fundos escurecidos viram uma camada sobre o vídeo em resolução plena, sem baixar a imagem inteira.</p></div></div>
+        <div class="mc sg" tabindex="0"><div class="mv-w"><canvas class="mv" data-v="telem" aria-hidden="true"></canvas><i class="mira"></i><span class="play">▶ PASSE O CURSOR</span></div>
+          <div class="mc-b"><span class="k">TELEMETRIA</span><h5>Rodapé com métricas ao vivo</h5><p>fps real, canvas, cada modelo em GPU ou WASM, fila, sincronia e memória. “Copiar relatório” e “Gravar 30 s” em CSV.</p></div></div>
+      </div>
     </div>
 
     <!-- INDUSTRIAL -->
     <div class="grp" id="industrial">
       <div class="grp-h">
-        <span class="lbl">01 — INDUSTRIAL</span>
+        <span class="lbl">03 — INDUSTRIAL</span>
         <h3>Da correia<br>ao <em>veredito</em></h3>
         <p>Quatro Studios de chão de fábrica, cada um com tela cheia, configuração, alarmes, histórico e CSV. A cadeia
           por baixo é a mesma do resto do sistema — e roda no dispositivo, ao lado da linha.</p>
@@ -663,7 +738,7 @@ footer{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-f
     <!-- ESPORTES -->
     <div class="grp" id="esportes">
       <div class="grp-h">
-        <span class="lbl">02 — ESPORTES</span>
+        <span class="lbl">04 — ESPORTES</span>
         <h3>Biomecânica<br>sem <em>marcadores</em></h3>
         <p>Uma câmera de lado e a pose do corpo inteiro viram ângulos, tempos e notas. Cada módulo tem painel próprio,
           alertas e relatório — passe o cursor por um cartão para ver o que ele mede.</p>
@@ -704,16 +779,16 @@ footer{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-f
     <!-- FERRAMENTAS -->
     <div class="grp" id="ferramentas">
       <div class="grp-h">
-        <span class="lbl">03 — FERRAMENTAS</span>
+        <span class="lbl">05 — FERRAMENTAS</span>
         <h3>Marcar, editar,<br><em>perguntar</em>, treinar</h3>
         <p>O que fica em volta da cadeia: uma assistente de IA, ferramentas de desenho sobre o vídeo, projetos com
           marcações, um editor de vídeo e o treino dos seus próprios modelos.</p>
       </div>
       <div class="minis t5 stg">
         <div class="mc sg" tabindex="0"><div class="mv-w"><canvas class="mv" data-v="via" aria-hidden="true"></canvas><i class="mira"></i><span class="play">▶ PASSE O CURSOR</span></div>
-          <div class="mc-b"><span class="k">VIA</span><h5>Assistente de IA</h5><p>Monta listas de classes, prompts e cadeias e consulta a base de conhecimento do sistema. A chave é sua e fica só no navegador.</p></div></div>
+          <div class="mc-b"><span class="k">VIA</span><h5>Assistente de IA</h5><p>Em todos os painéis e Studios: propõe cadeias, listas de classes e animações. Você confirma; a chave fica só no navegador.</p></div></div>
         <div class="mc sg" tabindex="0"><div class="mv-w"><canvas class="mv" data-v="mouse" aria-hidden="true"></canvas><i class="mira"></i><span class="play">▶ PASSE O CURSOR</span></div>
-          <div class="mc-b"><span class="k">CV-37</span><h5>Ferramentas de mouse</h5><p>ROI, zonas, linhas com sentido, régua calibrada em mm e mais 23, desenhadas direto sobre o vídeo.</p></div></div>
+          <div class="mc-b"><span class="k">CV-37</span><h5>Ferramentas de mouse</h5><p>ROI, zonas, linhas com sentido, régua em mm e mais 23 — e as regiões dos pipelines ajustáveis com o mouse.</p></div></div>
         <div class="mc sg" tabindex="0"><div class="mv-w"><canvas class="mv" data-v="projeto" aria-hidden="true"></canvas><i class="mira"></i><span class="play">▶ PASSE O CURSOR</span></div>
           <div class="mc-b"><span class="k">+PROJETO</span><h5>Projetos e marcações</h5><p>Marcações editáveis, menu de contexto e pastas de treino: o que você marca vira amostra rotulada.</p></div></div>
         <div class="mc sg" tabindex="0"><div class="mv-w"><canvas class="mv" data-v="video" aria-hidden="true"></canvas><i class="mira"></i><span class="play">▶ PASSE O CURSOR</span></div>
@@ -726,7 +801,7 @@ footer{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-f
     <!-- FONTES + PLATAFORMA -->
     <div class="grp" id="fontes">
       <div class="grp-h">
-        <span class="lbl">04 — FONTES E PLATAFORMA</span>
+        <span class="lbl">06 — FONTES E PLATAFORMA</span>
         <h3>Qualquer imagem,<br><em>qualquer tela</em></h3>
         <p>Da webcam ao YouTube, do notebook ao celular. A inferência acontece no aparelho de quem está olhando.</p>
       </div>
@@ -768,7 +843,7 @@ footer{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-f
           </div>
         </div>
       </div>
-      <ul class="cb-k"><li>84 MÓDULOS</li><li>151 OPERADORES</li><li>170+ PRESETS</li><li>WEBGPU · WASM</li><li>SAFARI · CHROME · EDGE · CELULAR</li></ul>
+      <ul class="cb-k"><li>84 MÓDULOS</li><li>151 OPERADORES</li><li>42 MODELOS</li><li>170+ PRESETS</li><li>WEBGPU · WASM</li><li>SAFARI · CHROME · EDGE · CELULAR</li></ul>
     </div>
   </section>
 
@@ -854,21 +929,30 @@ footer{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-f
       <div><span class="fx-id">CV-38</span><h3>CounterVision</h3><p>Contagem em esteira por cor sem modelo ou pelo seu detector, com rastreio, turnos, metas e alarmes.</p><span class="req">INDUSTRIAL · 4 OPERADORES</span></div>
       <div><span class="fx-id">CV-39</span><h3>Takt</h3><p>Tempo de posto pela pose multi-pessoa: produtivo, ocioso, vago e pausa, com Gantt e rostos borrados (LGPD).</p><span class="req">INDUSTRIAL · 2 OPERADORES</span></div>
       <div><span class="fx-id">CV-40</span><h3>Inspect</h3><p>Presença, paquímetro, cor ΔE, forma, OCR de lote e validade, GS1 e PatchCore numa receita com veredito OK/NOK.</p><span class="req">INDUSTRIAL · 7 OPERADORES</span></div>
+      <div><span class="fx-id">CV-41–48</span><h3>Onda 1: medir e proteger</h3><p>Tráfego com matriz de giro, manômetro e display de 7 segmentos, cerca virtual por parte do corpo, pessoa caída, sprint, chave NF-e e pallet por QR, mapa de calor; Studios OEE e Fisio e o Monitor de EPI.</p><span class="req">8 MÓDULOS · OEE · FISIO · EPI</span></div>
+      <div><span class="fx-id">CV-49–59</span><h3>Indústria e logística</h3><p>Poka-yoke, cubagem, doca, nível, gotejamento, alinhamento de correia, torque, chama, solda, fumaça na escala Ringelmann, baú e fissuras.</p><span class="req">11 MÓDULOS · NO CHÃO DE FÁBRICA</span></div>
+      <div><span class="fx-id">CV-60–67</span><h3>Segurança, varejo e cidade</h3><p>NR-17/NIOSH, saída obstruída, fogo indicativo, auditoria de preço, planograma, foto de produto, ocupação, medidores, resumo de vídeo e velocidade.</p><span class="req">8 MÓDULOS · NR-17 · VAREJO</span></div>
+      <div><span class="fx-id">CV-70–77</span><h3>Saúde e esportes</h3><p>Sinais vitais sem contato, rosto e movimento clínico, exercício em casa, hospital, comparação com referência, corda, luta, basquete, natação e PROESP-BR, com o Studio Vitais.</p><span class="req">8 MÓDULOS · STUDIO VITAIS</span></div>
+      <div><span class="fx-id">CV-80–87</span><h3>Educação, mídia, agro e obra</h3><p>Física por vídeo, descrição falada, mouse pela cabeça, alfabeto de Libras, gabarito, cortes e busca semântica em vídeo, agro, câmera de jogo e diário de obra.</p><span class="req">8 MÓDULOS · ACESSIBILIDADE</span></div>
+      <div><span class="fx-id">CV-88</span><h3>Motion 3D Studio</h3><p>Vídeo → 3D com ossos rígidos e contatos com o chão, até 4 atores, avatar VRM, GLB ou FBX, marionete 2D, saída VMC e animações geradas pela Via.</p><span class="req">STUDIO · BVH · GLB · VMC</span></div>
     </div>
     <p class="lbl" style="margin-top:clamp(40px,6vw,80px)">Ferramentas do sistema</p>
     <div class="fx fx-tools stg">
       <div><h3>Contexto</h3><p>Quatro perguntas sobre a mesma cena: LER, CONTAR, DESCREVER e ANALISAR. Cruza OCR, detecção e classificação numa frase gerada por regras, que nunca inventa o que não foi visto.</p><span class="req">SEM LLM · NO DISPOSITIVO</span></div>
       <div><h3>Legendas e transcrição</h3><p>Legendas ao vivo do áudio, com Whisper rodando no próprio aparelho, reconhecimento nativo do sistema ou o servidor. A transcrição pode ser exportada.</p><span class="req">WHISPER LOCAL · 3 MOTORES</span></div>
       <div><h3>Fontes de imagem</h3><p>Câmeras USB, câmera Continuidade do iPhone, câmeras Wi-Fi e IP por WHEP (Osmo, drone, OBS), arquivos de vídeo, tela e o YouTube com playlists, tocando no player oficial.</p><span class="req">USB · CONTINUIDADE · WHEP · YOUTUBE · TELA</span></div>
-      <div><h3>Pipeline e telemetria</h3><p>Monte a cadeia arrastando blocos e compare antes e depois com a linha divisória. Acompanhe fps e latência de cada bloco, e exporte a foto ou o grafo da cadeia.</p><span class="req">ARRASTAR · COMPARAR · EXPORTAR</span></div>
+      <div><h3>Pipeline e telemetria</h3><p>Monte a cadeia arrastando blocos, troque ou some presets e compare antes e depois com a linha divisória. O rodapé de telemetria mostra fps real, cada modelo em GPU ou WASM, fila, sincronia e memória, com relatório copiável e gravação de 30 s em CSV.</p><span class="req">TROCAR OU SOMAR · TELEMETRIA · CSV</span></div>
       <div><h3>Treinar modelos</h3><p>Três caminhos: detector livre RF-DETR, detector YOLO26 ou inspeção de anomalia só com fotos de peças boas. Treinos com nome, fila, comparação e publicação com um clique — com amostras de prints, das pastas do +Projeto e de quadros do YouTube.</p><span class="req">RF-DETR · PATCHCORE · YOLO26 · /TREINO/</span></div>
       <div><h3>Coisas e listas</h3><p>Diga ao YOLOE o que procurar: busca em português nas 4.585 classes, listas prontas (EPI, logística, escritório…) e listas suas, salvas com nome.</p><span class="req">VOCABULÁRIO ABERTO · LISTAS</span></div>
-      <div><h3>Via — assistente de IA</h3><p>Gera listas de classes, prompts e cadeias e responde com a base de conhecimento do sistema. A chave de API é sua e fica só no navegador: vai direto ao provedor, nunca pelos nossos servidores.</p><span class="req">CHAVE NO NAVEGADOR · BASE DE CONHECIMENTO</span></div>
+      <div><h3>Via — assistente de IA</h3><p>Está em todos os módulos e Studios: propõe cadeias, listas de classes e animações para o Motion 3D, e só aplica depois que você confirma. Responde com a base de conhecimento do sistema. A chave de API é sua e fica só no navegador: vai direto ao provedor, nunca pelos nossos servidores.</p><span class="req">CHAVE NO NAVEGADOR · BASE DE CONHECIMENTO</span></div>
       <div><h3>Ferramentas de mouse</h3><p>ROI, exclusão, zonas, linhas com sentido, régua calibrada e mais 23 ferramentas desenhadas sobre o vídeo, que controlam o que a cadeia processa, mede e conta.</p><span class="req">ROI · ZONAS · LINHAS · RÉGUA</span></div>
       <div><h3>+Projeto</h3><p>Marcações editáveis com alças, menu de contexto no clique direito e pastas de treino: cada marcação vira amostra rotulada para o Treinar.</p><span class="req">MARCAÇÕES · PASTAS DE TREINO</span></div>
       <div><h3>Editor GPlanSiS|Vídeo</h3><p>Cut, crop e timeline com miniaturas e forma de onda, e exportação MP4 no quadro exato — o trecho certo vai para o pipeline ou para o relatório.</p><span class="req">CUT · CROP · TIMELINE · MP4</span></div>
       <div><h3>Modelos sob controle</h3><p>WebGPU quando disponível — até 4× mais rápido — e WASM como piso. Carregar ou descarregar todos de uma vez, pré-carga ao abrir, só modelos livres com um clique e a licença de cada peso à vista.</p><span class="req">WEBGPU · WASM · LICENÇAS</span></div>
       <div><h3>Acesso, contas e temas</h3><p>Login por e-mail e senha, desbloqueio por biometria facial, painel de contas e papéis, sessão verificada no servidor e três temas: escuro, claro e Code Dark.</p><span class="req">LOGIN · BIOMETRIA · 3 TEMAS</span></div>
+      <div><h3>⚙ Calibrar quadra</h3><p>Assistente para padel, tênis, vôlei, basquete, futsal e beach tennis: 4 cantos arrastados sobre o vídeo, radar em metros e calibração salva por fonte. O mesmo ⚙ em Marcha, Takt, régua, paquímetro e Bike Fit 3D.</p><span class="req">HOMOGRAFIA · POR FONTE</span></div>
+      <div><h3>Regiões editáveis</h3><p>A quadra, a linha de contagem, o ponto do SAM 2, as zonas e as faixas que vêm nos pipelines são selecionadas e ajustadas na tela, com setas, Desfazer e menu de Redefinir, Travar e Apagar.</p><span class="req">MOUSE · SETAS · 10 STUDIOS</span></div>
+      <div><h3>Sincronia e desempenho</h3><p>O desenho carimbado com o instante do quadro e a imagem esperando por ele; vídeo fluido, menos CPU, teto de área para telas grandes e Retina e máscaras como camada sobre o vídeo nítido.</p><span class="req">72,8 → 21 PX · 13 → 21 FPS EM 6K</span></div>
     </div>
     <div class="actions" style="display:flex;gap:14px;flex-wrap:wrap;margin-top:clamp(30px,4vw,52px)">
       <a class="btn btn-p" href="/app.html" data-cursor="ENTRAR"><i class="scan" aria-hidden="true"></i><span>Entrar no sistema</span><i class="arr" aria-hidden="true">→</i></a>
@@ -990,7 +1074,7 @@ footer{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-f
     <div class="credits">
       <div><h4>ACESSO</h4><a href="/app.html">aivision.gplansis.com/app.html</a><br>login por e-mail e senha · biometria facial</div>
       <div><h4>PROCESSAMENTO</h4>Operadores clássicos e modelos ONNX no dispositivo, WebGPU ou WASM<br>câmera Wi-Fi/IP por WHEP: <a href="https://rtmp.gplansis.com/saude" rel="noopener">rtmp.gplansis.com</a></div>
-      <div><h4>MODOS</h4>Ler · Contar · Descrever · Analisar · Transcrever · <a href="/relacoes/">Relacionar</a> · <a href="/treino/">Treinar</a><br>Studios: BeltScan · CounterVision · Takt · Inspect · Bike Fit<br>Vocabulário aberto (YOLOE) · SAM · Profundidade · Zero-shot (CLIP) · Tracking com IDs · Legendas · QR e barras</div>
+      <div><h4>MODOS</h4>Ler · Contar · Descrever · Analisar · Transcrever · <a href="/relacoes/">Relacionar</a> · <a href="/treino/">Treinar</a><br>Studios: Motion 3D · BeltScan · CounterVision · Takt · Inspect · OEE · Fisio · Bike Fit · Vitais<br>Vocabulário aberto (YOLOE) · SAM · Profundidade · Zero-shot (CLIP) · Tracking com IDs · Legendas · QR e barras</div>
       <div><h4>GRUPO</h4><a href="https://gplansis.com" rel="noopener">gplansis.com</a><br>GPlanSiS|Group, 2026</div>
     </div>
   </section>
@@ -1005,7 +1089,7 @@ footer{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-f
           <h2>Visão computacional em tempo real, <em>na tela e na palma da sua mão.</em></h2>
         </div>
         <div>
-          <p class="cb-sub">84 módulos, 151 operadores e os Studios industriais e de esporte, prontos no navegador.
+          <p class="cb-sub">84 módulos, 151 operadores, 42 modelos, o Motion 3D e os Studios industriais e de esporte, prontos no navegador.
             Entre com a sua conta e monte a primeira cadeia em minutos.</p>
           <div class="cb-act">
             <a class="btn btn-p" href="/app.html" data-cursor="ENTRAR"><i class="scan" aria-hidden="true"></i><span>Entrar no sistema</span><i class="arr" aria-hidden="true">→</i></a>
@@ -1385,7 +1469,9 @@ const OPS={
   {n:'Corrida',k:'corrida.marcha',d:'cadência, contato e pisada',v:'run'},
   {n:'Swing',k:'swing.analise',d:'fases, ritmo e X-factor',v:'swing'},
   {n:'VBT',k:'vbt.barra',d:'velocidade da barra por ArUco',v:'vbt'},
-  {n:'Quadra',k:'quadra.analise',d:'radar 2D, posse e mapa de calor',v:'court'}]
+  {n:'Quadra',k:'quadra.analise',d:'radar 2D, posse e mapa de calor',v:'court'},
+  {n:'Calibrar quadra',k:'⚙ calibrar',d:'4 cantos, radar em metros',v:'calib'},
+  {n:'Motion 3D',k:'motion3d.captura',d:'vídeo → 3D, até 4 atores',v:'atores'}]
 };
 const opTabs=R('#opTabs'), opsGrid=R('#opsGrid');
 function renderOps(cat){
@@ -1776,6 +1862,54 @@ function badge(x,s,a,b,sz,fill,al){x.font=`${sz}px ${MONO}`;const w=x.measureTex
 function fs(W){return W<300?8.5:W<480?9.5:11;}
 function grid(x,W,H,n){x.strokeStyle=A(.05);x.lineWidth=1;for(let i=1;i<n;i++){L(x,0,H*i/n,W,H*i/n);L(x,W*i/n,0,W*i/n,H);}}
 
+/* ---------- 3D leve (Motion 3D) e utilidades das novidades ---------- */
+const PALE='#CFEBE4';
+function P3(c,p){const x0=p[0],y0=p[1]-c.ty,z0=p[2],cy=Math.cos(c.yaw),sy=Math.sin(c.yaw);
+  const x1=x0*cy-z0*sy,z1=x0*sy+z0*cy,cp=Math.cos(c.pitch),sp=Math.sin(c.pitch);
+  const y2=y0*cp+z1*sp,z2=-y0*sp+z1*cp,d=Math.max(.5,c.D+z2);return [c.cx+c.f*x1/d,c.cy-c.f*y2/d,d];}
+/* pose 3D (metros, y para cima): andar no lugar ou dançar; o = {x,z,face,amp,dance} */
+function pose3d(ph,o){
+  const a=o.amp==null?.55:o.amp,s=Math.sin(ph),bob=.03*Math.cos(2*ph),hy=.95+bob,J={};
+  J.hp=[0,hy,0];J.n=[0,hy+.52,.02];J.h=[0,hy+.72,.04];J.hl=[-.1,hy,0];J.hr=[.1,hy,0];
+  const leg=(hx,sw,kb)=>{const k=[hx,hy-.45*Math.cos(sw),.45*Math.sin(sw)];return [k,[hx,k[1]-.45*Math.cos(sw-kb),k[2]+.45*Math.sin(sw-kb)]];};
+  [J.kl,J.al]=leg(-.1,a*s,.9*Math.max(0,Math.sin(ph+1.2)));
+  [J.kr,J.ar]=leg(.1,-a*s,.9*Math.max(0,Math.sin(ph+1.2+PI)));
+  J.sl=[-.19,hy+.47,0];J.sr=[.19,hy+.47,0];
+  const arm=(sh,side,c,sp,e)=>{const el=[sh[0]+side*.29*Math.sin(sp),sh[1]-.29*Math.cos(c)*Math.cos(sp),sh[2]+.29*Math.sin(c)];
+    return [el,[el[0]+side*.05,el[1]-.26*Math.cos(c+e),el[2]+.26*Math.sin(c+e)]];};
+  if(o.dance){const w=Math.sin(ph*2);[J.el]=arm(J.sl,-1,.2,1.9+.5*w,0);[J.er]=arm(J.sr,1,.2,1.9-.5*w,0);
+    J.wl=[J.el[0]-.08,J.el[1]+.22+.06*w,J.el[2]+.05];J.wr=[J.er[0]+.08,J.er[1]+.22-.06*w,J.er[2]+.05];}
+  else{[J.el,J.wl]=arm(J.sl,-1,-a*.9*s,.12,.5+.3*Math.max(0,-s));[J.er,J.wr]=arm(J.sr,1,a*.9*s,.12,.5+.3*Math.max(0,s));}
+  const f=o.face||0,cf=Math.cos(f),sf=Math.sin(f);
+  for(const k in J){const q=J[k];J[k]=[o.x+q[0]*cf+q[2]*sf,q[1],o.z-q[0]*sf+q[2]*cf];}
+  return J;}
+const B3=[['hp','hl'],['hp','hr'],['hl','kl'],['kl','al'],['hr','kr'],['kr','ar'],['hp','n'],['n','sl'],['n','sr'],['sl','el'],['el','wl'],['sr','er'],['er','wr']];
+function skel3(x,c,J,col,lw,opt){opt=opt||{};const P={};for(const k in J)P[k]=P3(c,J[k]);
+  const sh=P3(c,[J.hp[0],0,J.hp[2]]);x.fillStyle=A(.07);x.beginPath();x.ellipse(sh[0],sh[1],c.f*.28/sh[2],c.f*.07/sh[2],0,0,TAU);x.fill();
+  x.lineCap='round';x.strokeStyle=col;
+  for(const [a,b] of B3){x.lineWidth=Math.max(1,(opt.thick||lw)*c.f/((P[a][2]+P[b][2])/2)/100);L(x,P[a][0],P[a][1],P[b][0],P[b][1]);}
+  const hr=c.f*.11/P.h[2];
+  if(opt.thick){x.fillStyle=col;Dt(x,P.h[0],P.h[1],hr);}else{x.lineWidth=Math.max(1,lw*c.f/P.h[2]/100);x.beginPath();x.arc(P.h[0],P.h[1],hr,0,TAU);x.stroke();}
+  if(!opt.thick){x.fillStyle=col;for(const k of ['kl','kr','el','er','wl','wr','al','ar','sl','sr','hl','hr'])Dt(x,P[k][0],P[k][1],Math.max(1.3,c.f*.016/P[k][2]));}
+  if(opt.contact)for(const k of ['al','ar'])if(J[k][1]<.09){x.strokeStyle=SIG;x.lineWidth=1.2;x.beginPath();x.ellipse(P[k][0],P[k][1]+2,c.f*.07/P[k][2],c.f*.022/P[k][2],0,0,TAU);x.stroke();}
+  x.lineCap='butt';return P;}
+function floor3(x,c,n,st,al){x.strokeStyle=A(al||.12);x.lineWidth=1;const e=n*st;
+  for(let i=-n;i<=n;i++){let a=P3(c,[i*st,0,-e]),b=P3(c,[i*st,0,e]);L(x,a[0],a[1],b[0],b[1]);a=P3(c,[-e,0,i*st]);b=P3(c,[e,0,i*st]);L(x,a[0],a[1],b[0],b[1]);}}
+function seta(x,px,py){x.fillStyle='#fff';x.strokeStyle='#02302C';x.lineWidth=1;x.beginPath();x.moveTo(px,py);x.lineTo(px+9,py+10);x.lineTo(px+4,py+10);x.lineTo(px,py+14);x.closePath();x.fill();x.stroke();}
+function blk(x,s,bx,by,bw,bh,f,st){x.font=`${f}px ${MONO}`;
+  if(st==='on'){x.fillStyle='#fff';x.fillRect(bx,by,bw,bh);}
+  else if(st==='sig'){x.fillStyle=SIG;x.fillRect(bx,by,bw,bh);}
+  else{x.strokeStyle=st==='prop'?SIG:st==='re'?'#fff':st==='x'?A(.2):A(.45);x.lineWidth=1;if(st==='prop'||st==='re')x.setLineDash([3,3]);x.strokeRect(bx+.5,by+.5,bw-1,bh-1);x.setLineDash([]);
+    if(st==='x'){x.strokeStyle=A(.3);L(x,bx+3,by+bh/2,bx+bw-3,by+bh/2);}}
+  let t=s;while(t.length>2&&x.measureText(t).width>bw-6)t=t.slice(0,-1);
+  Tx(x,t,bx+bw/2,by+bh/2+f*.36,f,st==='on'||st==='sig'?'#04413C':st==='prop'?SIG:st==='x'?A(.3):'#fff','center');}
+function sq2q(q){const [x0,y0]=q[0],[x1,y1]=q[1],[x2,y2]=q[2],[x3,y3]=q[3];
+  const dx1=x1-x2,dx2=x3-x2,dy1=y1-y2,dy2=y3-y2,sx=x0-x1+x2-x3,sy=y0-y1+y2-y3;let g=0,h=0;
+  if(Math.abs(sx)>1e-9||Math.abs(sy)>1e-9){const den=dx1*dy2-dx2*dy1;g=(sx*dy2-dx2*sy)/den;h=(dx1*sy-sx*dy1)/den;}
+  const a=x1-x0+g*x1,b=x3-x0+h*x3,d=y1-y0+g*y1,e=y3-y0+h*y3;
+  return (u,v)=>{const w=g*u+h*v+1;return [(a*u+b*v+x0)/w,(d*u+e*v+y0)/w];};}
+let NIT_OFF=null;
+
 const VZ={
 /* ---------- INDUSTRIAL ---------- */
 belt(x,W,H,t){
@@ -2092,6 +2226,296 @@ train(x,W,H,t){
   for(let i=0;i<4;i++){const cx=gx+(i%2)*(gw+4),cy=m+Math.floor(i/2)*(gh+4);x.strokeStyle=A(.3);x.lineWidth=1;x.strokeRect(cx+.5,cy+.5,gw,gh);
     if(p>.15+i*.12){x.strokeStyle=i===3?SIG:A(.9);x.strokeRect(cx+gw*(.2+.2*hash(i)),cy+gh*(.25+.2*hash(i+4)),gw*.4,gh*.4);}}
 },
+/* ---------- MOTION 3D (v96–v104) ---------- */
+m3d(x,W,H,t){
+  const f=fs(W)+1.5, wide=W>=520, th=f+12, tl=wide?Math.max(32,H*.19):Math.max(46,H*.28);
+  const ow=wide?W*.17:0, dw=wide?W*.21:0, vx0=ow, vx1=W-dw, vy0=th, vy1=H-tl, vw=vx1-vx0, vh=vy1-vy0;
+  x.fillStyle=A(.04);x.fillRect(0,0,W,th);x.strokeStyle=A(.15);x.lineWidth=1;L(x,0,th+.5,W,th+.5);
+  Tx(x,wide?'MOTION 3D · TOMADA 03 · 30 fps':'TOMADA 03',62,th-6,f-2,A(.8));
+  const sec=(t/1000)%60, rs=`REC 00:${String(Math.floor(sec)).padStart(2,'0')},${Math.floor(sec%1*10)}`;
+  x.font=`${f-2}px ${MONO}`;const rw=x.measureText(rs).width;
+  if(MV_FIXO||Math.floor(t/600)%2===0){x.fillStyle=SIG;Dt(x,W-92-rw,th/2,3);}
+  Tx(x,rs,W-86,th-6,f-2,SIG,'right');
+  /* viewport */
+  const ph=t/360;
+  const J1=pose3d(ph,{x:-.55,z:.1,face:PI+.3}), J2=pose3d(ph*.8+1,{x:.62,z:-.25,face:PI-.5,dance:1,amp:.25});
+  x.save();x.beginPath();x.rect(vx0,vy0,vw,vh);x.clip();
+  const c={yaw:.5+.45*Math.sin(t/4200),pitch:.34,D:4.4,f:Math.min(vw*.95,vh*1.55),cx:vx0+vw/2,cy:vy0+vh*.6,ty:.85};
+  floor3(x,c,4,.5,.1);
+  const P2=skel3(x,c,J2,A(.85),2.2,{contact:1}), P1=skel3(x,c,J1,SIG,2.6,{contact:1});
+  Tx(x,'ATOR 1',P1.h[0],P1.h[1]-c.f*.13/P1.h[2]-4,f-2,SIG,'center');
+  Tx(x,'ATOR 2',P2.h[0],P2.h[1]-c.f*.13/P2.h[2]-4,f-2,A(.75),'center');
+  Tx(x,'PERSPECTIVA · ÓRBITA',vx0+8,vy0+f+4,f-2,A(.45));
+  if(vw>260){const iw=Math.min(vw*.24,150),ih=iw*.62,ix=vx0+8,iy=vy1-8-ih,s2=ih*.72,w=ph;
+    x.fillStyle='#02302C';x.fillRect(ix,iy,iw,ih);x.strokeStyle=A(.4);x.lineWidth=1;x.strokeRect(ix+.5,iy+.5,iw-1,ih-1);
+    const sn=Math.sin(w),hp=[ix+iw*.32,iy+ih*.9-s2*.5];
+    skel(x,body(hp,s2,{tr:-PI/2,ua:PI/2-.5*sn,fa:PI/2-.5*sn-.3,ua2:PI/2+.5*sn,fa2:PI/2+.5*sn-.3,th:PI/2+.4*sn,sh:PI/2+.4*sn+.2,th2:PI/2-.4*sn,sh2:PI/2-.4*sn+.2}),s2,.85);
+    Tx(x,'VÍDEO 2D',ix+5,iy+f-1,f-2.5,A(.6));Tx(x,'→ 3D',ix+iw-5,iy+ih/2+3,f-2.5,SIG,'right');}
+  x.restore();
+  /* painéis: Outliner e Detalhes */
+  if(wide){
+    x.fillStyle=A(.03);x.fillRect(0,th,ow,vy1-th);x.fillRect(vx1,th,dw,vy1-th);
+    x.strokeStyle=A(.15);x.lineWidth=1;L(x,ow+.5,th,ow+.5,vy1);L(x,vx1+.5,th,vx1+.5,vy1);
+    const rh=f+6;Tx(x,'OUTLINER',8,th+f+6,f-2,A(.5));
+    ['▾ Cena','Ator 1','Ator 2','Avatar VRM','Câmera virtual','Luz HDRI','▸ Sources'].forEach((r,i)=>{
+      const yy=th+f+10+(i+1)*rh;if(yy>vy1-4)return;const sel=i===1;
+      if(sel){x.fillStyle=SA(.16);x.fillRect(2,yy-rh+4,ow-4,rh);}
+      Tx(x,(i&&i<6?'  ':'')+r,8,yy,f-2.5,sel?SIG:A(.75));});
+    const a3=(a,b,cc)=>{const u=[a[0]-b[0],a[1]-b[1],a[2]-b[2]],v=[cc[0]-b[0],cc[1]-b[1],cc[2]-b[2]];
+      return Math.acos(clamp((u[0]*v[0]+u[1]*v[1]+u[2]*v[2])/(Math.hypot(...u)*Math.hypot(...v)),-1,1))*180/PI;};
+    const ct=J1.al[1]<.09&&J1.ar[1]<.09?'OS DOIS PÉS':J1.al[1]<.09?'PÉ E':J1.ar[1]<.09?'PÉ D':'NO AR';
+    const dx=vx1+8;Tx(x,'DETALHES · ATOR 1',dx,th+f+6,f-2,A(.5));
+    [['Joelho E',a3(J1.hl,J1.kl,J1.al).toFixed(0)+'°',1],['Joelho D',a3(J1.hr,J1.kr,J1.ar).toFixed(0)+'°',1],['Contato',ct,0],
+     ['Altura','1,72 m',0],['Filtro','One Euro',0],['Saída','VMC ●',1]].forEach((r,i)=>{
+      const yy=th+f+10+(i+1)*rh;if(yy>vy1-4)return;
+      Tx(x,r[0],dx,yy,f-2.5,A(.6));Tx(x,r[1],W-8,yy,f-2.5,r[2]?SIG:'#fff','right');
+      x.strokeStyle=A(.08);L(x,dx,yy+4,W-8,yy+4);});
+  }
+  /* linha do tempo */
+  const ty0=vy1;x.fillStyle=A(.04);x.fillRect(0,ty0,W,H-ty0);x.strokeStyle=A(.15);x.lineWidth=1;L(x,0,ty0+.5,W,ty0+.5);
+  const lx=wide?ow+8:58, tw=W-lx-10, ry0=ty0+(wide?f+4:11), rh2=(H-ry0-3)/2;
+  for(let i=0;i<=24;i++){const xx=lx+i/24*tw;x.strokeStyle=A(.2);L(x,xx,ty0+2,xx,ty0+(i%6?5:9));}
+  ['Ator 1','Ator 2'].forEach((n,r)=>{const yy=ry0+r*rh2+rh2/2;Tx(x,n,wide?8:10,yy+3,f-2,r?A(.7):SIG);
+    x.strokeStyle=A(.1);L(x,lx,yy,lx+tw,yy);
+    for(let k=0;k<9;k++){const u=(k+.3+.5*hash(k*3+r*17))/9.2,xx=lx+u*tw,d=Math.min(4,rh2*.3);
+      x.fillStyle=r?A(.7):SIG;x.beginPath();x.moveTo(xx,yy-d);x.lineTo(xx+d,yy);x.lineTo(xx,yy+d);x.lineTo(xx-d,yy);x.fill();}});
+  const ph2=MV_FIXO?.4:(t/9000)%1, hx=lx+ph2*tw;x.strokeStyle=SIG;x.lineWidth=1.5;L(x,hx,ty0+2,hx,H-2);
+  x.fillStyle=SIG;x.beginPath();x.moveTo(hx-4,ty0+1);x.lineTo(hx+4,ty0+1);x.lineTo(hx,ty0+6);x.fill();
+},
+atores(x,W,H,t){
+  const f=fs(W)+1.5, c={yaw:.4+.25*Math.sin(t/4000),pitch:.42,D:5.4,f:Math.min(W*.95,H*1.65),cx:W/2,cy:H*.62,ty:.7};
+  floor3(x,c,4,.5,.09);
+  const Q=[[-.95,.35,.2,SIG],[.05,-.65,-.2,'#fff'],[.95,.25,-.4,PALE],[.2,.95,.3,A(.6)]];
+  Q.map((a,i)=>{const J=pose3d(t/(330+i*40)+i*1.7,{x:a[0],z:a[1],face:PI+a[2],dance:i%2,amp:i%2?.3:.55});return {J,col:a[3],i,d:P3(c,J.hp)[2]};})
+   .sort((a,b)=>b.d-a.d)
+   .forEach(o=>{const P=skel3(x,c,o.J,o.col,2,{contact:1});Tx(x,'ATOR '+(o.i+1),P.h[0],P.h[1]-c.f*.13/P.h[2]-4,f-2,o.col,'center');});
+  Tx(x,'4 ATORES · POSIÇÃO REAL NO PISO',10,f+6,f-2.5,A(.75));
+  Tx(x,'BVH POR ATOR · .zip',10,H-9,f-2,SIG);
+},
+avatar(x,W,H,t){
+  const f=fs(W)+1.5, c={yaw:.35*Math.sin(t/3000),pitch:.24,D:4.2,f:Math.min(W*.78,H*1.5),cx:W/2,cy:H*.62,ty:.9};
+  floor3(x,c,3,.5,.07);
+  const ph=t/420, Js=pose3d(ph,{x:-.62,z:0,face:PI,dance:1,amp:.3}), Ja=pose3d(ph,{x:.62,z:0,face:PI,dance:1,amp:.3});
+  skel3(x,c,Js,A(.9),2);
+  const Pa=skel3(x,c,Ja,'rgba(207,235,228,.88)',0,{thick:12});
+  const r=c.f*.018/Pa.h[2];x.fillStyle='#02302C';Dt(x,Pa.h[0]-r*2.3,Pa.h[1]-r*.4,r);Dt(x,Pa.h[0]+r*2.3,Pa.h[1]-r*.4,r);
+  Tx(x,'RETARGET →',W/2,f+6,f-2.5,SIG,'center');
+  Tx(x,'ESQUELETO',10,f+6,f-2,A(.7));
+  badge(x,['VRM 1.0','GLB · MIXAMO','FBX'][Math.floor(t/2200)%3],W-10,f+8,f-2,SIG,'right');
+  Tx(x,'REPOUSO T/A CORRIGIDO',10,H-9,f-2.5,A(.55));
+},
+marionete(x,W,H,t){
+  const f=fs(W)+1.5, s=Math.min(H*.56,W*.62), cx=W*.5, cy=H*.585, st=MV_FIXO?3:Math.floor(t/1500)%4;
+  x.font=`${f-2}px ${MONO}`;let hx=10;
+  ['RECORTE','ESQUELETO','MALHA','ANIMA'].forEach((k,i)=>{Tx(x,k,hx,f+6,f-2,i===st?SIG:A(.45));hx+=x.measureText(k).width;if(i<3){Tx(x,'›',hx+5,f+6,f-2,A(.35));hx+=16;}});
+  const a1=.9*Math.sin(t/480)+.2, a2=.35+.35*Math.sin(t/700+1), lg=.22*Math.sin(t/600), nod=.15*Math.sin(t/900);
+  const part=(u,v)=>{if(u*u/(.13*.13)+(v+.62)*(v+.62)/(.14*.14)<=1)return 'h';
+    if(Math.abs(u)<=.17&&v>=-.48&&v<=.06)return 't';
+    if(Math.abs(u)>.17&&Math.abs(u)<=.56&&v>=-.47&&v<=-.35)return u<0?'a1':'a2';
+    if(v>.06&&v<=.62&&((u>=-.16&&u<=-.03)||(u>=.03&&u<=.16)))return u<0?'l1':'l2';return null;};
+  const rot=(u,v,ox,oy,a)=>{const cc=Math.cos(a),sn=Math.sin(a),dx=u-ox,dy=v-oy;return [ox+dx*cc-dy*sn,oy+dx*sn+dy*cc];};
+  const def=(u,v,k)=>{
+    if(k==='a1')return rot(u,v,-.17,-.41,a1*clamp((-u-.17)/.14));
+    if(k==='a2')return rot(u,v,.17,-.41,-a2*clamp((u-.17)/.14));
+    if(k==='l1')return rot(u,v,-.09,.06,lg*clamp((v-.06)/.14));
+    if(k==='l2')return rot(u,v,.09,.06,-lg*clamp((v-.06)/.14));
+    if(k==='h')return rot(u,v,0,-.48,nod);return [u,v];};
+  const S=(q)=>[cx+q[0]*s,cy+q[1]*s], g=.045, G=new Map();
+  for(let i=-14;i<=14;i++)for(let j=-18;j<=14;j++){const u=i*g,v=j*g,k=part(u,v);if(k)G.set(i+','+j,[k,S(def(u,v,k))]);}
+  x.strokeStyle=st===0?A(.18):A(.38);x.lineWidth=.8;
+  const ok=(a,b)=>a===b||a==='t'||b==='t';
+  for(const [key,[k,q]] of G){const [i,j]=key.split(',').map(Number);
+    for(const nb of [(i+1)+','+j,i+','+(j+1)]){const o=G.get(nb);if(o&&ok(k,o[0]))L(x,q[0],q[1],o[1][0],o[1][1]);}}
+  if(st===0){x.strokeStyle=SIG;x.setLineDash([4,3]);x.strokeRect(cx-.6*s,cy-.8*s,1.2*s,1.45*s);x.setLineDash([]);}
+  const jn={n:[0,-.48],hd:def(0,-.62,'h'),hp:[0,.06],s1:[-.17,-.41],e1:def(-.36,-.41,'a1'),w1:def(-.54,-.41,'a1'),
+    s2:[.17,-.41],e2:def(.36,-.41,'a2'),w2:def(.54,-.41,'a2'),h1:[-.09,.06],k1:def(-.09,.33,'l1'),f1:def(-.09,.6,'l1'),h2:[.09,.06],k2:def(.09,.33,'l2'),f2:def(.09,.6,'l2')};
+  const E=[['n','hd'],['n','hp'],['n','s1'],['s1','e1'],['e1','w1'],['n','s2'],['s2','e2'],['e2','w2'],['hp','h1'],['h1','k1'],['k1','f1'],['hp','h2'],['h2','k2'],['k2','f2']];
+  x.strokeStyle=st===1?SIG:SA(.75);x.lineWidth=st===1?2:1.4;for(const [a,b] of E){const p=S(jn[a]),q=S(jn[b]);L(x,p[0],p[1],q[0],q[1]);}
+  x.fillStyle=SIG;for(const k in jn){const p=S(jn[k]);Dt(x,p[0],p[1],2.2);}
+  Tx(x,'PNG COM ALFA · MP4',10,H-9,f-2,A(.55));
+},
+vmc(x,W,H,t){
+  const f=fs(W)+1.5, g=H*.84, s=H*.5;
+  const pz=tt=>{const w=tt/380;return {tr:-PI/2+.1*Math.sin(w),ua:-PI/2-.7+.5*Math.sin(w),fa:-PI/2-.4+.7*Math.sin(w*2),ua2:-PI/2+.7-.5*Math.sin(w),fa2:-PI/2+.4-.7*Math.sin(w*2),
+    th:PI/2-.12+.12*Math.sin(w),sh:PI/2,th2:PI/2+.12-.12*Math.sin(w),sh2:PI/2};};
+  x.strokeStyle=A(.3);x.lineWidth=1;L(x,W*.04,g,W*.32,g);
+  skel(x,body([W*.18,g-s*.5],s,pz(t)),s);
+  Tx(x,'FONTE',W*.18,f+6,f-2.5,A(.65),'center');
+  const x0=W*.33,x1=W*.6,y=H*.46;x.strokeStyle=A(.25);x.setLineDash([3,4]);L(x,x0,y,x1,y);x.setLineDash([]);
+  for(let k=0;k<6;k++){const u=((t/900)+k/6)%1;x.fillStyle=SA(.35+.65*Math.sin(u*PI));x.fillRect(lerp(x0,x1,u)-2.5,y-2.5,5,5);}
+  Tx(x,'VMC · OSC',(x0+x1)/2,y-10,f-2.5,SIG,'center');Tx(x,'udp 39539',(x0+x1)/2,y+16,f-2.5,A(.55),'center');
+  const mx0=W*.62,mx1=W-10,my0=H*.15,my1=H*.76,mw=mx1-mx0,mh=my1-my0;
+  x.strokeStyle=A(.6);x.lineWidth=1.2;x.strokeRect(mx0+.5,my0+.5,mw-1,mh-1);L(x,(mx0+mx1)/2,my1,(mx0+mx1)/2,H*.86);L(x,mx0+mw*.3,H*.86,mx1-mw*.3,H*.86);
+  const s2=mh*.6,J=body([(mx0+mx1)/2,my1-8-s2*.5],s2,pz(t-140));
+  x.lineCap='round';x.strokeStyle=PALE;x.lineWidth=Math.max(3,s2*.075);
+  for(const [a,b] of [['n','hp'],['n','el'],['el','wr'],['n','el2'],['el2','wr2'],['hp','kn'],['kn','an'],['hp','kn2'],['kn2','an2']])L(x,J[a][0],J[a][1],J[b][0],J[b][1]);
+  x.lineCap='butt';x.fillStyle=PALE;Dt(x,J.h[0],J.h[1],s2*.075);
+  if(MV_FIXO||Math.floor(t/700)%2===0){x.fillStyle=SIG;Dt(x,mx1-8,my0+8,2.5);}
+  Tx(x,'OBS · VTUBER · JOGO',(mx0+mx1)/2,my0-6,f-2.5,A(.6),'center');
+},
+/* ---------- NOVIDADES (v99–v112) ---------- */
+viaprop(x,W,H,t){
+  const f=fs(W)+1.5, P=7200, cyc=Math.floor(t/P), p=MV_FIXO?.9:(t%P)/P, m=10, an=cyc%2===1;
+  const ask=an?'animar: acenar e girar':'contar caixas na esteira', B=an?['POSE A','ACENO','GIRO','POSE B']:['ROI','YOLOX','TRACK','LINHA'];
+  x.font=`${f-2}px ${MONO}`;const bh=f+8,by=m;
+  const bw=Math.min(W-2*m,x.measureText(ask).width+14);x.strokeStyle=A(.6);x.lineWidth=1;x.strokeRect(W-m-bw+.5,by+.5,bw-1,bh);
+  Tx(x,ask.slice(0,Math.floor(clamp(p/.16)*ask.length)),W-m-bw+7,by+bh-6,f-2,'#fff');
+  const ry=by+bh+6;
+  if(p>.2){const msg=an?'VIA · proponho estes keyframes':'VIA · proponho esta cadeia';x.font=`${f-2}px ${MONO}`;
+    x.fillStyle=A(.12);x.fillRect(m,ry,Math.min(W-2*m,x.measureText(msg).width+14),bh);
+    Tx(x,msg.slice(0,Math.floor(clamp((p-.2)/.12)*msg.length)),m+7,ry+bh-6,f-2,A(.9));}
+  const yb=ry+bh+f+10, bh2=Math.max(18,H*.14), gp=8, bw2=(W-2*m-3*gp)/4, done=p>.7;
+  if(p>.32)Tx(x,an?'KEYFRAMES · MOTION 3D':'CADEIA PROPOSTA',m,yb-5,f-2.5,A(.55));
+  B.forEach((b,i)=>{if(p<.34+i*.05)return;const bx=m+i*(bw2+gp);blk(x,b,bx,yb,bw2,bh2,f-2.5,done?'on':'prop');
+    if(i<3){x.strokeStyle=done?A(.8):SA(.6);L(x,bx+bw2+1,yb+bh2/2,bx+bw2+gp-1,yb+bh2/2);}});
+  const yc=yb+bh2+10, cw=Math.min(84,(W-2*m-8)/2), chh=f+9;
+  if(!done&&p>.5){const hot=p>.62;
+    if(hot){x.fillStyle=SIG;x.fillRect(m,yc,cw,chh);}else{x.strokeStyle=SIG;x.lineWidth=1;x.strokeRect(m+.5,yc+.5,cw-1,chh-1);}
+    Tx(x,'Confirmar',m+cw/2,yc+chh-6,f-2.5,hot?'#04413C':SIG,'center');
+    x.strokeStyle=A(.35);x.strokeRect(m+cw+8.5,yc+.5,cw-1,chh-1);Tx(x,'Descartar',m+cw*1.5+8,yc+chh-6,f-2.5,A(.55),'center');
+    const u=ease(clamp((p-.5)/.12));seta(x,lerp(W*.85,m+cw*.6,u),lerp(H-4,yc+chh*.55,u));}
+  if(done){badge(x,'APLICADO · VOCÊ CONFIRMOU',m,yc+chh-2,f-2,SIG);const u=(t/1100)%1;x.fillStyle=SIG;Dt(x,m+u*(W-2*m),yb+bh2+4,2.2);}
+},
+somar(x,W,H,t){
+  const f=fs(W)+1.5, P=6400, cyc=Math.floor(t/P), p=MV_FIXO?.9:(t%P)/P, m=10, add=cyc%2===0;
+  x.font=`${f-2}px ${MONO}`;const sw=x.measureText('TROCAR').width+12,sh=f+5;
+  ['TROCAR','SOMAR'].forEach((k,i)=>{const bx=W-m-(2-i)*sw,on=(i===1)===add;
+    if(on){x.fillStyle=SIG;x.fillRect(bx,m,sw,sh);}else{x.strokeStyle=A(.35);x.lineWidth=1;x.strokeRect(bx+.5,m+.5,sw-1,sh-1);}
+    Tx(x,k,bx+sw/2,m+sh-4.5,f-2,on?'#04413C':A(.6),'center');});
+  const bh=Math.max(16,H*.12), gp=5, n=5, bw=(W-2*m-(n-1)*gp)/n, X=i=>m+i*(bw+gp);
+  const y1=H*.24, y2=y1+bh+f+10, y3=y2+bh+f+10;
+  Tx(x,'CADEIA ATUAL',m,y1-4,f-2.5,A(.55));['CLAHE','YOLOX','TRACK'].forEach((s,i)=>blk(x,s,X(i),y1,bw,bh,f-2,'off'));
+  Tx(x,'PRESET · CONTAGEM',m,y2-4,f-2.5,A(.55));
+  const sl=(1-ease(clamp(p/.22)))*W*.6;['YOLOX','TRACK','LINHA','CSV'].forEach((s,i)=>blk(x,s,X(i+1)+sl,y2,bw,bh,f-2,'prop'));
+  if(p>.34)Tx(x,'RESULTADO',m,y3-4,f-2.5,A(.55));
+  const R=add?[['CLAHE','on'],['YOLOX','re'],['TRACK','re'],['LINHA','sig'],['CSV','sig']]:[['CLAHE','x'],['YOLOX','sig'],['TRACK','sig'],['LINHA','sig'],['CSV','sig']];
+  R.forEach((r,i)=>{if(p<.36+i*.06)return;const u=ease(clamp((p-.36-i*.06)/.08));blk(x,r[0],X(i),y3-(1-u)*8,bw,bh,f-2,r[1]);});
+  if(p>.7){Tx(x,add?'2 OPERADORES REAPROVEITADOS':'CADEIA SUBSTITUÍDA',m,H-9,f-2,SIG);const u=(t/1000)%1;x.fillStyle=SIG;Dt(x,m+u*(W-2*m),y3+bh+5,2);}
+},
+sincro(x,W,H,t){
+  const f=fs(W)+1.5, hw=W/2;
+  x.strokeStyle=A(.06);x.lineWidth=1;for(let i=1;i<4;i++)L(x,0,H*i/4+8,W,H*i/4+8);
+  x.strokeStyle=A(.3);L(x,hw,0,hw,H);
+  const pos=(tt,x0)=>[x0+hw*(.5+.28*Math.sin(tt/650)),H*(.55+.15*Math.sin(tt/410))];
+  [[0,'ANTES',270,'72,8 px',A(.65)],[1,'COM SINCRONIA',0,'21 px',SIG]].forEach(([i,lab,lag,err,col])=>{
+    const x0=i*hw,o=pos(t,x0),b=pos(t-lag,x0),ow=hw*.22,oh=ow*.5;
+    x.strokeStyle=A(.15);x.beginPath();for(let k=0;k<24;k++){const q=pos(t-k*40,x0);k?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1]);}x.stroke();
+    x.fillStyle=A(.85);x.fillRect(o[0]-ow/2,o[1]-oh/2,ow,oh*.7);x.fillRect(o[0]-ow*.28,o[1]-oh*.75,ow*.56,oh*.3);
+    x.fillStyle='#02302C';Dt(x,o[0]-ow*.28,o[1]+oh*.2,oh*.18);Dt(x,o[0]+ow*.28,o[1]+oh*.2,oh*.18);
+    const bw=ow*1.3,bh=oh*1.7;x.strokeStyle=SIG;x.lineWidth=1.4;x.strokeRect(b[0]-bw/2,b[1]-bh/2,bw,bh);
+    Tx(x,'carro',b[0]-bw/2,b[1]-bh/2-4,f-2.5,SIG);
+    if(lag){x.strokeStyle=A(.5);x.setLineDash([2,3]);L(x,b[0],b[1],o[0],o[1]);x.setLineDash([]);}
+    Tx(x,lab,x0+8,f+6,f-2,col);Tx(x,'ERRO '+err,x0+8,H-9,f-2.5,col);});
+},
+calib(x,W,H,t){
+  const f=fs(W)+1.5, P=7600, cyc=Math.floor(t/P), p=MV_FIXO?.9:(t%P)/P;
+  const SP=[['PADEL',10,20],['TÊNIS',10.97,23.77],['VÔLEI',9,18],['BASQUETE',15,28],['FUTSAL',20,40],['BEACH TENNIS',8,16]][cyc%6];
+  const T=[[W*.2,H*.32],[W*.56,H*.32],[W*.7,H*.9],[W*.04,H*.9]], O=[[-.05,-.07],[.05,-.08],[.05,.06],[-.04,.06]];
+  const lines=(Hm)=>{const seg=(a,b)=>{const p1=Hm(a[0],a[1]),p2=Hm(b[0],b[1]);L(x,p1[0],p1[1],p2[0],p2[1]);};
+    seg([0,0],[1,0]);seg([1,0],[1,1]);seg([1,1],[0,1]);seg([0,1],[0,0]);seg([0,.5],[1,.5]);seg([0,.3],[1,.3]);seg([0,.7],[1,.7]);seg([.5,.3],[.5,.7]);};
+  const Ht=sq2q(T);x.strokeStyle=A(.25);x.lineWidth=1.4;lines(Ht);
+  const net1=Ht(0,.5),net2=Ht(1,.5);x.strokeStyle=A(.5);x.lineWidth=2;L(x,net1[0],net1[1]-5,net2[0],net2[1]-5);
+  let act=-1;const C=T.map((q,i)=>{const s0=.08+i*.15,s1=s0+.11,u=clamp((p-s0)/(s1-s0));if(p>=s0-.03&&p<s1+.01)act=i;const k=ease(u);
+    return [q[0]+O[i][0]*W*(1-k),q[1]+O[i][1]*H*(1-k)];});
+  const ok=p>.7;x.strokeStyle=ok?SIG:SA(.7);x.lineWidth=1.2;lines(sq2q(C));
+  C.forEach((q,i)=>{if(i===act||ok){x.fillStyle=SIG;x.fillRect(q[0]-3.5,q[1]-3.5,7,7);}else{x.strokeStyle='#fff';x.lineWidth=1.2;x.strokeRect(q[0]-3.5,q[1]-3.5,7,7);}});
+  const pl=[0,1,2,3].map(i=>[clamp(.5+.3*Math.sin(t/(900+i*130)+i*2),.08,.92),clamp((i<2?.25:.75)+.14*Math.cos(t/(1100+i*90)+i),.05,.95)]);
+  pl.forEach((q,i)=>{const s=Ht(q[0],q[1]);x.fillStyle=i<2?'#fff':PALE;Dt(x,s[0],s[1]-4,3);});
+  if(act>=0&&!ok)seta(x,C[act][0]+2,C[act][1]+2);
+  const rh=H*.6,mx=W-10-W*.75;let rw=rh*SP[1]/SP[2],rh2=rh;if(rw>mx){rh2=rh*mx/rw;rw=mx;}
+  const rx=W-10-rw,ry=H*.2;x.strokeStyle=A(.55);x.lineWidth=1;x.strokeRect(rx+.5,ry+.5,rw,rh2);L(x,rx,ry+rh2/2,rx+rw,ry+rh2/2);
+  if(ok)pl.forEach((q,i)=>{x.fillStyle=i<2?'#fff':PALE;Dt(x,rx+q[0]*rw,ry+q[1]*rh2,2.4);});
+  else{x.fillStyle=A(.25);Tx(x,'?',rx+rw/2,ry+rh2/2+4,f,A(.3),'center');}
+  const dm=v=>String(v).replace('.',',');
+  Tx(x,`${dm(SP[1])} × ${dm(SP[2])} m`,rx+rw,ry-5,f-2.5,A(.7),'right');
+  Tx(x,`⚙ CALIBRAR · ${SP[0]}`,10,f+6,f-2.5,SIG);
+  Tx(x,ok?'4 CANTOS · SALVO POR FONTE':`CANTO ${Math.max(1,act+1)} DE 4`,10,f*2+10,f-2.5,ok?SIG:A(.6));
+},
+regioes(x,W,H,t){
+  const f=fs(W)+1.5, P=7000, p=MV_FIXO?.8:(t%P)/P, m=10;
+  grid(x,W,H,6);
+  const ww=Math.min(W*.34,104), wh=f+24, wx=W-m-ww, wy=m;
+  x.fillStyle='#02302C';x.fillRect(wx,wy,ww,wh);x.strokeStyle=A(.4);x.lineWidth=1;x.strokeRect(wx+.5,wy+.5,ww-1,wh-1);
+  Tx(x,'FERRAMENTAS',wx+6,wy+f,f-2.5,A(.8));
+  for(let i=0;i<6;i++){const q=(ww-12)/6,bx=wx+6+i*q;if(i===2){x.fillStyle=SIG;x.fillRect(bx,wy+f+5,q-3,q*.8);}else{x.strokeStyle=A(.4);x.strokeRect(bx+.5,wy+f+5.5,q-4,q*.8-1);}}
+  const la=[W*.08,H*.86],lb=[W*.6,H*.74];x.strokeStyle=SIG;x.lineWidth=2;L(x,la[0],la[1],lb[0],lb[1]);Tx(x,'LINHA 1',lb[0]+6,lb[1]+3,f-2,SIG);
+  {const u=(t/2600)%1,iy=lerp(H*.62,H*.98,u);x.fillStyle=A(.85);x.fillRect(W*.34-3,iy-3,6,6);}
+  const Z=[[W*.14,H*.28],[W*.46,H*.22],[W*.5,H*.52],[W*.18,H*.58]];
+  const k=ease(clamp((p-.12)/.24)), nud=(p>.42?4:0)+(p>.5?4:0), v2=[Z[2][0]+W*.12*k+nud,Z[2][1]+H*.1*k], ZZ=[Z[0],Z[1],v2,Z[3]];
+  const lock=p>.78, sel=p>.08&&!lock;
+  x.fillStyle=lock?A(.05):SA(.08);x.strokeStyle=sel?SIG:'#fff';x.lineWidth=1.3;x.beginPath();ZZ.forEach((q,i)=>i?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1]));x.closePath();x.fill();x.stroke();
+  if(sel)ZZ.forEach((q,i)=>{x.fillStyle=i===2?SIG:'#fff';x.fillRect(q[0]-3,q[1]-3,6,6);});
+  Tx(x,'ZONA A'+(lock?' · TRAVADA':''),Z[0][0]+4,Z[0][1]+f+3,f-2,lock?'#fff':SIG);
+  if(lock){const kx=Z[0][0]+4,ky=Z[0][1]+f*2+6;x.strokeStyle=SIG;x.lineWidth=1.2;x.strokeRect(kx,ky-1,8,6);x.beginPath();x.arc(kx+4,ky-1,3,PI,0);x.stroke();}
+  if(p>.4&&p<.56)badge(x,'← → AJUSTE FINO',v2[0]-6,v2[1]+f+12,f-2.5,SIG,'right');
+  let cur=null;
+  if(p<.12){const u=ease(p/.12);cur=[lerp(W*.8,Z[2][0],u),lerp(H*.95,Z[2][1],u)];}else if(p<.4)cur=v2;
+  if(p>.58&&p<.82){const mx=Math.min(v2[0]+8,W-m-74),my=Math.min(v2[1]+4,H-m-(f+4)*3-6),mw=74,ih=f+4;
+    x.fillStyle='#02302C';x.fillRect(mx,my,mw,ih*3+6);x.strokeStyle=A(.5);x.lineWidth=1;x.strokeRect(mx+.5,my+.5,mw,ih*3+6);
+    ['Redefinir','Travar','Apagar'].forEach((s,i)=>{const hi=i===1&&p>.66;if(hi){x.fillStyle=SA(.9);x.fillRect(mx+2,my+3+i*ih,mw-4,ih);}
+      Tx(x,s,mx+6,my+3+i*ih+ih-3.5,f-2,hi?'#04413C':'#fff');});
+    cur=p>.66?[mx+mw*.6,my+3+ih*1.6]:[mx+mw*.6,my+ih*.6];}
+  if(cur)seta(x,cur[0],cur[1]);
+  Tx(x,'SETAS · DESFAZER · TRAVAR',m,H-6,f-2.5,A(.5));
+},
+retina(x,W,H,t){
+  const f=fs(W)+1.5, P=6000, p=MV_FIXO?1:(t%P)/P, m=10, g=ease(clamp((p-.1)/.4));
+  Tx(x,'RETINA 6K · MOTION 3D',m,f+6,f-2.5,A(.75));
+  const R=[['CAPTURA','fps',13,21,25],['POR QUADRO','ms',54,7,60],['TRAVADAS','',73,0,80]];
+  const y0=f+16, rh=(H*.66-y0)/3, lw=(W-2*m)*.9;
+  R.forEach((r,i)=>{const yy=y0+i*rh,now=lerp(r[2],r[3],g),bh=Math.max(3,rh*.17);
+    Tx(x,r[0],m,yy+f-2,f-2,A(.6));
+    Tx(x,`${r[2]} → ${Math.round(now)}${r[1]?' '+r[1]:''}`,W-m,yy+f-2,f-2.5,'#fff','right');
+    x.fillStyle=A(.22);x.fillRect(m,yy+f+2,lw*r[2]/r[4],bh);
+    x.fillStyle=SIG;x.fillRect(m,yy+f+4+bh,Math.max(1.5,lw*now/r[4]),bh);});
+  const sy0=H*.7, sy1=H-m-f-1, k=Math.floor(t/90);
+  x.strokeStyle=A(.15);x.lineWidth=1;L(x,m,sy1,W-m,sy1);L(x,W/2,sy0,W/2,sy1);
+  x.strokeStyle='#fff';x.lineWidth=1.1;x.beginPath();
+  for(let i=0;i<=80;i++){const u=i/80,kk=k+i,v=u<.5?.45+.3*hash(kk)+(hash(kk*3+1)>.88?.25:0):.08+.06*hash(kk);
+    const xx=m+u*(W-2*m),yy=sy1-v*(sy1-sy0);i?x.lineTo(xx,yy):x.moveTo(xx,yy);}x.stroke();
+  Tx(x,'ANTES',m,sy0-2,f-2.5,A(.5));Tx(x,'COM TETO DE ÁREA',W/2+5,sy0-2,f-2.5,SIG);
+  Tx(x,'4,2 MP NO VÍDEO · 3 MP NOS STUDIOS',m,H-5,f-2.5,A(.6));
+},
+nitidez(x,W,H,t){
+  const f=fs(W)+1.5, dv=MV_FIXO?W*.5:W*(.5+.28*Math.sin(t/1700));
+  x.fillStyle='#02302C';x.fillRect(0,0,W,H);
+  x.strokeStyle=A(.2);x.lineWidth=1;for(let i=-H;i<W;i+=5)L(x,i,H,i+H*.5,0);
+  x.font=`500 ${f+1}px ${MONO}`;x.fillStyle='#fff';x.textAlign='left';x.fillText('LOTE 2610A',W*.06,H*.3);x.fillText('VAL 10/27',W*.06,H*.3+f+5);
+  for(let i=0;i<26;i++){x.fillStyle=hash(i*7)>.45?'#fff':A(.15);x.fillRect(W*.06+i*W*.012,H*.74,Math.max(1,W*.007),H*.14);}
+  const px=W*(.62+.12*Math.sin(t/1300)), py=H*.6, s=H*.5;
+  const sil=(k)=>{x.beginPath();x.arc(px,py-s*.5,s*.13*k,0,TAU);x.fill();x.beginPath();x.ellipse(px,py,s*.2*k,s*.34*k,0,0,TAU);x.fill();};
+  x.fillStyle=A(.8);sil(1);x.fillStyle=SA(.35);sil(1.12);
+  if(!NIT_OFF)NIT_OFF=document.createElement('canvas');
+  const ow=Math.max(8,Math.round(W/7)),oh=Math.max(5,Math.round(H/7));if(NIT_OFF.width!==ow)NIT_OFF.width=ow;if(NIT_OFF.height!==oh)NIT_OFF.height=oh;
+  const ox=NIT_OFF.getContext('2d');ox.imageSmoothingEnabled=true;ox.clearRect(0,0,ow,oh);ox.drawImage(x.canvas,0,0,ow,oh);
+  x.save();x.beginPath();x.rect(0,0,dv,H);x.clip();x.imageSmoothingEnabled=false;x.drawImage(NIT_OFF,0,0,W,H);x.restore();
+  x.save();x.beginPath();x.rect(dv,0,W-dv,H);x.clip();x.strokeStyle=SIG;x.lineWidth=1.3;
+  x.beginPath();x.arc(px,py-s*.5,s*.146,0,TAU);x.stroke();x.beginPath();x.ellipse(px,py,s*.224,s*.38,0,0,TAU);x.stroke();x.restore();
+  x.strokeStyle=SIG;x.lineWidth=1.5;L(x,dv,0,dv,H);
+  badge(x,'ANTES · IMAGEM REDUZIDA',8,f+8,f-2.5,A(.85));
+  badge(x,'AGORA · CAMADA',W-8,f+8,f-2.5,SIG,'right');
+},
+telem(x,W,H,t){
+  const f=fs(W)+1.5, m=10, k=Math.floor(t/320), P=9000, p=MV_FIXO?.3:(t%P)/P, rec=p>.15&&p<.5;
+  const gy0=m+f+8, gy1=H*.5, fps=29.2+.7*hash(k), dm=v=>v.replace('.',',');
+  Tx(x,'FPS REAL',m,m+f,f-2,A(.6));x.font=`${f-2}px ${MONO}`;Tx(x,dm(fps.toFixed(1)),m+x.measureText('FPS REAL ').width,m+f,f-1,'#fff');
+  x.strokeStyle=A(.12);x.lineWidth=1;L(x,m,gy1,W-m,gy1);
+  const N=60,line=(fn,col)=>{x.strokeStyle=col;x.lineWidth=1.3;x.beginPath();
+    for(let i=0;i<=N;i++){const kk=k+i-N,v=fn(kk),xx=m+i/N*(W-2*m),yy=gy1-v*(gy1-gy0);i?x.lineTo(xx,yy):x.moveTo(xx,yy);}x.stroke();};
+  line(kk=>.8+.12*hash(kk)-(hash(kk*7+1)>.94?.3:0),'#fff');line(kk=>.18+.1*hash(kk+99),SIG);
+  const fy=H*.58;x.fillStyle=A(.05);x.fillRect(0,fy,W,H-fy);x.strokeStyle=A(.35);L(x,0,fy+.5,W,fy+.5);
+  const M=[['FPS',dm(fps.toFixed(1))],['CANVAS','3,0 MP'],['EXIB','sinc'],['YOLOX','GPU '+dm((6.5+hash(k+3)).toFixed(1))+' ms'],['RTMO','WASM '+Math.round(19+4*hash(k+5))+' ms'],
+    ['FILA',hash(k+8)>.7?'2':'1'],['SINC',Math.round(110+20*hash(k+9))+' ms'],['MEM',Math.round(408+8*hash(k+2))+' MB'],['TRAV','0']];
+  x.font=`${f-2}px ${MONO}`;const lh=f+3,bot=H-m-f-6;let cx=m,cy=fy+f+3;
+  for(const [a,b] of M){const wa=x.measureText(a+' ').width,w=wa+x.measureText(b).width+12;if(cx+w>W-m){cx=m;cy+=lh;}if(cy>bot)break;
+    Tx(x,a,cx,cy,f-2,A(.5));Tx(x,b,cx+wa,cy,f-2,a==='YOLOX'||a==='RTMO'?SIG:'#fff');cx+=w;}
+  const by=H-m-f+1,bh=f+5,ty=m-2;x.font=`${f-2.5}px ${MONO}`;const c1='COPIAR RELATÓRIO',w1=x.measureText(c1).width+10;
+  x.strokeStyle=A(.45);x.lineWidth=1;x.strokeRect(m+.5,by+.5,w1,bh);Tx(x,c1,m+5,by+bh-4,f-2.5,A(.8));
+  const c2=rec?`● REC 00:${String(Math.max(0,30-Math.floor((p-.15)/.35*30))).padStart(2,'0')}`:'● GRAVAR 30 s';
+  x.font=`${f-2.5}px ${MONO}`;const w2=x.measureText(c2).width+10;
+  if(rec&&(MV_FIXO||Math.floor(t/500)%2===0)){x.fillStyle=SIG;x.fillRect(W-m-w2,ty,w2,bh+1);Tx(x,c2,W-m-w2+5,ty+bh-4,f-2.5,'#04413C');}
+  else{x.strokeStyle=SIG;x.strokeRect(W-m-w2+.5,ty+.5,w2,bh);Tx(x,c2,W-m-w2+5,ty+bh-4,f-2.5,SIG);}
+},
 /* ---------- MODELOS (operadores) ---------- */
 det(x,W,H,t){
   const f=fs(W);const L3=[['pessoa',.92],['caixa',.87],['empilhadeira',.81]];
@@ -2132,7 +2556,7 @@ track(x,W,H,t){
     const px=W*(.1+.8*((t/6000+i*.25)%1)),py=H*(.3+.14*i)+Math.sin(t/700+i)*H*.06;x.strokeStyle=SIG;x.strokeRect(px-6,py-6,12,12);Tx(x,'#'+(i+1),px+8,py-6,fs(W)-3,SIG);}
 }
 };
-const STATIC_T={belt:2600,count:4100,takt:3300,inspect:3612,bike:900,via:6200,mouse:5550,projeto:3800,video:3300,train:6400,jump:1080,swing:1790,vbt:720};
+const STATIC_T={atores:2000,avatar:1500,marionete:2400,vmc:1500,viaprop:6200,somar:5600,sincro:900,calib:6800,regioes:5000,retina:5400,nitidez:600,telem:2500,belt:2600,count:4100,takt:3300,inspect:3612,bike:900,via:6200,mouse:5550,projeto:3800,video:3300,train:6400,jump:1080,swing:1790,vbt:720};
 
 const MV=new Map();
 let mvLast=0;
@@ -2199,8 +2623,12 @@ window.__mvReady=true;
 /* ============================================================
    DIMENSIONAMENTO
    ============================================================ */
+/* grade de cartões: o último ocupa o resto da linha, sem buraco no fim */
+function fxFill(){RA('.fx').forEach(g=>{const k=g.children,n=k.length;if(!n)return;k[n-1].style.gridColumn='';
+  const cols=getComputedStyle(g).gridTemplateColumns.split(' ').filter(Boolean).length||1,r=n%cols;
+  if(r)k[n-1].style.gridColumn=`span ${cols-r+1}`;});}
 function sizeAll(){
-  sizeField(); sizeCn(); sizeLab();
+  fxFill(); sizeField(); sizeCn(); sizeLab();
   plates.forEach(p=>{ const r=p.c.getBoundingClientRect(); const d=Math.min(devicePixelRatio||1,1.6);
     p.c.width=Math.max(1,r.width*d); p.c.height=Math.max(1,r.height*d); p.x.setTransform(d,0,0,d,0,0); });
   lockWordmark(); measure();

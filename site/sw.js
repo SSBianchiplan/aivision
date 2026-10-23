@@ -24,7 +24,7 @@
  * ========================================================================
  */
 
-const VERSION = 'iav-v112-vps';   // 23/10/2026: Textos públicos sem o apelido interno do servidor
+const VERSION = 'iav-v113-vps';   // 23/10/2026: Página principal com as novidades até a v112 (Motion 3D, novidades, contagens)
 const SHELL = `${VERSION}-shell`;
 /*
  * Pesos dos modelos num cache de nome FIXO: sobrevivem às publicações. Antes o

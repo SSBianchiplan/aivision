@@ -2,7 +2,7 @@
 
 As versões seguem o `VERSION` do service worker (`site/sw.js`).
 
-## v106–v112 — 2026-10-23
+## v106–v113 — 2026-10-23
 - **Regiões editáveis com o mouse (v106):** as regiões que vêm prontas nos pipelines (quadra, linha de contagem, ponto do SAM 2, zonas, faixas do BeltScan, posto do Takt, gatilho do Inspect) podem ser selecionadas e ajustadas na tela, com ajuste fino pelas setas, Desfazer e menu de contexto (Redefinir, Travar, Apagar).
 - **⚙ Calibrar quadra (v106):** assistente com o esporte (padel, tênis, vôlei, basquete, futsal, beach tennis), 4 cantos arrastados sobre o vídeo e homografia salva por fonte; radar em metros. O mesmo ⚙ em Marcha, Takt, régua/paquímetro e Bike Fit 3D.
 - **🛠 Ferramentas nos 10 Studios (v106)** e **modais do sistema** no lugar de `confirm`/`alert`/`prompt` (`js/components/dialogo.js`).
@@ -10,6 +10,7 @@ As versões seguem o `VERSION` do service worker (`site/sw.js`).
 - **Menos CPU com arquivo e YouTube (v108):** a fila de inferência descansa 0,5× a duração de cada execução em WASM quando a imagem está atrasada pela sincronia; a qualidade "Automática" do YouTube decodifica no tamanho da captura.
 - **Telas grandes e Retina (v109):** teto de área nos canvases de vídeo (`js/components/escala-canvas.js`): ~4,2 MP no vídeo principal e 3 MP nos Studios. Num monitor de 6324×3106 px com o Motion 3D: captura 13 → 21 fps, 54 → 7 ms por quadro, travadas 73 → 0.
 - **Telemetria (v110):** rodapé de monitoramento com métricas ao vivo (fps real da captura, canvas, modo de exibição, cada modelo com GPU/WASM, fila, sincronia, memória, travadas), cada métrica liga/desliga no widget, "Copiar relatório" e "Gravar 30 s" em CSV. Ver [docs/telemetria.md](docs/telemetria.md).
+- **Página principal (v113):** seção Motion 3D, seção Novidades com 8 cartões animados, contagens 84/151/42, cartões de CV-41 a CV-88.
 - **v112:** textos públicos sem o apelido interno do servidor.
 - **Nitidez (v111):** a largura de trabalho não fica mais presa em 160 px nem é gravada quando a qualidade automática a baixa; 18 operadores que só desenham (ou só alteram pixels com uma opção ligada) voltam ao vídeo em resolução plena; máscaras, mapas de calor e fundos escurecidos viram uma camada de imagem sobre o vídeo nítido (`overlayOnly` pode ser função dos parâmetros, `registry.soDesenha`).
 

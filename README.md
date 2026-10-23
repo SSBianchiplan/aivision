@@ -5,7 +5,7 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/licen%C3%A7a-AGPL--3.0-04413C" alt="Licença AGPL-3.0"></a>
   <a href="https://aivision.gplansis.com"><img src="https://img.shields.io/badge/no%20ar-aivision.gplansis.com-2ea44f" alt="No ar em aivision.gplansis.com"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/vers%C3%A3o-v112-FFD84D" alt="Versão v112"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/vers%C3%A3o-v113-FFD84D" alt="Versão v113"></a>
   <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-bem--vindos-brightgreen" alt="PRs bem-vindos"></a>
 </p>
 
@@ -76,9 +76,10 @@ Câmera do aparelho, câmeras USB e Continuidade, câmeras Wi-Fi/IP (WHEP), arqu
 
 | | |
 |---|---|
-| <img src=".github/telas/pagina-principal.jpg" alt="Página principal do iaVision"><br><sub>Página principal</sub> | <img src=".github/telas/sistema.jpg" alt="Quadra de padel com detecção, rastreio, Pipeline, Telemetria e o rodapé de monitoramento"><br><sub>O sistema: quadra com RF-DETR + ByteTrack, Pipeline, Telemetria e rodapé de monitoramento</sub> |
-| <img src=".github/telas/calibrar-quadra.jpg" alt="Assistente Calibrar quadra com os 4 cantos arrastáveis sobre a quadra de padel"><br><sub>⚙ Calibrar quadra: 4 cantos arrastados sobre o vídeo</sub> | <img src=".github/telas/studio-motion3d.jpg" alt="Motion 3D Studio com vídeo, esqueleto, World Outliner e ângulos das articulações"><br><sub>Motion 3D Studio: vídeo → esqueleto 3D</sub> |
-| <img src=".github/telas/studio-countervision.jpg" alt="Studio CounterVision contando peças por cor numa esteira"><br><sub>Studio CounterVision com o vídeo de exemplo</sub> | <img src=".github/telas/studio-bike-fit.jpg" alt="Studio Bike Fit analisando uma ciclista em vista lateral numa bike indoor"><br><sub>Studio Bike Fit com vídeo lateral do YouTube: ângulos, curvas por pedalada e recomendações (vídeo: <a href="https://www.youtube.com/watch?v=6w9fyUIGaek">Ana Tholl</a>)</sub> |
+| <img src=".github/telas/pagina-principal.jpg" alt="Página principal do iaVision"><br><sub>Página principal</sub> | <img src=".github/telas/pagina-novidades.jpg" alt="Seção Novidades da página principal com cartões animados"><br><sub>Página principal: novidades até a v112</sub> |
+| <img src=".github/telas/sistema.jpg" alt="Quadra de padel com detecção, rastreio, Pipeline, Telemetria e o rodapé de monitoramento"><br><sub>O sistema: quadra com RF-DETR + ByteTrack, Pipeline, Telemetria e rodapé de monitoramento</sub> | <img src=".github/telas/calibrar-quadra.jpg" alt="Assistente Calibrar quadra com os 4 cantos arrastáveis sobre a quadra de padel"><br><sub>⚙ Calibrar quadra: 4 cantos arrastados sobre o vídeo</sub> |
+| <img src=".github/telas/studio-motion3d.jpg" alt="Motion 3D Studio com vídeo, esqueleto, World Outliner e ângulos das articulações"><br><sub>Motion 3D Studio: vídeo → esqueleto 3D</sub> | <img src=".github/telas/studio-countervision.jpg" alt="Studio CounterVision contando peças por cor numa esteira"><br><sub>Studio CounterVision com o vídeo de exemplo</sub> |
+| <img src=".github/telas/studio-bike-fit.jpg" alt="Studio Bike Fit analisando uma ciclista em vista lateral numa bike indoor"><br><sub>Studio Bike Fit com vídeo lateral do YouTube: ângulos, curvas por pedalada e recomendações (vídeo: <a href="https://www.youtube.com/watch?v=6w9fyUIGaek">Ana Tholl</a>)</sub> |  |
 
 ## Arquitetura
 
