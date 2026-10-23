@@ -473,9 +473,10 @@ export function Viewport({ source, executor, snapshotRef, hideIdle, ring, canvas
         // pixels: o quadro processado é guardado depois da cadeia; o de exibir sai dos já guardados
         if (mode === 'overlay' || st.compare) sc.buf.guardar(el, c, mirror, tQ, dw, dh, sc.atrasoMs);
         if (sc.atrasoMs > 0) {
-          if (mode === 'overlay') quadroExib = perto ? sc.buf.escolherPerto(tQ - sc.atrasoMs) : sc.buf.escolher(tQ - sc.atrasoMs);
+          // em sequência (proximo): o quadro seguinte ao exibido, não o «mais novo até o alvo» — ver sincronia.js
+          if (mode === 'overlay') quadroExib = perto ? sc.buf.escolherPerto(tQ - sc.atrasoMs) : sc.buf.proximo(tQ - sc.atrasoMs);
           else {
-            quadroOut = sc.bufOut.escolher(tQ - sc.atrasoMs);
+            quadroOut = sc.bufOut.proximo(tQ - sc.atrasoMs);
             if (quadroOut && st.compare) quadroExib = sc.buf.escolherPerto(quadroOut.t);
           }
         }
@@ -505,9 +506,22 @@ export function Viewport({ source, executor, snapshotRef, hideIdle, ring, canvas
         sincronizar: sincOn,
       });
       {
-        // atraso: sobe na hora (a imagem espera o resultado), desce devagar (sem pular quadros à vista)
-        const alvo = sincOn && result.sincronia ? Math.max(0, result.sincronia.atrasoMs || 0) : 0;
-        sc.atrasoMs = alvo >= sc.atrasoMs ? alvo : Math.max(alvo, sc.atrasoMs - 3);
+        /*
+         * Atraso da imagem. Antes subia NA HORA a cada resultado novo (a imagem voltava no tempo ou
+         * congelava) e descia 3 ms por quadro (vídeo a 1,09×): com RF-DETR o pedido (L + P) oscila
+         * ±200 ms a cada inferência e o vídeo vivia congelando e acelerando — «lento e engasgando».
+         * Agora: 100 ms de folga sobre o pedido (a oscilação comum cabe nela); salta só no começo
+         * ou num degrau grande (uma pausa); fora isso sobe a 10% (a imagem anda a 0,9×) e só desce,
+         * a 4%, quando sobra mais de 150 ms além da folga — sem congelar nem voltar no tempo.
+         */
+        const pedido = sincOn && result.sincronia ? Math.max(0, result.sincronia.atrasoMs || 0) : 0;
+        const alvo = pedido ? pedido + 100 : 0;
+        const passo = sc.tAnt ? Math.min(100, Math.max(0, tQ - sc.tAnt)) : 0;
+        sc.tAnt = tQ;
+        if (!alvo) sc.atrasoMs = Math.max(0, sc.atrasoMs - passo * 0.04);
+        else if (!sc.atrasoMs || alvo > sc.atrasoMs + 300) sc.atrasoMs = alvo;
+        else if (alvo > sc.atrasoMs) sc.atrasoMs = Math.min(alvo, sc.atrasoMs + passo * 0.1);
+        else if (alvo < sc.atrasoMs - 150) sc.atrasoMs = Math.max(alvo, sc.atrasoMs - passo * 0.04);
       }
       // quem copia este canvas (Motion 3D Studio, Studios) desenha no instante do quadro exibido
       display.tQuadro = tQ;

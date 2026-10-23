@@ -23,6 +23,7 @@ export class AtrasoQuadros {
     this.maxQuadros = maxQuadros;
     this.anel = [];          // [{ canvas, t }] do mais velho para o mais novo
     this.livres = [];        // canvases para reaproveitar
+    this.mostrado = null;    // t do último quadro entregue por proximo() (fila de reprodução)
   }
 
   /** Guarda o quadro atual (recorte `c` da fonte, já espelhado se for o caso) no tamanho lw×lh. */
@@ -34,7 +35,9 @@ export class AtrasoQuadros {
      */
     const sw = c && c.sw ? c.sw : lw;
     let k = Math.min(1, sw / lw);
-    const quer = Math.ceil(((atrasoMs || 0) + 300) / 30) + 2;
+    // atraso em degraus de 500 ms: o tamanho só muda quando o atraso muda de faixa (cada mudança
+    // redimensiona os canvases reaproveitados = textura nova na GPU, quadro a quadro)
+    const quer = Math.ceil((Math.ceil(((atrasoMs || 0) + 300) / 500) * 500) / 30) + 2;
     const bytes = lw * lh * 4 * k * k;
     if (bytes * quer > this.maxBytes) k *= Math.sqrt(this.maxBytes / (bytes * quer));
     k = Math.max(k, Math.min(1, 480 / lw));
@@ -42,7 +45,10 @@ export class AtrasoQuadros {
     const cap = Math.max(2, Math.min(this.maxQuadros, Math.floor(this.maxBytes / (lw * lh * 4))));
     // a fonte parou (pausa, busca, aba em segundo plano): o que está guardado é de antes
     const ult = this.anel[this.anel.length - 1];
-    if (ult && (t - ult.t > 1000 || t < ult.t)) while (this.anel.length) this.livres.push(this.anel.shift().canvas);
+    if (ult && (t - ult.t > 1000 || t < ult.t)) {
+      while (this.anel.length) this.livres.push(this.anel.shift().canvas);
+      this.mostrado = null;
+    }
     // descarta o que já passou do atraso (com folga de 250 ms) e o que excede o teto
     // (fica sempre um quadro mais velho que o alvo, para escolher() ter de onde tirar)
     while (this.anel.length > 1 && this.anel[1].t < t - atrasoMs - 250) this.livres.push(this.anel.shift().canvas);
@@ -83,9 +89,37 @@ export class AtrasoQuadros {
     return e;
   }
 
+  /**
+   * O quadro a exibir AGORA, em sequência (fila de reprodução): o seguinte ao último exibido,
+   * enquanto ele estiver a até `folga` ms de `tAlvo`. Escolher só pelo relógio (escolher) faz o
+   * laço de quadros, que oscila alguns ms, repetir um quadro e pular o seguinte o tempo todo —
+   * medido no padel com RF-DETR: 22% de quadros repetidos e 28% de saltos, o vídeo «engasgava».
+   * Em sequência só há repetição ou salto quando o atraso muda (e o atraso muda devagar).
+   */
+  proximo(tAlvo, folga = 40) {
+    const a = this.anel;
+    if (!a.length) return null;
+    const u = this.mostrado;
+    let e = null;
+    if (u !== null) {
+      let i = 0;
+      while (i < a.length && a[i].t <= u) i++;
+      const seg = i < a.length ? a[i] : null;
+      const ant = i > 0 && a[i - 1].t === u ? a[i - 1] : null;
+      if (seg && seg.t >= tAlvo - folga && seg.t <= tAlvo + folga) e = seg;   // o seguinte, na hora
+      else if (seg && seg.t > tAlvo + folga) e = ant;                         // adiantado: segura o último
+      else if (!seg && ant && ant.t >= tAlvo - 2 * folga) e = ant;            // nada novo ainda: repete
+    }
+    // começo, ficou para trás ou o último saiu do anel: volta ao relógio
+    if (!e) e = this.escolher(tAlvo);
+    this.mostrado = e.t;
+    return e;
+  }
+
   limpar() {
     this.anel.length = 0;
     this.livres.length = 0;
+    this.mostrado = null;
   }
 
   get tamanho() { return this.anel.length; }

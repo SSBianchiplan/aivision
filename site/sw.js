@@ -24,7 +24,7 @@
  * ========================================================================
  */
 
-const VERSION = 'iav-v106-vps';   // 23/10/2026: Regiões editáveis + calibração da quadra + Ferramentas nos Studios + modais do sistema
+const VERSION = 'iav-v107-vps';   // 23/10/2026: Vídeo fluido com sincronia: fila de exibição em sequência e atraso suave (compartilhar aba/arquivo)
 const SHELL = `${VERSION}-shell`;
 /*
  * Pesos dos modelos num cache de nome FIXO: sobrevivem às publicações. Antes o
