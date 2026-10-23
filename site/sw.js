@@ -24,7 +24,7 @@
  * ========================================================================
  */
 
-const VERSION = 'iav-v100-vps';   // 22/10/2026: Motion 3D v2: vídeo→3D realista (levantar.js), várias pessoas, avatar VRM/GLB/FBX, marionete 2D, estúdio (câmera virtual, fundo, gravação, OBS, VMC)
+const VERSION = 'iav-v101-vps';   // 22/10/2026: Motion 3D: sincronia imagem×pose, piso (contato em y=0, sombra), perspectiva e câmera que segue; redução do quadro na GPU (todos os módulos)
 const SHELL = `${VERSION}-shell`;
 /*
  * Pesos dos modelos num cache de nome FIXO: sobrevivem às publicações. Antes o

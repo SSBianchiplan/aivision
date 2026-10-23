@@ -469,6 +469,25 @@ function distanciaAoCasco(c, pts) {
   return Math.min(...H.map((a, k) => dSeg(a, H[(k + 1) % H.length])));
 }
 
+/**
+ * Estatura (m) de um conjunto de comprimentos: canela + coxa + tronco + pescoço, mais cabeça e
+ * tornozelo-chão na proporção do padrão (1,70 m). Exportada para os testes.
+ */
+export const estatura = (L) => (L.canela + L.coxa + L.tronco + L.pescoco) * (1.7 / (PADRAO.canela + PADRAO.coxa + PADRAO.tronco + PADRAO.pescoco));
+/**
+ * Escala humana real: com `altura` (m) configurada, os ossos medidos são reescalados para ela;
+ * sem ela, a estatura medida só é aceita entre 1,45 e 2,00 m (fora disso o W errou a escala e
+ * vale 1,70 m). A escala px/m, a profundidade e a posição no piso seguem os ossos.
+ */
+export function escalarAltura(L, altura = null) {
+  const e = estatura(L);
+  const alvo = Number.isFinite(altura) && altura > 0.5 ? altura : e < 1.45 || e > 2.0 ? 1.7 : null;
+  if (!alvo || !(e > 0)) return L;
+  const k = alvo / e, out = {};
+  for (const n of Object.keys(L)) out[n] = L[n] * k;
+  return out;
+}
+
 /** Rotação em torno de x (inclinação da câmera). */
 const girarX = (p, th) => (p ? [p[0], p[1] * Math.cos(th) - p[2] * Math.sin(th), p[1] * Math.sin(th) + p[2] * Math.cos(th)] : null);
 
@@ -480,7 +499,7 @@ export class Levantador {
   zerar() {
     this.histW = []; this.L = null; this.s = null; this.ant = null; this.mem = {}; this.filtros = null; this.tAnt = null;
     this.baseChao = []; this.raiz0 = null; this.trava = null; this.contatosHist = []; this.incl = 0; this.saida = null; this.info = {};
-    this.raizF = null; this.histZ = []; this.histS = [];
+    this.raizF = null; this.histZ = []; this.histS = []; this.histZp = []; this.amPiso = []; this.piso = null; this.histD = []; this.noArAnt = false; this.baseTrava = null; this.histAlt = []; this.zPe = null; this.tPe = 0;
   }
   configurar(o) { Object.assign(this.opc, o); }
 
@@ -493,7 +512,7 @@ export class Levantador {
     const e = prepararEntrada(P, w, h, esp, W);
     // comprimentos: do W visto até agora (re-medidos a cada 30 quadros, até 600 amostras)
     if (W) { this.histW.push(W); if (this.histW.length > 600) this.histW.splice(0, this.histW.length - 600); }
-    if (!this.L || (this.histW.length % 30 === 1 && this.histW.length < 1200)) this.L = comprimentos(this.histW.slice(-600));
+    if (!this.L || (this.histW.length % 30 === 1 && this.histW.length < 1200)) this.L = escalarAltura(comprimentos(this.histW.slice(-600)), this.opc.altura);
     const L = this.L;
     // escala px/m: envoltória com subida rápida e descida lenta
     this.histS = this.histS || [];
@@ -531,15 +550,31 @@ export class Levantador {
     let vBaixo = null;
     for (const k of CONTATO) if (e.uv[k] && e.vis[k] > 0.3 && (vBaixo == null || e.uv[k][1] > vBaixo)) vBaixo = e.uv[k][1];
     let ar = 0;
-    if (vBaixo != null) {
-      this.baseChao.push(vBaixo); if (this.baseChao.length > 90) this.baseChao.shift();
-      const base = this.baseChao.slice().sort((a, b) => b - a)[Math.min(this.baseChao.length - 1, 3)];
-      ar = Math.max(0, (base - vBaixo) / s - 0.04);
-      if (ar < 0.04) ar = 0;
+    // PISO NA IMAGEM: com o plano do piso estimado (altura e inclinação da câmera, _ajustarPiso), o pé
+    // de apoio dá a profundidade daquele quadro e o pulo é o pé ACIMA do piso na profundidade do corpo
+    // — funciona com o ator andando em profundidade (a "linha do chão" fixa na imagem não).
+    const pe = this._ajustarPiso(e, q, K, minimo);
+    if (pe) {
+      ar = pe.altura > 0.1 ? Math.min(1.2, pe.altura - 0.03) : 0;
       this.nAr = ar ? (this.nAr || 0) + 1 : 0;
-      if (ar > 1.2 || this.nAr > 45) { ar = 0; this.baseChao = [vBaixo]; this.nAr = 0; }
+      if (this.nAr > 45) { ar = 0; this.nAr = 0; }
+    } else if (vBaixo != null) {
+      // sem o plano ainda: a linha do chão na imagem, mas só a DECOLAGEM rápida conta (subir > 15 cm
+      // em ≤ 1/3 s; andar para longe da câmera também sobe o pé na imagem, devagar) e a base fica
+      // travada durante o voo
+      this.baseChao.push(vBaixo); if (this.baseChao.length > 10) this.baseChao.shift();
+      const base = this.baseTrava != null ? this.baseTrava : Math.max(...this.baseChao);
+      const a = (base - vBaixo) / s - 0.04;
+      if (this.baseTrava == null && a > 0.15) this.baseTrava = base;
+      ar = this.baseTrava != null && a > 0.04 ? a : 0;
+      if (!ar) this.baseTrava = null;
+      this.nAr = ar ? (this.nAr || 0) + 1 : 0;
+      if (ar > 1.2 || this.nAr > 45) { ar = 0; this.baseChao = [vBaixo]; this.nAr = 0; this.baseTrava = null; }
     }
-    const dy = -minimo + ar;
+    // pulo só com histerese: 3 quadros seguidos acima do piso (ruído de um quadro não decola)
+    const noAr = ar > 0 && (this.nAr || 0) >= 3;
+    this.noArAnt = noAr;
+    const dy = -minimo + (noAr ? ar : 0);
     // translação da raiz pela imagem (x) e pela escala (profundidade), suavizada
     let rx = 0, rz = 0;
     // raiz no referencial da câmera (várias pessoas: posição relativa real). A profundidade vem da
@@ -548,6 +583,24 @@ export class Levantador {
     this.histZ = this.histZ || []; this.histZ.push(RA[2]); if (this.histZ.length > 45) this.histZ.shift();
     const zs = this.histZ.slice().sort((a, b) => a - b);
     this.raizAbs = [RA[0], RA[1], zs[Math.floor(zs.length / 2)]];
+    // POSIÇÃO NO PISO PELO PÉ (perspectiva): o raio do pixel do pé de apoio cruza o plano do piso e
+    // dá onde o ator está — bem mais firme que f/s (a escala treme com a pose e some com as pernas
+    // ocultas). Sem pé apoiado visível, no ar ou sem plano ainda, fica a profundidade pela escala.
+    if (pe && pe.raiz && !noAr) {
+      this.histZp = this.histZp || []; this.histZp.push(pe.raiz[1]); if (this.histZp.length > 5) this.histZp.shift();
+      const zp = this.histZp.slice().sort((a, b) => a - b);
+      this.raizAbs = [pe.raiz[0], RA[1], zp[Math.floor(zp.length / 2)]];
+      this.zPe = this.raizAbs[2]; this.tPe = t;
+    } else {
+      this.histZp = [];
+      // pé de apoio oculto por instantes (giro, saia) ou no ar: segura a profundidade do pé (até 2 s),
+      // em vez de pular para a da escala (outro viés: o ator "teleportava" em profundidade)
+      if (this.zPe != null && t - this.tPe < 2000 && t >= this.tPe && e.uv.Q) {
+        const Dz = -this.zPe;
+        this.raizAbs = [((e.uv.Q[0] - K.cx) / K.f) * Dz, RA[1], this.zPe];
+      }
+    }
+    this.info.camera = this.piso ? { altura: this.piso.hc, inclinacaoGraus: (this.piso.th * 180) / Math.PI } : null;
     if (this.opc.raiz) {
       const R = this.raizAbs;
       if (!this.raiz0) this.raiz0 = R;
@@ -561,12 +614,78 @@ export class Levantador {
     // temporal: One Euro + limite de velocidade por junta
     if (this.opc.suavizar) q = this._suavizar(q, dt);
     this.tAnt = t;
+    // PISO EXATO: depois da suavização (que atrasa o y), o contato mais baixo volta para y = 0 em
+    // todo quadro apoiado; no pulo (histerese acima) a altura medida na imagem fica
+    {
+      const alt = CONTATO.filter((k) => q[k]).map((k) => q[k][1]);
+      if (alt.length) {
+        const m = Math.min(...alt), alvo = noAr ? ar : 0;
+        if (Math.abs(m - alvo) > 1e-4) q = q.map((p) => (p ? [p[0], p[1] - m + alvo, p[2]] : null));
+      }
+    }
     // inclinação automática: plano dos contatos (precisa de profundidade variada)
     this._inclinacao(q);
     const eq = equilibrio(q, CONTATO.filter((k) => q[k]).map((k) => q[k][1]));
-    this.info = { escala: s, deitada: Boolean(deitada), fundidas: exame.fundidas, trocou: exame.trocar, rtmo: usouRTMO, ar, inclinacaoGraus: (th * 180) / Math.PI, equilibrio: eq ? { apoio: eq.apoio, distCm: Math.round(eq.dist * 100) } : null, L };
+    const cam = this.info.camera || null;
+    this.info = { camera: cam, raiz: this.raizAbs, escala: s, deitada: Boolean(deitada), fundidas: exame.fundidas, trocou: exame.trocar, rtmo: usouRTMO, ar, inclinacaoGraus: (th * 180) / Math.PI, equilibrio: eq ? { apoio: eq.apoio, distCm: Math.round(eq.dist * 100) } : null, L };
     this.saida = q;
     return q;
+  }
+
+  /**
+   * Plano do piso a partir dos pés apoiados, quadro a quadro. Para cada amostra, o pé de apoio tem
+   * tanβ = (v − cy)/f (exato, do pixel) e a profundidade D pela escala (f/s, ruidosa). No piso,
+   * 1/D = (tanβ·cos θ + sin θ)/h — linear em tanβ, com o ruído só em 1/D: a regressão dá a inclinação θ
+   * e a altura h da câmera sem viés (precisa de variação de profundidade; sem ela fica o automático).
+   * Devolve { altura do pé acima do piso, raiz [x, z] da câmera nivelada } ou null.
+   */
+  _ajustarPiso(e, q, K, minimo) {
+    let k = -1;
+    for (const j of [27, 28, 29, 30, 31, 32]) if (e.uv[j] && e.vis[j] > 0.5 && q[j] && (k < 0 || e.uv[j][1] > e.uv[k][1])) k = j;
+    if (k < 0) return null;
+    const tb = (e.uv[k][1] - K.cy) / K.f, tu = (e.uv[k][0] - K.cx) / K.f;
+    // profundidade do pé pela escala OBSERVADA neste quadro (a temporal é mediana de 1 s e atrasa a
+    // profundidade — achataria a regressão); q é relativo ao quadril, +z = para a câmera
+    const so = this.histS && this.histS.length ? this.histS[this.histS.length - 1] : K.s;
+    const D = K.f / so - q[k][2];
+    this.histD = this.histD || []; this.histD.push(D); if (this.histD.length > 15) this.histD.shift();
+    const apoiado = q[k][1] - minimo < 0.06;      // o pé visível é o contato mais baixo (não o do retiré)
+    if (apoiado && !this.noArAnt && D > 0.3) {
+      this.amPiso = this.amPiso || []; this.amPiso.push([tb, 1 / D]); if (this.amPiso.length > 400) this.amPiso.shift();
+      if (this.amPiso.length >= 40 && this.amPiso.length % 5 === 0) {
+        const n = this.amPiso.length;
+        let sx = 0, sy = 0; for (const [x, y] of this.amPiso) { sx += x; sy += y; }
+        const mx = sx / n, my = sy / n;
+        let sxx = 0, sxy = 0; for (const [x, y] of this.amPiso) { sxx += (x - mx) ** 2; sxy += (x - mx) * (y - my); }
+        const dp = Math.sqrt(sxx / n);
+        if (dp > 0.012) {
+          const A = sxy / sxx, B = my - A * mx;
+          const th = Math.atan2(B, A), hc = Math.cos(th) / A;
+          if (A > 0 && hc > 0.2 && hc < 6 && Math.abs(th) < 0.6) {
+            this.piso = this.piso ? { th: 0.7 * this.piso.th + 0.3 * th, hc: 0.7 * this.piso.hc + 0.3 * hc } : { th, hc };
+            if (this.opc.inclinacao == null) this.incl = this.piso.th;
+          }
+        }
+      }
+    }
+    if (!this.piso) return null;
+    const { th, hc } = this.piso;
+    const den = tb * Math.cos(th) + Math.sin(th);
+    if (!(den > 0.02) || !e.uv.Q) return null;
+    // supondo o pé no piso: onde ele está (raio do pixel × plano)
+    const Df = hc / den;
+    const G = girarX([tu * Df, -tb * Df, -Df], -th);
+    const hx = G[0] - q[k][0], hz = G[2] - q[k][2];
+    // PULO sem escala: o quadril, no raio do SEU pixel e nessa profundidade, fica a H do piso; o
+    // esqueleto diz que o quadril está a −minimo do contato mais baixo. No chão, H ≈ −minimo; com o pé a
+    // a metros do piso, o raio do pé "acerta" o piso mais longe e H − (−minimo) ≈ a. Só pixels e o plano.
+    const Dh = -hz, tbQ = (e.uv.Q[1] - K.cy) / K.f, tuQ = (e.uv.Q[0] - K.cx) / K.f;
+    const Hq = girarX([tuQ * Dh, -tbQ * Dh, -Dh], -th)[1] + hc;
+    // o viés (escala dos ossos × plano) sai pela mediana dos últimos ~3 s: o que vale é a SUBIDA
+    const bruto = Hq + minimo;
+    if (!this.noArAnt) { this.histAlt = this.histAlt || []; this.histAlt.push(bruto); if (this.histAlt.length > 90) this.histAlt.shift(); }
+    const base = this.histAlt && this.histAlt.length >= 10 ? this.histAlt.slice().sort((a, b) => a - b)[Math.floor(this.histAlt.length / 2)] : bruto;
+    return { altura: bruto - base, raiz: apoiado ? [hx, hz] : null };
   }
 
   _travarPe(q, dt) {
@@ -606,7 +725,7 @@ export class Levantador {
   }
 
   _inclinacao(q) {
-    if (this.opc.inclinacao != null) return;
+    if (this.opc.inclinacao != null || this.piso) return;   // com o plano do piso (pés em profundidade), vale ele
     // 1) pernas retas e os dois pés embaixo: a perna é vertical no mundo; no referencial da câmera,
     //    o vetor tornozelos→quadris dá a inclinação (atan2(z, y)) — o "para cima" do esqueleto
     const r = this.ant;

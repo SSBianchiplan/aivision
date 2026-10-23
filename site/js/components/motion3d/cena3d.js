@@ -89,7 +89,7 @@ export class CenaMotion3D {
     this.renderer.domElement.setAttribute('aria-label', 'Viewport 3D: esqueleto e avatar');
     host.appendChild(this.renderer.domElement);
     this.cena = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(45, 1, 0.02, 80);
+    this.camera = new THREE.PerspectiveCamera(45, 1, 0.02, 200);
     this.camera.position.set(2.6, 1.8, 3.4);
     this.controles = new OrbitControls(this.camera, this.renderer.domElement);
     this.controles.target.set(0, 0.9, 0);
@@ -99,8 +99,10 @@ export class CenaMotion3D {
     this.hemi = new THREE.HemisphereLight(0xffffff, 0x445055, 1.1);
     this.luz = new THREE.DirectionalLight(0xffffff, 1.4); this.luz.position.set(2, 5, 3);
     this.cena.add(this.hemi, this.luz);
-    this.gradeObj = new THREE.GridHelper(10, 40, 0x1f4a4a, 0x163235);
-    this.pisoObj = new THREE.Mesh(new THREE.PlaneGeometry(10, 10).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x0f2224, roughness: 0.95, metalness: 0 }));
+    // piso grande (o ator anda pelo piso como no vídeo) com névoa da cor do fundo: a borda some numa
+    // linha de horizonte coerente; a grade (30 m, células de 25 cm) acompanha o ator
+    this.gradeObj = new THREE.GridHelper(30, 120, 0x1f4a4a, 0x163235);
+    this.pisoObj = new THREE.Mesh(new THREE.PlaneGeometry(160, 160).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x0f2224, roughness: 0.95, metalness: 0 }));
     this.pisoObj.position.y = -0.002;
     this.cena.add(this.pisoObj, this.gradeObj);
 
@@ -125,6 +127,17 @@ export class CenaMotion3D {
     this.rastro = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0x6b7278 }));
     this.base = new THREE.LineLoop(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0x2b3035 }));
     this.ator.add(this.com, this.comChao, this.rastro, this.base);
+    // sombra de contato (mancha suave sob o ator) e anel no ponto de apoio: o boneco "pousa" no piso
+    const cs = document.createElement('canvas'); cs.width = cs.height = 64;
+    const gs = cs.getContext('2d'), gr = gs.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(0.45, 'rgba(0,0,0,0.55)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    gs.fillStyle = gr; gs.fillRect(0, 0, 64, 64);
+    this.sombra = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cs), transparent: true, depthWrite: false, opacity: 0.5 }));
+    this.sombra.renderOrder = 1; this.sombra.visible = false;
+    this.apoio = new THREE.Mesh(new THREE.RingGeometry(0.075, 0.1, 40).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x2ef2d0, transparent: true, opacity: 0.85, depthWrite: false }));
+    this.apoio.renderOrder = 2; this.apoio.visible = false;
+    this.ator.add(this.sombra, this.apoio);
+    this.geoCam = null; this.camVideoAplicada = false; this.presetAtual = 'video';
     this.cams = new THREE.Group(); this.cams.name = 'Cameras';
     this.cena.add(this.cams);
 
@@ -180,6 +193,7 @@ export class CenaMotion3D {
     const c = CORES[temaAtual()];
     this.cores = c;
     if (!this.fundoCfg || this.fundoCfg.tipo === 'tema') this.cena.background = new THREE.Color(c.fundo);
+    this._nevoa();
     this.ossos.material.color.setHex(c.marca);
     this.juntas.material.color.setHex(c.junta);
     this.retarget.material.color.setHex(c.retarget);
@@ -187,9 +201,12 @@ export class CenaMotion3D {
     const mats = Array.isArray(this.gradeObj.material) ? this.gradeObj.material : [this.gradeObj.material];
     this.cena.remove(this.gradeObj);
     this.gradeObj.geometry.dispose(); mats.forEach((m) => m.dispose());
-    this.gradeObj = new THREE.GridHelper(10, 40, c.grade, c.grade2);
+    const gp = this.gradeObj.position.clone();
+    this.gradeObj = new THREE.GridHelper(30, 120, c.grade, c.grade2);
+    this.gradeObj.position.copy(gp);
     this.gradeObj.visible = this.opc.grade;
     this.cena.add(this.gradeObj);
+    if (this.apoio) this.apoio.material.color.setHex(c.marca);
     this.matAvatar && this.matAvatar.color.setHex(c.avatar);
     this.com.material.color.setHex(c.junta);
     this.comChao.material.color.setHex(c.marca);
@@ -218,14 +235,39 @@ export class CenaMotion3D {
     this.sujo = true;
   }
 
-  /** Presets de câmera: perspectiva, frente, lado, topo, atrás (o avatar se move como um espelho). */
+  /** Névoa da cor do fundo (só com fundo de tema ou cor lisa): o fim do piso vira horizonte. */
+  _nevoa() {
+    const t = this.fundoCfg ? this.fundoCfg.tipo : 'tema';
+    const bg = this.cena.background;
+    this.cena.fog = (t === 'tema' || t === 'cor') && bg && bg.isColor ? new THREE.Fog(bg.getHex(), 18, 70) : null;
+  }
+
+  /**
+   * Presets de câmera: 'video' (do lado da câmera do vídeo, na altura e inclinação estimadas pelo
+   * levantamento), frente, 3/4, lado, topo, perspectiva, atrás (o avatar se move como um espelho).
+   * A distância enquadra uma pessoa de ~1,7 m com folga (FOV 45°).
+   */
   vista(nome) {
+    this.presetAtual = nome;
     const alvo = this.controles.target.clone();
-    const d = 3.6;
-    const P = { perspectiva: [2.6, 1.8, 3.4], frente: [0, 1.1, d], lado: [d, 1.1, 0], topo: [0, d + 1, 0.001], atras: [0, 1.3, -d] }[nome] || [2.6, 1.8, 3.4];
+    const d = 3.8;
+    const g = this.geoCam || { altura: 1.3, inclinacaoGraus: 6 };
+    const hv = Math.min(3, Math.max(0.4, g.altura));
+    const P = {
+      video: [0, hv, d], perspectiva: [2.6, 1.8, 3.4], frente: [0, 1.1, d], tresquartos: [d * 0.71, 1.4, d * 0.71],
+      lado: [d, 1.1, 0], topo: [0, d + 1.2, 0.001], atras: [0, 1.3, -d],
+    }[nome] || [0, hv, d];
+    if (nome === 'video') alvo.y = Math.max(0.6, Math.min(1.2, hv - Math.tan(((g.inclinacaoGraus || 0) * Math.PI) / 180) * d));
+    this.controles.target.copy(alvo);
     this.camera.position.set(alvo.x + P[0], P[1], alvo.z + P[2]);
     this.controles.update();
     this.sujo = true;
+  }
+  /** Geometria estimada da câmera do vídeo ({ altura (m), inclinacaoGraus }): aplicada uma vez no preset 'video'. */
+  definirCameraVideo(geo) {
+    if (!geo || !Number.isFinite(geo.altura)) return;
+    this.geoCam = geo;
+    if (!this.camVideoAplicada && this.presetAtual === 'video') { this.camVideoAplicada = true; this.vista('video'); }
   }
 
   /** Transformação do SK_Character (Details › Transform). rot em graus. */
@@ -307,6 +349,7 @@ export class CenaMotion3D {
     for (let i = 0; i < 33; i++) { const p = q && q[i]; m.makeTranslation(p ? p[0] : 0, p ? p[1] : -10, p ? p[2] : 0); this.juntas.setMatrixAt(i, m); }
     this.juntas.instanceMatrix.needsUpdate = true;
     this._posarAvatar(q);
+    this._sombra(q);
     // nomes dos ossos (juntas do esqueleto padrão)
     JUNTAS_PADRAO.forEach(([, ref], i) => { const p = ponto(q, ref); const s = this._sprites[i]; s.visible = Boolean(p); if (p) s.position.set(p[0] + 0.02, p[1] + (i === 1 ? 0.12 : 0.03), p[2]); });
     // CoM do robo
@@ -330,6 +373,26 @@ export class CenaMotion3D {
     this.retarget.geometry = new THREE.BufferGeometry();
     this.retarget.geometry.setAttribute('position', new THREE.Float32BufferAttribute(rs, 3));
     this.sujo = true;
+  }
+
+  /** Sombra de contato sob o quadril/CoM (some com a altura do pulo) e anel no pé de apoio; a grade acompanha o ator. */
+  _sombra(q) {
+    const pes = q ? [27, 28, 29, 30, 31, 32].filter((k) => q[k]) : [];
+    const Q = q && q[23] && q[24] ? [(q[23][0] + q[24][0]) / 2, (q[23][2] + q[24][2]) / 2] : null;
+    this.sombra.visible = this.apoio.visible = false;
+    if (!Q || !pes.length) return;
+    const ys = pes.map((k) => q[k][1]), h = Math.max(0, Math.min(...ys));
+    const xs = pes.map((k) => q[k][0]), zs = pes.map((k) => q[k][2]);
+    const larg = Math.max(0.45, Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...zs) - Math.min(...zs)) + 0.35);
+    this.sombra.visible = true;
+    this.sombra.position.set(Q[0], 0.003, Q[1]);
+    this.sombra.scale.set(larg * (1 + h), 1, larg * 0.8 * (1 + h));
+    this.sombra.material.opacity = 0.55 * Math.max(0.15, 1 - h / 0.6);
+    const kb = pes.reduce((a, k) => (q[k][1] < q[a][1] ? k : a), pes[0]);
+    if (q[kb][1] < 0.03) { this.apoio.visible = true; this.apoio.position.set(q[kb][0], 0.004, q[kb][2]); }
+    // grade: recentra em passos de 1 m (múltiplo da célula), as linhas não "andam"
+    const w = new THREE.Vector3(Q[0], 0, Q[1]).applyMatrix4(this.ator.matrixWorld);
+    this.gradeObj.position.set(Math.round(w.x), 0, Math.round(w.z));
   }
 
   _posarAvatar(q) {
@@ -505,6 +568,7 @@ export class CenaMotion3D {
     }
     if (!bg) bg = new THREE.Color(this.cores.fundo);
     this.cena.background = bg;
+    this._nevoa();
     if (bg.isTexture) this._fundoTex = bg;
     if (velho && velho !== bg) velho.dispose();
     this.sujo = true;

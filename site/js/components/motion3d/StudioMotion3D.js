@@ -172,7 +172,7 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
   const setMsg = useCallback((t) => { setMsgBruto(t); clearTimeout(msgT.current); if (t) msgT.current = setTimeout(() => setMsgBruto(''), 8000); }, []);
   const [, setTique] = useState(0);
   const [opc, setOpc] = useState({ esqueleto: true, avatar: 'capsulas', grade: true, piso: true, nomes: false, retarget: false, com: true, cameras: true, luz: 'lit', borrar: false, maos: true, chao: true });
-  const [camPreset, setCamPreset] = useState('perspectiva');
+  const [camPreset, setCamPreset] = useState('video');       // ângulo da câmera do vídeo (altura e inclinação estimadas)
   const [aba3d, setAba3d] = useState(null);             // popovers Perspective / Lit / Show
   const [selOutliner, setSelOutliner] = useState('SK_Character');
   const [buscaOut, setBuscaOut] = useState('');
@@ -204,7 +204,7 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
   const [conferencia, setConferencia] = useState(null);
   const [verRepouso, setVerRepouso] = useState(false);
   const verRepousoRef = useRef(false); verRepousoRef.current = verRepouso;
-  const [seguir, setSeguir] = useState('livre');
+  const [seguir, setSeguir] = useState('seguir');        // enquadra o ator e o segue suavemente (a órbita do usuário continua valendo)
   const [limpo, setLimpo] = useState(false);
   const [pupAbrir, setPupAbrir] = useState(null);       // { id } de uma marionete salva
   const [pupArquivo, setPupArquivo] = useState(null);   // imagem nova para a marionete
@@ -219,6 +219,7 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
   const atorAvatarRef = useRef(null); atorAvatarRef.current = atorAvatar;
   const [qualidade, setQualidade] = useState(null);     // progresso do passe de qualidade (0..1) ou null
   const layoutRef = useRef('padrao'); layoutRef.current = layout;
+  const sincRef = useRef(null);                         // { atrasoMs, modo }: indicador SINCRONIA
 
   // ------------------------------------------------------------------ montagem
   useEffect(() => {
@@ -227,6 +228,8 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
     document.body.classList.add('studio-aberto', 'm3d-aberto');
     const n = store.get().nodes.find((x) => x.op === OP);
     if (!n || !n.enabled) ativarMotion3D();
+    // padrão de UMA pessoa: o multipessoa (YOLOX + um BlazePose por pessoa) só por escolha explícita nesta sessão
+    else if ((n.params && n.params.pessoas | 0) > 1) ativarMotion3D({ pessoas: 1 });
     // como no Studio Bike Fit: a barra de vídeo do app some depois de 3 s sem mexer o mouse
     let tOcioso = 0;
     const acordar = () => { document.body.classList.remove('studio-ocioso'); clearTimeout(tOcioso); tOcioso = setTimeout(() => document.body.classList.add('studio-ocioso'), 3000); };
@@ -332,8 +335,15 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
           setPlay((cur) => (!cur || cur.tomada.id !== p.tomada.id ? cur : prox === cur.quadro ? { ...cur, tocando: false } : { ...cur, quadro: prox }));
         }
       }
-      const r = canalMotion.instantaneo();
-      const tR = r ? r.tWall : -1;
+      // a pose do quadro EXIBIDO: o Viewport diz o instante do quadro que pintou (tExibir; com a
+      // sincronia, o quadro de L ms atrás) e o canal devolve a pose daquele instante (interpolada) ou,
+      // na câmera ao vivo, prevista até ele. Sem o canvas do app: a última pose, como antes.
+      const r0 = canalMotion.instantaneo();
+      const dcEl = !p && displayCanvas && displayCanvas.current;
+      const tEx = dcEl && Number.isFinite(dcEl.tExibir) ? dcEl.tExibir : null;
+      const r = !p && r0 && tEx != null ? (canalMotion.poseEm(tEx, { prever: true }) || r0) : r0;
+      sincRef.current = tEx != null && Number.isFinite(dcEl.tQuadro) && r ? { atrasoMs: dcEl.tQuadro - tEx, modo: r.modo || null } : null;
+      const tR = r ? (r.tAlvo != null ? r.tAlvo : r.tWall) : -1;
       const tam = `${Math.round(tamVid.current.w)}x${Math.round(tamVid.current.h)}`;
       const soVid = vistaRef.current === 'video' || layoutRef.current === 'ambos';
       // Vídeo e 3D com chaves separadas: o vídeo acompanha cada quadro PINTADO pelo app
@@ -343,6 +353,7 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
       const chaveVid = chave + `|${tam}|d${dcq}`;
       const cenaNova = cena.current && cena.current !== ultimaCena;
       // o vídeo só é redesenhado quando aparece (vista Vídeo ou lado a lado)
+      const tD0 = performance.now();
       if (soVid && chaveVid !== ultimaChaveVid) { ultimaChaveVid = chaveVid; desenharVideo(r, p); }
       if (cenaNova || chave !== ultimaChave) {
         ultimaChave = chave; ultimaCena = cena.current;
@@ -360,6 +371,8 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
             chaoVivo = alturaChao(buf);
             const ult = buf.filter(Boolean).slice(-90);
             if (ult.length) { compVivo = comprimentosRobo(ult); pernaViva = pernaDe(compVivo); }
+            const il = canalMotion.infoLevantar();
+            if (cena.current && il && il.camera) cena.current.definirCameraVideo(il.camera);
           }
           // o 3D reconstruído (levantamento 2D→3D: piso em 0, contatos) quando houver; senão o W com "pés no chão"
           const sel = atorSelecionado(r);
@@ -386,12 +399,13 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
             const W = Wv;
             // esqueleto padrão do robo calculado DIRETO (antes: gerava e relia texto BVH a cada pose)
             let ret = null;
-            if (opc.retarget && W) { try { ret = retargetRobo(W, compVivo || comprimentosRobo([W]), ultimaLocal); } catch (_) { ret = null; } }
+            if (opc.retarget && W) { const tR0 = performance.now(); try { ret = retargetRobo(W, compVivo || comprimentosRobo([W]), ultimaLocal); } catch (_) { ret = null; } canalMotion.etapa('retarget', performance.now() - tR0); }
             cena.current.mostrarQuadro(W || null, null, [], [], null, ret);
           }
         }
       }
       const agora = performance.now();
+      if (!p && r) canalMotion.etapa('desenho', agora - tD0);
       if (agora - tHist > 250) { tHist = agora; desenharHistograma(); setTique((n) => (n + 1) % 1e6); }
     };
     id = requestAnimationFrame(pintar);
@@ -428,6 +442,8 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
       P = r.P; maos = r.maos;
     }
     const k = Math.min(W / iw, H / ih), ox = (W - iw * k) / 2, oy = (H - ih * k) / 2;
+    // gancho de medição (testes): a pose desenhada neste quadro, normalizada (antes de pintar o vídeo)
+    cv.__desenho = P && r && !p ? { tCap: r.tCap, P: P.map((q) => (q ? [q.x / iw, q.y / ih, q.v] : null)) } : null;
     // Resolução: o quadro publicado pelo operador é o quadro REDUZIDO que vai ao modelo de pose
     // (procWidth). Para exibir, copia o vídeo do canvas de exibição do app em resolução cheia,
     // como o Studio Bike Fit (mesma conta "contém, centrado" do Viewport); o reduzido fica de reserva.
@@ -469,7 +485,9 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
       g.fillText(txt, W / 2, 22 * dpr);
     }
     if (P && opc.esqueleto) {
-      const minV = 0.35;
+      // certo (v ≥ 0,5): linha cheia; incerto (0,15–0,5: perna sob a saia, braço atrás do corpo):
+      // tracejado e esmaecido, como no robo — nunca desenhado como se fosse certo
+      const minV = 0.5, minI = 0.15;
       g.lineCap = 'round';
       g.shadowColor = acento; g.shadowBlur = 10 * dpr;
       g.strokeStyle = acento; g.lineWidth = 3.2 * dpr;
@@ -479,12 +497,22 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
         g.beginPath(); g.moveTo(ox + A.x * k, oy + A.y * k); g.lineTo(ox + B.x * k, oy + B.y * k); g.stroke();
       }
       g.shadowBlur = 0;
+      g.save(); g.globalAlpha = 0.45; g.setLineDash([6 * dpr, 5 * dpr]); g.lineWidth = 2.2 * dpr;
+      for (const [a, b] of LIGACOES_2D) {
+        const A = P[a], B = P[b];
+        if (!A || !B || A.v < minI || B.v < minI || (A.v >= minV && B.v >= minV)) continue;
+        g.beginPath(); g.moveTo(ox + A.x * k, oy + A.y * k); g.lineTo(ox + B.x * k, oy + B.y * k); g.stroke();
+      }
+      g.restore();
       for (let i = 0; i < 33; i++) {
         const A = P[i];
-        if (!A || A.v < minV) continue;
+        if (!A || A.v < minI) continue;
+        const certo = A.v >= minV;
+        g.globalAlpha = certo ? 1 : 0.45;
         g.fillStyle = i === selJuntaRef.current ? '#FFD84D' : '#E8FFFB';
-        g.beginPath(); g.arc(ox + A.x * k, oy + A.y * k, (i === selJuntaRef.current ? 6 : 3.2) * dpr, 0, 2 * Math.PI); g.fill();
+        g.beginPath(); g.arc(ox + A.x * k, oy + A.y * k, (i === selJuntaRef.current ? 6 : certo ? 3.2 : 2.4) * dpr, 0, 2 * Math.PI); g.fill();
       }
+      g.globalAlpha = 1;
       // várias pessoas: cada ator com a sua cor e o rótulo "Ator N" (mesma cor do 3D)
       if (!p && r && Array.isArray(r.atores) && r.atores.length > 1) {
         g.font = `600 ${12 * dpr}px Archivo, Arial, sans-serif`; g.textAlign = 'center';
@@ -980,6 +1008,8 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
       pngViewport: () => (cena.current ? cena.current.png() : null),
       cena: () => cena.current,
       definirVista: (v) => setVista(v),
+      definirLayout: (v) => setLayout(v),
+      definirCamera: (v) => { setCamPreset(v); if (cena.current) cena.current.vista(v); },
       pedirServidor: (m) => pedirServidor(m),
       consentir: (v) => setConsent(Boolean(v)),
       // Studio v2
@@ -1231,7 +1261,9 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
         <option value="0.6">grande-angular (~80°)</option><option value="0.8">celular (~65°)</option><option value="1">normal (~53°)</option><option value="1.4">tele leve (~40°, vídeo de palco)</option><option value="2">tele (~28°)</option></select></label>
       <label class="m3d-campo">Inclinação da câmera <select value=${lev.inclinacao == null ? 'auto' : String(lev.inclinacao)} onChange=${(e) => { canalMotion.configurarLevantar({ inclinacao: e.target.value === 'auto' ? null : +e.target.value }); setTique((n) => n + 1); }}>
         <option value="auto">automática (pernas retas, plano dos contatos)</option>${[-20, -10, -5, 0, 5, 10, 15, 20, 30].map((g) => html`<option key=${g} value=${g}>${g}° ${g > 0 ? '(para baixo)' : g < 0 ? '(para cima)' : '(nivelada)'}</option>`)}</select></label>
-      ${infoLev && html`<div class="m3d-kv"><span>Diagnóstico</span><b>${[`incl. ${numero(infoLev.inclinacaoGraus, 0)}°`, infoLev.ar ? `no ar ${Math.round(infoLev.ar * 100)} cm` : 'no chão', infoLev.equilibrio && infoLev.equilibrio.apoio ? `apoio ${infoLev.equilibrio.apoio === 'L' ? 'pé esq.' : 'pé dir.'} (CoM a ${infoLev.equilibrio.distCm} cm)` : null, infoLev.fundidas ? 'pernas fundidas no 2D' : null, infoLev.trocou ? 'pernas trocadas corrigidas' : null, infoLev.rtmo ? 'RTMO desempatou' : null].filter(Boolean).join(' · ')}</b></div>`}
+      <label class="m3d-campo">Altura do ator <select value=${lev.altura == null ? 'auto' : String(lev.altura)} onChange=${(e) => { canalMotion.configurarLevantar({ altura: e.target.value === 'auto' ? null : +e.target.value }); setTique((n) => n + 1); }}>
+        <option value="auto">automática (medida; fora de 1,45–2,00 m vale 1,70 m)</option>${[1.5, 1.6, 1.65, 1.7, 1.75, 1.8, 1.9].map((a) => html`<option key=${a} value=${a}>${numero(a, 2)} m</option>`)}</select></label>
+      ${infoLev && html`<div class="m3d-kv"><span>Diagnóstico</span><b>${[`incl. ${numero(infoLev.inclinacaoGraus, 0)}°`, infoLev.ar ? `no ar ${Math.round(infoLev.ar * 100)} cm` : 'no chão', infoLev.equilibrio && infoLev.equilibrio.apoio ? `apoio ${infoLev.equilibrio.apoio === 'L' ? 'pé esq.' : 'pé dir.'} (CoM a ${infoLev.equilibrio.distCm} cm)` : null, infoLev.fundidas ? 'pernas fundidas no 2D' : null, infoLev.trocou ? 'pernas trocadas corrigidas' : null, infoLev.rtmo ? 'RTMO desempatou' : null, infoLev.camera ? `câmera a ${numero(infoLev.camera.altura, 2)} m do piso` : null].filter(Boolean).join(' · ')}</b></div>`}
       <p class="m3d-dica">O 3D sai do 2D (que acerta mais) com comprimentos de osso fixos, limites articulares (até a ponta de dança), contato com o chão (pés, joelhos, quadril sentado), pé travado e centro de massa sobre o apoio; o W do BlazePose entra como opinião. Para vídeo/YouTube, grave e use ⋯ › Refinar (qualidade). Com pernas fundidas (tutu, 5ª posição), ligue também o RTMO (pose.rtmo) na cadeia: ele desempata.</p>
       ${play && html`<button class="m3d-btn" disabled=${qualidade != null} onClick=${() => refinarTomada(play.tomada)}>${qualidade != null ? `Refinando ${Math.round(qualidade * 100)} %` : 'Refinar a tomada aberta (qualidade)'}</button>`}
       <div class="m3d-sub">Suavização</div>
@@ -1428,9 +1460,9 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
               <button class=${`m3d-btn mini ${vista === '3d' ? 'on' : ''}`} aria-pressed=${vista === '3d'} onClick=${() => setVista('3d')}>3D</button>
               <button class=${`m3d-btn mini ${vista === 'marionete' ? 'on' : ''}`} aria-pressed=${vista === 'marionete'} onClick=${() => setVista('marionete')} title="Imagem → movimento 2D">Marionete 2D</button>
             </span>
-            ${['Perspective', 'Lit', 'Show'].map((a) => html`<span key=${a} class="m3d-menu-w"><button class=${`m3d-btn mini ${aba3d === a ? 'on' : ''}`} aria-haspopup="menu" onClick=${() => setAba3d(aba3d === a ? null : a)}>${a === 'Perspective' ? ({ perspectiva: 'Perspective', frente: 'Front', lado: 'Side', topo: 'Top', atras: 'Back (espelho)' })[camPreset] : a === 'Lit' ? ({ lit: 'Lit', unlit: 'Unlit', wireframe: 'Wireframe' })[opc.luz] : 'Show'} ▾</button>
+            ${['Perspective', 'Lit', 'Show'].map((a) => html`<span key=${a} class="m3d-menu-w"><button class=${`m3d-btn mini ${aba3d === a ? 'on' : ''}`} aria-haspopup="menu" onClick=${() => setAba3d(aba3d === a ? null : a)}>${a === 'Perspective' ? ({ video: 'Câmera do vídeo', perspectiva: 'Perspective', frente: 'Front', tresquartos: '3/4', lado: 'Side', topo: 'Top', atras: 'Back (espelho)' })[camPreset] : a === 'Lit' ? ({ lit: 'Lit', unlit: 'Unlit', wireframe: 'Wireframe' })[opc.luz] : 'Show'} ▾</button>
               ${aba3d === a && html`<div class="m3d-menu" role="menu">
-                ${a === 'Perspective' && [['perspectiva', 'Perspective'], ['frente', 'Front'], ['lado', 'Side'], ['topo', 'Top'], ['atras', 'Back (como espelho)']].map(([k, r]) => html`<button key=${k} role="menuitem" class=${camPreset === k ? 'on' : ''} onClick=${() => { setCamPreset(k); if (cena.current) cena.current.vista(k); setAba3d(null); if (vista === 'video') setVista('3d'); }}>${r}</button>`)}
+                ${a === 'Perspective' && [['video', 'Câmera do vídeo (altura e inclinação)'], ['frente', 'Front'], ['tresquartos', '3/4'], ['lado', 'Side'], ['topo', 'Top'], ['perspectiva', 'Perspective'], ['atras', 'Back (como espelho)']].map(([k, r]) => html`<button key=${k} role="menuitem" class=${camPreset === k ? 'on' : ''} onClick=${() => { setCamPreset(k); if (cena.current) cena.current.vista(k); setAba3d(null); if (vista === 'video') setVista('3d'); }}>${r}</button>`)}
                 ${a === 'Lit' && [['lit', 'Lit'], ['unlit', 'Unlit'], ['wireframe', 'Wireframe']].map(([k, r]) => html`<button key=${k} role="menuitem" class=${opc.luz === k ? 'on' : ''} onClick=${() => { setOpc({ ...opc, luz: k }); setAba3d(null); }}>${r}</button>`)}
                 ${a === 'Show' && [['esqueleto', 'Esqueleto'], ['grade', 'Grade'], ['piso', 'Piso'], ['nomes', 'Nomes dos ossos'], ['retarget', 'Retarget (BVH)'], ['com', 'CoM e base de suporte'], ['cameras', 'Câmeras']].map(([k, r]) => html`<button key=${k} role="menuitemcheckbox" aria-checked=${opc[k]} class=${opc[k] ? 'on' : ''} onClick=${() => setOpc({ ...opc, [k]: !opc[k] })}>${opc[k] ? '☑' : '☐'} ${r}</button>`)}
               </div>`}</span>`)}
@@ -1455,6 +1487,7 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
             <span class="m3d-met"><em>Rate</em><b>${play ? `${play.tomada.fps} fps` : `${numero(estatisticas.fps, 1)} fps`}</b></span>
             <span class="m3d-met"><em>Buffer</em><b>${estatisticas.gravando ? `${estatisticas.gravadas} rec` : estatisticas.buffer}</b></span>
             <span class="m3d-met"><em>Latency</em><b>${estatisticas.latMed == null ? '—' : `${numero(estatisticas.latMed, 0)} ms`}</b></span>
+            ${!play && sincRef.current && html`<span class="m3d-met" title="Imagem e pose do MESMO instante: arquivo e YouTube mostram o quadro atrasado pela latência; a câmera ao vivo prevê a pose até o quadro exibido"><em>Sync</em><b>${sincRef.current.atrasoMs > 1 ? `SINCRONIA −${Math.round(sincRef.current.atrasoMs)} ms` : sincRef.current.modo === 'prevista' ? 'PREVISÃO' : 'ao vivo'}</b></span>`}
             <canvas class="m3d-hist" ref=${cvHist} width="120" height="22" aria-label="Histograma de latência"></canvas>
           </div>
         </main>

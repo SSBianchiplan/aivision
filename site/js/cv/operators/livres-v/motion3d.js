@@ -41,7 +41,7 @@ async function estimarAtores(state, prep, esp) {
   const lista = (await state.multi.estimar(prep)).filter((a) => a.W && a.P && !a.incoerente);
   const latMs = performance.now() - prep.t0;
   if (!lista.length) {
-    canalMotion.publicar({ t: prep.tFonte, P: null, W: null, w: prep.w, h: prep.h, latMs, img: prep.img, maos: prep.maos, rosto: prep.rosto, esp, atores: [] });
+    canalMotion.publicar({ t: prep.tFonte, tCap: prep.tCap, P: null, W: null, w: prep.w, h: prep.h, latMs, img: prep.img, maos: prep.maos, rosto: prep.rosto, esp, atores: [] });
     return { sem: true };
   }
   // VAGAS estáveis "Ator 1…4": o ID do rastreador muda quando a trilha morre (pose a poucos Hz por
@@ -64,13 +64,16 @@ async function estimarAtores(state, prep, esp) {
     o.vaga = { n }; vagas.push(o.vaga);
   }
   for (const o of obs) if (o.vaga) Object.assign(o.vaga, { x: o.x, y: o.y, t: tS, idMM: o.a.id });
+  // o Ator 1 (principal) roda em todo ciclo; os outros em rodízio (MotorMulti.alternar)
+  const v1 = obs.find((o) => o.vaga && o.vaga.n === 1);
+  state.multi.principalId = v1 ? v1.a.id : null;
   const atores = obs.filter((o) => o.vaga).sort((a, b) => a.vaga.n - b.vaga.n).map(({ a, vaga }) => {
     const hx = (a.P[23].x + a.P[24].x) / 2 / prep.w;
     return { id: vaga.n, W: a.W, P: a.P, cx: esp ? 1 - hx : hx, alt: (a.caixa.y2 - a.caixa.y1) / prep.h };
   });
-  if (!atores.length) { canalMotion.publicar({ t: prep.tFonte, P: null, W: null, w: prep.w, h: prep.h, latMs, img: prep.img, maos: prep.maos, rosto: prep.rosto, esp, atores: [] }); return { sem: true }; }
+  if (!atores.length) { canalMotion.publicar({ t: prep.tFonte, tCap: prep.tCap, P: null, W: null, w: prep.w, h: prep.h, latMs, img: prep.img, maos: prep.maos, rosto: prep.rosto, esp, atores: [] }); return { sem: true }; }
   const pri = atores[0];
-  canalMotion.publicar({ t: prep.tFonte, P: pri.P, W: pri.W, w: prep.w, h: prep.h, latMs, img: prep.img, maos: prep.maos, rosto: prep.rosto, esp, atores });
+  canalMotion.publicar({ t: prep.tFonte, tCap: prep.tCap, P: pri.P, W: pri.W, w: prep.w, h: prep.h, latMs, img: prep.img, maos: prep.maos, rosto: prep.rosto, esp, atores });
   state.principal = pri.id;
   return { P: pri.P, W: pri.W, w: prep.w, h: prep.h, atores };
 }
@@ -95,6 +98,8 @@ export const motion3dCaptura = {
     beta: { type: 'float', min: 0, max: 5, step: 0.05, default: 0.4, label: 'One Euro: beta' },
     desenhar: { type: 'bool', default: true, label: 'Desenhar esqueleto (fora do Studio)' },
     pessoas: { type: 'int', min: 1, max: 4, step: 1, default: 1, label: 'Atores (várias pessoas: YOLOX + um BlazePose por pessoa)' },
+    sincronizar: { type: 'enum', options: ['auto', 'sempre', 'nunca'], default: 'auto', label: 'Sincronizar imagem e pose (auto = arquivo e YouTube; câmera: previsão)' },
+    maxAtrasoMs: { type: 'int', min: 50, max: 1500, step: 50, default: 500, label: 'Atraso máximo da imagem (ms)' },
   },
   apply(src, p, state, ctx) {
     if (!ensure('yolox', state, ctx)) return clone(src);
@@ -108,10 +113,12 @@ export const motion3dCaptura = {
     state.rosto = Array.isArray(ctx.faceMesh) ? ctx.faceMesh : null;   // rosto.malha antes na cadeia: expressões e cabeça do avatar
     // várias pessoas (Studio v2): o MotorMulti da Corrida em modo recorte, um RastreadorMotion por pessoa
     const multi = (p.pessoas | 0) > 1;
-    if (multi && !state.multi) state.multi = new MotorMulti({ fonte: 'recorte', maxPessoas: p.pessoas | 0, detectarMs: 1500, fabrica: () => new RastreadorMotion() });
+    if (multi && !state.multi) state.multi = new MotorMulti({ fonte: 'recorte', maxPessoas: p.pessoas | 0, detectarMs: 2500, alternar: true, fabrica: () => new RastreadorMotion() });
     if (multi) state.multi.configurar({ maxPessoas: p.pessoas | 0 });
     else if (state.multi) { state.multi = null; state.principal = null; }
 
+    // instante do quadro (relógio da página, o mesmo do Viewport): a pose é desenhada no quadro dela
+    const tCap = Number.isFinite(ctx.tQuadro) ? ctx.tQuadro : performance.now();
     schedule(state, p.everyMs,
       () => {
         if (quadroRepetido(state, src, ctx, { forcar: convergindo(state.rast, state.results) })) return null;
@@ -125,20 +132,34 @@ export const motion3dCaptura = {
         if (multi && state.tMulti != null && t < state.tMulti - 500) { state.multi.zerar(); state.vagas = []; }
         if (multi) state.tMulti = t;
         const prep = multi ? { ...state.multi.preparar(src, t, { esp }), multi: true } : state.rast.preparar(src, performance.now(), { esp, detectarMs: p.detectarMs });
-        return { ...prep, tFonte: t, t0: performance.now(), maos: state.maos, rosto: state.rosto, img: canalMotion.precisaQuadro() ? clone(src) : null };
+        return { ...prep, tFonte: t, tCap, t0: performance.now(), maos: state.maos, rosto: state.rosto, img: canalMotion.precisaQuadro() ? clone(src) : null };
       },
       async (prep) => {
         if (prep.multi && state.multi) return estimarAtores(state, prep, esp);
         const r = await state.rast.estimar(prep);
         const latMs = performance.now() - prep.t0;
+        const et = state.rast.etapas;
+        if (et) { if (prep.det) canalMotion.etapa('det', et.det); canalMotion.etapa('recorte', et.recorte); canalMotion.etapa('pose', et.pose); }
         if (r.sem) {
-          canalMotion.publicar({ t: prep.tFonte, P: null, W: null, w: prep.w, h: prep.h, latMs, img: prep.img, maos: prep.maos, rosto: prep.rosto, esp });
+          canalMotion.publicar({ t: prep.tFonte, tCap: prep.tCap, P: null, W: null, w: prep.w, h: prep.h, latMs, img: prep.img, maos: prep.maos, rosto: prep.rosto, esp });
           return { sem: true };
         }
-        canalMotion.publicar({ t: prep.tFonte, P: r.P, W: r.W, w: prep.w, h: prep.h, vis: r.vis, latMs, img: prep.img, maos: prep.maos, rosto: prep.rosto, esp, aquecendo: Boolean(r.aquecendo) });
+        canalMotion.publicar({ t: prep.tFonte, tCap: prep.tCap, P: r.P, W: r.W, w: prep.w, h: prep.h, vis: r.vis, latMs, img: prep.img, maos: prep.maos, rosto: prep.rosto, esp, aquecendo: Boolean(r.aquecendo) });
         return { P: r.P, W: r.W, w: prep.w, h: prep.h };
       });
 
+    // sincronia (components/video/sincronia.js no Viewport): a imagem de arquivo/YouTube é exibida
+    // atrasada pela latência da pose + um período, e a pose desenhada é a DAQUELE quadro
+    const sc = canalMotion.sincronizacao();
+    // (nós salvos antes destes parâmetros não os têm: valem os padrões)
+    const modoSinc = p.sincronizar || 'auto', maxAtraso = Number.isFinite(p.maxAtrasoMs) ? p.maxAtrasoMs : 500;
+    if (modoSinc !== 'nunca' && sc.latMs != null) {
+      // atraso com histerese (só muda quando a diferença passa de ~2/3 de quadro): atraso que oscila
+      // a cada quadro faz o anel repetir/pular quadros e o vídeo do Studio tremer
+      const alvo = Math.min(maxAtraso, sc.latMs + (sc.perMs || 0) + 8);
+      if (state.atrasoSinc == null || alvo > state.atrasoSinc || state.atrasoSinc - alvo > 25) state.atrasoSinc = alvo;
+      ctx.sincronia = { modo: modoSinc, atrasoMs: state.atrasoSinc };
+    }
     if (state.inferMs) ctx.metrics['motion3d ms'] = state.inferMs.toFixed(0);
     if (state.error) ctx.metrics['motion3d erro'] = state.error;
     const R = state.results;
@@ -153,15 +174,22 @@ export const motion3dCaptura = {
     const st = canalMotion.estatisticas();
     if (st.gravando) ctx.metrics['motion3d ● REC'] = `${st.gravadas} poses`;
     if (!desenhar) return clone(src);
-    const sx = ctx.w / R.w, sy = ctx.h / R.h;
+    // a pose do quadro EXIBIDO (interpolada com a sincronia; prevista na câmera ao vivo)
+    const tEx = Number.isFinite(ctx.tExibir) ? ctx.tExibir : tCap;
+    const D = (canalMotion.poseEm(tEx, { prever: !ctx.fonteParada }) || null);
+    const PD = D && D.P && D.w ? D : R;
+    const sx = ctx.w / PD.w, sy = ctx.h / PD.h;
+    // visibilidade baixa (perna sob a saia, braço atrás do corpo): tracejado e esmaecido, nunca "certo"
+    const VIS_MIN = 0.15;
     for (const [a, b] of LIGACOES) {
-      const A = R.P[a], B = R.P[b];
-      if (!A || !B || A.v < p.minVis || B.v < p.minVis) continue;
-      ctx.overlay.push({ type: 'line', x1: A.x * sx, y1: A.y * sy, x2: B.x * sx, y2: B.y * sy, color: COR_MOCAP, width: 3 });
+      const A = PD.P[a], B = PD.P[b];
+      if (!A || !B || A.v < VIS_MIN || B.v < VIS_MIN) continue;
+      const certo = A.v >= p.minVis && B.v >= p.minVis;
+      ctx.overlay.push({ type: 'line', x1: A.x * sx, y1: A.y * sy, x2: B.x * sx, y2: B.y * sy, color: COR_MOCAP, width: certo ? 3 : 2, ...(certo ? {} : { dash: true, alpha: 0.45 }) });
     }
     for (let i = 0; i < 33; i++) {
-      const A = R.P[i];
-      if (A && A.v >= p.minVis) ctx.overlay.push({ type: 'point', x: A.x * sx, y: A.y * sy, r: 3, color: '#E8FFFB' });
+      const A = PD.P[i];
+      if (A && A.v >= VIS_MIN) ctx.overlay.push({ type: 'point', x: A.x * sx, y: A.y * sy, r: A.v >= p.minVis ? 3 : 2, color: '#E8FFFB', ...(A.v >= p.minVis ? {} : { alpha: 0.45 }) });
     }
     if (st.gravando) ban(`● REC Motion 3D · ${st.gravadas} poses`, '#f87171');
     return clone(src);

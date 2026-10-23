@@ -167,19 +167,35 @@ export class MotorMulti {
       for (const id of [...this.rps.keys()]) if (!novas.has(id)) this.rps.delete(id);
     }
     const res = [];
+    // o.alternar (Motion 3D): sem detecção nova, o principal (`principalId`) roda em todo ciclo e as
+    // outras pessoas UMA por ciclo, em rodízio — o ciclo custa 2 poses em vez de N (latência menor);
+    // quem não rodou repete a última pose (marcada `repetida`). A Corrida não liga (todas por ciclo).
+    let rodam = null;
+    if (this.o.alternar && !prep.det && this.rps.size > 2) {
+      const ids = [...this.rps.keys()];
+      const pri = this.rps.has(this.principalId) ? this.principalId : ids[0];
+      const outros = ids.filter((x) => x !== pri);
+      this.rr = ((this.rr | 0) + 1) % outros.length;
+      rodam = new Set([pri, outros[this.rr]]);
+    }
+    this.cache = this.cache || new Map();
     for (const id of novas.keys()) {
       // o.fabrica: outro rastreador por pessoa (o Motion 3D usa o RastreadorMotion, que dá também os 33 pontos 3D)
       if (!this.rps.has(id)) { const r = this.o.fabrica ? this.o.fabrica() : new RastreadorPose(); r.usarQuadro(this.fc); this.rps.set(id, r); }
     }
     for (const [id, rp] of this.rps) {
       if (prep.alvoId != null && id !== prep.alvoId) continue;
+      if (rodam && !rodam.has(id) && this.cache.has(id)) { res.push({ ...this.cache.get(id), repetida: true }); continue; }
       const pr = { w: prep.w, h: prep.h, t, esp, coerencia: true };
       const r = await rp.estimarNaCaixa(pr, novas.get(id) || null);
       if (r.sem) { this.rps.delete(id); continue; }
       const caixa = caixaPose(r.P);
       if (!r.incoerente) this.rast.observar(id, caixa, t);
-      res.push({ id, P: r.P, W: r.W || null, pontos: 33, caixa, incoerente: Boolean(r.incoerente), aquecendo: Boolean(r.aquecendo), motivo: r.motivo });
+      const item = { id, P: r.P, W: r.W || null, pontos: 33, caixa, incoerente: Boolean(r.incoerente), aquecendo: Boolean(r.aquecendo), motivo: r.motivo };
+      if (this.o.alternar) this.cache.set(id, item);
+      res.push(item);
     }
+    if (this.o.alternar) for (const id of [...this.cache.keys()]) if (!this.rps.has(id)) this.cache.delete(id);
     this.ultimas = res;
     return res;
   }

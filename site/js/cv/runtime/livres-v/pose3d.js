@@ -42,12 +42,37 @@ export function mundoParaRobo(w, roi, esp) {
 }
 
 export class RastreadorMotion extends RastreadorPose {
-  zerar() { super.zerar(); this._mundoDe = new WeakMap(); }
+  zerar() { super.zerar(); this._mundoDe = new WeakMap(); this.etapas = { det: 0, recorte: 0, pose: 0 }; this.boas = 0; }
+
+  /**
+   * ROI do quadro anterior, como no MediaPipe: o recorte vem dos pontos auxiliares da pose
+   * anterior (pai) e o YOLOX só roda quando a pose some, degrada ou fica incoerente. Com o
+   * rastreio SAUDÁVEL (núcleo bem visível há ≥ 15 poses seguidas) a re-detecção periódica de
+   * segurança passa de `detectarMs` para 4× — cada passada do YOLOX (70–190 ms) é uma pose a
+   * menos e um degrau na latência.
+   */
+  preparar(src, t, opts = {}) {
+    const saudavel = this.boas >= 15;
+    return super.preparar(src, t, saudavel ? { ...opts, detectarMs: 4 * (opts.detectarMs || 6000) } : opts);
+  }
+
+  async estimar(prep) {
+    const t0 = performance.now();
+    this.etapas = { det: 0, recorte: 0, pose: 0 };
+    const r = await super.estimar(prep);
+    if (prep.det) this.etapas.det = Math.max(0, performance.now() - t0 - this.etapas.recorte - this.etapas.pose);
+    this.boas = r && !r.sem && !r.incoerente && r.vis >= 0.6 ? this.boas + 1 : 0;
+    return r;
+  }
 
   /** O _inferir do pai, guardando também a saída do mundo (cópia: o ORT reusa buffers). */
   async _inferir(crop) {
     const ps = MODELS.pose;
-    const o2 = await run('pose', await makeTensor(toTensorData(crop, ps), ps.input));
+    const tensor = await makeTensor(toTensorData(crop, ps), ps.input);
+    const tI = performance.now();
+    this.etapas.recorte += tI - (this._tRec || tI);
+    const o2 = await run('pose', tensor);
+    this.etapas.pose += performance.now() - tI;
     let lms = null, presenca = null, mundo = null;
     for (const key of Object.keys(o2)) {
       const d = o2[key];
@@ -62,6 +87,7 @@ export class RastreadorMotion extends RastreadorPose {
   /** O pai escolhe entre várias estimativas (rotações da semente): o W vai junto do P de cada uma. */
   async _poseNaRoi(roi, esp) {
     this._mundo = null;
+    this._tRec = performance.now();   // recorte girado (pai) até a entrada do modelo
     const r = await super._poseNaRoi(roi, esp);
     if (r && this._mundo) this._mundoDe.set(r.P, mundoParaRobo(this._mundo, roi, esp));
     return r;

@@ -60,6 +60,18 @@ export class AtrasoQuadros {
     return e;
   }
 
+  /**
+   * O quadro guardado mais PERTO de `tAlvo` (antes ou depois). Com o laço de quadros oscilando
+   * alguns ms, o "mais novo até tAlvo" repete um quadro e pula o seguinte; o mais perto mantém o
+   * passo do vídeo (Motion 3D: o Studio exibe o quadro e desenha a pose do instante dele).
+   */
+  escolherPerto(tAlvo) {
+    if (!this.anel.length) return null;
+    let e = this.anel[0];
+    for (const q of this.anel) if (Math.abs(q.t - tAlvo) < Math.abs(e.t - tAlvo)) e = q;
+    return e;
+  }
+
   limpar() {
     this.anel.length = 0;
     this.livres.length = 0;
