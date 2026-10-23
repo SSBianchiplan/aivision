@@ -18,6 +18,7 @@
 import * as THREE from '../../../vendor/three-0.170.0/three.module.min.js';
 import { OrbitControls } from '../../../vendor/three-0.170.0/addons/OrbitControls.js';
 import { centroCamera, mv, transp } from '../../../vendor/gplansis-robo-mocap/mocap-robo.mjs';
+import { dprCanvas, TETO_STUDIO } from '../escala-canvas.js';
 
 /** Do robo: setFromPoints numa geometria existente reaproveita o buffer — geometria nova sempre. */
 export function trocarPontos(l, pts) {
@@ -598,6 +599,7 @@ export class CenaMotion3D {
 
   redimensionar() {
     const w = this.host.clientWidth || 1, h = this.host.clientHeight || 1;
+    this.renderer.setPixelRatio(dprCanvas(w, h, TETO_STUDIO));   // teto de área (escala-canvas.js)
     this.renderer.setSize(w, h, false); this.camera.aspect = w / h; this.camera.updateProjectionMatrix();
     this.sujo = true;
   }

@@ -24,7 +24,7 @@
  * ========================================================================
  */
 
-const VERSION = 'iav-v108-vps';   // 23/10/2026: Economia de CPU do WASM com sincronia, Automática do YouTube no tamanho da captura, Limpar tudo com modal
+const VERSION = 'iav-v109-vps';   // 23/10/2026: Teto de área nos canvases de vídeo (tela grande/Retina), Motion 3D procura pessoa a cada 250 ms
 const SHELL = `${VERSION}-shell`;
 /*
  * Pesos dos modelos num cache de nome FIXO: sobrevivem às publicações. Antes o

@@ -71,6 +71,7 @@ import { SaidaVMC } from './vmc.js';
 import { registrarStudio } from './api.js';
 import * as THREE from '../../../vendor/three-0.170.0/three.module.min.js';
 import { GLTFExporter } from '../../../vendor/three-0.170.0/addons/GLTFExporter.js';
+import { dprCanvas, TETO_STUDIO } from '../escala-canvas.js';
 
 /** Modelos de exemplo gerados em código (CC0; nada baixado). */
 const EXEMPLOS = [
@@ -419,7 +420,7 @@ export function StudioMotion3D({ onClose, displayCanvas, onResetState }) {
     const cv = cvVid.current;
     if (!cv) return;
     const box = tamVid.current;
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const dpr = dprCanvas(box.w, box.h, TETO_STUDIO);
     const W = Math.max(1, Math.round(box.w * dpr)), H = Math.max(1, Math.round(box.h * dpr));
     if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
     const g = cv.getContext('2d');

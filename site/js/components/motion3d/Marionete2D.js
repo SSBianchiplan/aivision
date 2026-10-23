@@ -12,6 +12,7 @@ import { lerImagem, alfaDaImagem, recorteAutomatico, poseAutomatica } from './ma
 import { gravarAoVivo, exportarMP4, exportarPNGzip } from './gravador.js';
 import * as armazem from '../../cv/runtime/livres-v/armazem.js';
 import { novoId } from '../../cv/runtime/livres-v/tomada.js';
+import { dprCanvas, TETO_STUDIO } from '../escala-canvas.js';
 
 const baixar = (blob, nome) => { const u = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = u; a.download = nome; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 3000); };
 const FUNDOS = [['transp', 'Transparente'], ['#00b140', 'Chroma verde'], ['#0047bb', 'Chroma azul'], ['#111417', 'Escuro'], ['#ffffff', 'Branco']];
@@ -133,7 +134,7 @@ export function Marionete2D({ obterPose, quadrosTomada, setMsg, abrir = null, ar
     const c = sobre.current, f = figRef.current;
     if (!c) return;
     const box = c.parentElement;
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const dpr = dprCanvas(box.clientWidth, box.clientHeight, TETO_STUDIO);
     const W = Math.round(box.clientWidth * dpr), H = Math.round(box.clientHeight * dpr);
     if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
     const g = c.getContext('2d');

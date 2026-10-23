@@ -121,7 +121,10 @@ export const motion3dCaptura = {
 
     // instante do quadro (relógio da página, o mesmo do Viewport): a pose é desenhada no quadro dela
     const tCap = Number.isFinite(ctx.tQuadro) ? ctx.tQuadro : performance.now();
-    schedule(state, p.everyMs,
+    // sem pessoa no quadro, o YOLOX rodava sem pausa (120–200 ms de GPU cada) e a captura da aba
+    // caía para 13–16 fps: procurando, uma tentativa a cada 250 ms basta
+    const semPessoa = state.results && state.results.sem;
+    schedule(state, semPessoa ? Math.max(250, p.everyMs | 0) : p.everyMs,
       () => {
         if (quadroRepetido(state, src, ctx, { forcar: convergindo(state.rast, state.results) })) return null;
         const fv = tempoDaFonte();

@@ -36,6 +36,7 @@ import {
   PONTOS_REF, PARTES, calibrarLateral, calibrarFrontal, amostraLateral, amostraFrontal, fundir,
   esqueletoAgora, trajetorias, csvCiclo, projetor, bikeParaLateral, bikeParaFrontal,
 } from '../../cv/runtime/livres-e/fit3d.js';
+import { dprCanvas, TETO_STUDIO } from '../escala-canvas.js';
 import { BotaoVia } from '../../via/BotaoVia.js';   // [VIA] botão «✦ Via» da barra (js/via/)
 
 const VISTAS = [
@@ -744,7 +745,7 @@ export function BikeFit3D({ onClose }) {
 function desenhar3D(S) {
   const c = S.c3d;
   if (!c) return;
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const dpr = dprCanvas(c.clientWidth, c.clientHeight, TETO_STUDIO);
   const W = Math.max(200, Math.round(c.clientWidth * dpr)), H = Math.max(160, Math.round(c.clientHeight * dpr));
   if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
   const g = c.getContext('2d');

@@ -16,6 +16,7 @@ import { marcStore, confirmar, novoId, vistaParaFonte, COR_FUNC, setVisivel } fr
 import { FERRAMENTAS } from '../../cv/runtime/livres-n/ferramentas.js';
 import { geometria, marcacoesAtuais } from '../../cv/runtime/livres-n/canal.js';
 import { numBR } from '../../cv/numfmt.js';
+import { dprCanvas, TETO_STUDIO } from '../escala-canvas.js';
 
 export const OP = 'inspect.programa';
 const fin = Number.isFinite;
@@ -78,8 +79,8 @@ export function carimbo() {
 /** Ajusta o canvas ao tamanho exibido (× dpr) e devolve { g, w, h, dpr }. */
 export function prepararCanvas(cv) {
   postos = [];
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const rect = cv.getBoundingClientRect();
+  const dpr = dprCanvas(rect.width, rect.height, TETO_STUDIO);
   const w = Math.max(1, Math.round(rect.width * dpr)), h = Math.max(1, Math.round(rect.height * dpr));
   if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
   const g = cv.getContext('2d');

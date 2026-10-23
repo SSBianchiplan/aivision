@@ -30,6 +30,7 @@
  */
 import { ordenar, fimClipe, clipeEm, quadroNoClipe, tempoDoQuadro, enquadramento, ajustarAoQuadro } from './edl.js';
 import { quadroEm } from './midia.js';
+import { dprCanvas, TETO_STUDIO } from '../escala-canvas.js';
 
 const ALCA = 9;
 
@@ -105,7 +106,7 @@ export class Reprodutor {
 
   medir() {
     const r = this.cv.getBoundingClientRect();
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const dpr = dprCanvas(r.width, r.height, TETO_STUDIO);
     this.w = Math.max(10, r.width); this.h = Math.max(10, r.height);
     this.cv.width = Math.round(this.w * dpr); this.cv.height = Math.round(this.h * dpr);
     this.dpr = dpr;

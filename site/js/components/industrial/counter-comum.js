@@ -25,6 +25,7 @@ import { instantaneo, motorCor } from '../../cv/runtime/livres-l/esteira.js';
 import { amostraDeHex } from '../../cv/runtime/livres-l/cor.js';
 import { colorFor } from '../../cv/runtime/opkit.js';
 import { numBR } from '../../cv/numfmt.js';
+import { dprCanvas, TETO_STUDIO } from '../escala-canvas.js';
 
 export const OP = 'contagem.esteira';
 export const fin = Number.isFinite;
@@ -170,8 +171,8 @@ export async function abrirExemplo(abrirArquivo) {
 const palco = () => (document.documentElement.getAttribute('data-theme') === 'code' ? '#1E1E1E' : '#02302C');
 
 export function desenharVideo(cv, opc = {}) {
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
   const r = cv.getBoundingClientRect();
+  const dpr = dprCanvas(r.width, r.height, TETO_STUDIO);
   const W = Math.max(50, Math.round(r.width * dpr)), H = Math.max(50, Math.round(r.height * dpr));
   if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
   const g = cv.getContext('2d');

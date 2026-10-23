@@ -17,6 +17,7 @@ import { criar, marcStore, fonteParaVista, setFerramenta, selecionar } from '../
 import { KP_LIGACOES } from '../../cv/operators/livres-a/pose.js';
 import { COR_ESTADO, ROTULO, ESTADOS, iso, ERRO_MAX_CALIBRACAO_M } from '../../cv/runtime/livres-m/canal.js';
 import { numBR } from '../../cv/numfmt.js';
+import { dprCanvas, TETO_STUDIO } from '../escala-canvas.js';
 
 export const OP = 'takt.posto';
 export { COR_ESTADO, ROTULO, ESTADOS };
@@ -115,8 +116,8 @@ const palco = () => (document.documentElement.getAttribute('data-theme') === 'co
 
 /** Ajusta o canvas ao tamanho exibido × dpr; devolve { g, W, H, dpr }. */
 export function prepararCanvas(cv, alturaMin = 0) {
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const r = cv.getBoundingClientRect();
+  const dpr = dprCanvas(r.width, Math.max(r.height, alturaMin), TETO_STUDIO);
   const W = Math.max(2, Math.round(r.width * dpr)), H = Math.max(2, Math.round(Math.max(r.height, alturaMin) * dpr));
   if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
   const g = cv.getContext('2d');

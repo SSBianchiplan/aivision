@@ -10,6 +10,7 @@ import { defaultParams } from '../../cv/registry.js';
 import { newNodeId } from '../../cv/executor.js';
 import { PRESETS_ONDA2C, criarMarcacoesOnda2c } from '../presets-onda2c.js';
 import { AVISO_SAUDE } from '../../cv/runtime/livres-t/clinica.js';
+import { dprCanvas, TETO_STUDIO } from '../escala-canvas.js';
 
 export { PRESETS_ONDA2C, AVISO_SAUDE };
 export const OPS_ONDA2C = [...new Set(PRESETS_ONDA2C.map((p) => p.op))];
@@ -98,8 +99,8 @@ export function abrirRelatorio(h, nome) {
 // ------------------------------------------------------------------ desenho
 
 export function prepararCanvas(cv) {
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const b = cv.getBoundingClientRect();
+  const dpr = dprCanvas(b.width, b.height, TETO_STUDIO);
   const W = Math.max(2, Math.round(b.width * dpr)), H = Math.max(2, Math.round(b.height * dpr));
   if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
   const g = cv.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0);

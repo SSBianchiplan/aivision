@@ -18,6 +18,7 @@
  * Puro (montarMalha, pesosGeodesicos, poseMarionete, deformar) + o renderizador three.js.
  */
 import * as THREE from '../../../vendor/three-0.170.0/three.module.min.js';
+import { dprCanvas, TETO_STUDIO } from '../escala-canvas.js';
 
 /** Juntas editáveis (índices do BlazePose) e rótulos. */
 export const JUNTAS_2D = [[0, 'nariz'], [11, 'ombro esq.'], [12, 'ombro dir.'], [13, 'cotovelo esq.'], [14, 'cotovelo dir.'], [15, 'punho esq.'], [16, 'punho dir.'],
@@ -338,7 +339,7 @@ export class PalcoMarionete {
     this.render();
   }
   render() { this.renderer.render(this.cena, this.camera); }
-  redimensionar() { if (this._fixo) return; const w = this.host.clientWidth || 1, h = this.host.clientHeight || 1; this.renderer.setSize(w, h, false); this.enquadrar(); this.render(); }
+  redimensionar() { if (this._fixo) return; const w = this.host.clientWidth || 1, h = this.host.clientHeight || 1; this.renderer.setPixelRatio(dprCanvas(w, h, TETO_STUDIO)); this.renderer.setSize(w, h, false); this.enquadrar(); this.render(); }
   /** Tamanho fixo (exportação): devolve a função de volta ao tamanho do host. */
   tamanhoFixo(w, h) {
     this._fixo = [w, h];

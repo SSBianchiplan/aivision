@@ -10,6 +10,7 @@ import { defaultParams } from '../../cv/registry.js';
 import { newNodeId } from '../../cv/executor.js';
 import { OSSOS } from '../../cv/runtime/livres-h/comum.js';
 import { ARTICULACOES, TESTES, REF, FONTES, normaSTS30, num } from '../../cv/runtime/livres-p/fisio.js';
+import { dprCanvas, TETO_STUDIO } from '../escala-canvas.js';
 
 export const OP = 'fisio.avaliar';
 export const AVISO_MEDICO = 'Não é dispositivo médico: apoio à avaliação por profissional habilitado. Ângulos 2D pela pose sem marcador têm erro de alguns graus; tempos dependem da câmera estável e do corpo inteiro no quadro.';
@@ -49,8 +50,8 @@ export function baixar(conteudo, nome, tipo = 'text/plain') {
 }
 
 export function prepararCanvas(cv) {
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const r = cv.getBoundingClientRect();
+  const dpr = dprCanvas(r.width, r.height, TETO_STUDIO);
   const W = Math.max(2, Math.round(r.width * dpr)), H = Math.max(2, Math.round(r.height * dpr));
   if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
   const g = cv.getContext('2d');

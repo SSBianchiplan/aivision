@@ -32,6 +32,7 @@ import {
 } from './marcacoes-vista.js';
 import { AtrasoQuadros, sincroniaLigada } from './video/sincronia.js';
 import { definirEconomia } from '../cv/runtime/onnx.js';
+import { dprCanvas } from './escala-canvas.js';
 
 /** YT.PlayerState em que o quadro capturado não anda: terminado, pausado, carregando, carregado sem tocar. */
 const YT_PARADO = new Set([0, 2, 3, 5]);
@@ -232,7 +233,7 @@ export function Viewport({ source, executor, snapshotRef, hideIdle, ring, canvas
           esperando.current = src;
           lastOverlay.current = [];
           const rect = display.getBoundingClientRect();
-          const dpr = Math.min(window.devicePixelRatio || 1, 2);
+          const dpr = dprCanvas(rect.width, rect.height);
           const cw = Math.round(rect.width * dpr), ch = Math.round(rect.height * dpr);
           if (cw && ch) {
             if (display.width !== cw || display.height !== ch) { display.width = cw; display.height = ch; }
@@ -288,7 +289,8 @@ export function Viewport({ source, executor, snapshotRef, hideIdle, ring, canvas
 
       // ---- geometria de exibição
       const rect = tamCss.current || display.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      // densidade com teto de área (escala-canvas.js): monitor grande não redesenha 20 MP por quadro
+      const dpr = dprCanvas(rect.width, rect.height);
       const cw = Math.round(rect.width * dpr), ch = Math.round(rect.height * dpr);
       if (!cw || !ch) return;
       if (display.width !== cw || display.height !== ch) {
@@ -880,7 +882,7 @@ export function Viewport({ source, executor, snapshotRef, hideIdle, ring, canvas
     const size = src.size;
     if (!size.width) return;
     const rect = display.getBoundingClientRect();
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = display.width / Math.max(1, rect.width);   // a mesma densidade com que o canvas foi pintado
     const cw = rect.width * dpr, ch = rect.height * dpr;
     const fit = Math.min(cw / size.width, ch / size.height);
     const dw = size.width * fit;
