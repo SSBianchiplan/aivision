@@ -24,7 +24,7 @@
  * ========================================================================
  */
 
-const VERSION = 'iav-v101-vps';   // 22/10/2026: Motion 3D: sincronia imagem×pose, piso (contato em y=0, sombra), perspectiva e câmera que segue; redução do quadro na GPU (todos os módulos)
+const VERSION = 'iav-v102-vps';   // 23/10/2026: Motion 3D: botão Pipeline (popover) no cabeçalho; barra lateral sem cortar textos
 const SHELL = `${VERSION}-shell`;
 /*
  * Pesos dos modelos num cache de nome FIXO: sobrevivem às publicações. Antes o

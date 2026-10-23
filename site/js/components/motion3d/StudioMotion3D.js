@@ -81,6 +81,7 @@ const RE_MODELO = /\.(glb|gltf|vrm|fbx)$/i, RE_IMAGEM = /\.(png|jpe?g|webp|gif|b
 const COR_ATOR = [null, '#FFD84D', '#F472B6', '#60A5FA'];
 import { ligarViaMotion } from './via-motion.js';   // [VIA] gancho da Via (js/components/motion3d/via-motion.js)
 import { BotaoVia } from '../../via/BotaoVia.js';   // [VIA] botão «✦ Via» da barra
+import { PipelineConteudo } from '../Panels.js';   // popover do Pipeline (como no Studio Bike Fit)
 
 const OP = 'motion3d.captura';
 const PASTAS = [
@@ -158,7 +159,7 @@ function injetarPose(W, t, latMs = 8) {
   canalMotion.publicar({ t, P, W, w: 640, h: 480, latMs });
 }
 
-export function StudioMotion3D({ onClose, displayCanvas }) {
+export function StudioMotion3D({ onClose, displayCanvas, onResetState }) {
   const raiz = useRef(null), cvVid = useRef(null), host3d = useRef(null), cena = useRef(null), fundo = useRef(null), cvHist = useRef(null);
   const inputImport = useRef(null), inputVideoServ = useRef(null);
   const [vista, setVista] = useState('video');          // video | 3d | ambos
@@ -1137,8 +1138,9 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
         <${FonteStudio} classeBotao="m3d-btn mini" semTexto=${true} />
       </div>
       <div class="m3d-atores" aria-label="Atores">
-        <label class="m3d-campo">Atores (pessoas) <select value=${String(p.pessoas || 1)} onChange=${(e) => { const n = +e.target.value; definirParam({ pessoas: n }); if (n < 2) { limparExtras(); setAtorAvatar(null); } }}>
-          ${[1, 2, 3, 4].map((n) => html`<option key=${n} value=${n}>${n === 1 ? '1 (rápido)' : `${n} · YOLOX + BlazePose por pessoa`}</option>`)}</select></label>
+        <label class="m3d-campo" title="Quantas pessoas acompanhar (1 é o mais rápido)">Atores <select value=${String(p.pessoas || 1)} onChange=${(e) => { const n = +e.target.value; definirParam({ pessoas: n }); if (n < 2) { limparExtras(); setAtorAvatar(null); } }}>
+          ${[1, 2, 3, 4].map((n) => html`<option key=${n} value=${n}>${n === 1 ? '1 (rápido)' : `${n} pessoas`}</option>`)}</select></label>
+        ${(p.pessoas || 1) > 1 && html`<p class="m3d-dica">YOLOX + BlazePose por pessoa · mais pessoas, menos poses/s</p>`}
         ${atoresVivos.length > 1 && atoresVivos.map((a, n) => html`<div key=${a.id} class=${`m3d-ator ${(atorAvatar == null ? n === 0 : a.id === atorAvatar) ? 'sel' : ''}`} style=${{ '--cor-ator': COR_ATOR[n] || 'var(--m3d-acento)' }}>
           <span class="m3d-dot" aria-hidden="true"></span><b>Ator ${n + 1}</b><small>id ${a.id}${a.Wl ? ' · 3D reconstruído' : ''}</small>
           <button class="m3d-btn mini" aria-pressed=${(atorAvatar == null ? n === 0 : a.id === atorAvatar)} onClick=${() => setAtorAvatar(n === 0 ? null : a.id)}>${(atorAvatar == null ? n === 0 : a.id === atorAvatar) ? 'dirige o avatar' : 'dirigir avatar'}</button>
@@ -1379,10 +1381,11 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
     </section>`;
 
   const PainelFlutuante = painel && html`
-    <div class=${`m3d-pop pop-${painel}`} role="dialog" aria-modal="false" aria-label=${{ multicam: 'Multicâmera', freemocap: 'FreeMoCap', avatar: 'Avatar', estudio: 'Estúdio' }[painel] || 'Motores de servidor'}>
-      <div class="m3d-pop-cab"><b>${{ multicam: 'Multicâmera (FreeMoCap no navegador · GPlanSiS|ROBO)', freemocap: 'FreeMoCap · calibração ChArUco · importação', avatar: 'Avatar · modelo 3D, mapeamento e retarget', estudio: 'Estúdio · câmera virtual, fundo, gravação, OBS, VMC' }[painel] || 'Motores de servidor · fila de jobs'}</b>
+    <div class=${`m3d-pop pop-${painel}`} role="dialog" aria-modal="false" aria-label=${{ multicam: 'Multicâmera', freemocap: 'FreeMoCap', avatar: 'Avatar', estudio: 'Estúdio', pipeline: 'Pipeline' }[painel] || 'Motores de servidor'}>
+      <div class="m3d-pop-cab"><b>${{ multicam: 'Multicâmera (FreeMoCap no navegador · GPlanSiS|ROBO)', freemocap: 'FreeMoCap · calibração ChArUco · importação', avatar: 'Avatar · modelo 3D, mapeamento e retarget', estudio: 'Estúdio · câmera virtual, fundo, gravação, OBS, VMC', pipeline: 'Pipeline · nós, parâmetros e presets' }[painel] || 'Motores de servidor · fila de jobs'}</b>
         <button class="m3d-btn mini" onClick=${() => setPainel(null)} aria-label="Fechar">✕</button></div>
       <div class="m3d-pop-c">
+        ${painel === 'pipeline' && html`<${PipelineConteudo} onResetState=${onResetState || (() => {})} presetsPrimeiro=${['Motion 3D', 'Esportes e biomecânica', 'Mãos, rosto e olhos']} />`}
         ${painel === 'multicam' && html`<${PainelMulticam} motor=${motorMc.current} mc=${mc} onGravar=${gravar} onDemo=${demonstracao} setMsg=${setMsg} />`}
         ${painel === 'avatar' && html`<${PainelAvatar} info=${avatar ? { nome: avatar.nome, tipo: avatar.tipo, vrm: avatar.vrm ? (avatar.vrm === '0' ? '0.x' : '1.0') : null, ossos: avatar.ossos, repouso: avatar.rig.poseRepouso, escala: avatar.rig.escala, flags: { dedos: avatar.rig.temDedos(), expressoes: avatar.rig.temExpressoes(), molas: avatar.rig.temMolas() } } : null}
           mapa=${avatar ? avatar.mapa : {}} origem=${avatar ? avatar.origem : {}} onMapa=${(m) => mudarMapa(m)} onAuto=${() => { if (!avatar) return; const a = mapaAutomatico(avatar.rig.modelo); mudarMapa(a.mapa, a.origem); setMsg('Mapa automático refeito.'); }}
@@ -1438,6 +1441,7 @@ export function StudioMotion3D({ onClose, displayCanvas }) {
             ${[['padrao', 'Padrão (painéis + Content Browser)'], ['foco', 'Foco no viewport'], ['ambos', 'Vídeo e 3D lado a lado']].map(([k, r]) => html`<button key=${k} role="menuitem" class=${layout === k ? 'on' : ''} onClick=${() => { setLayout(k); setMenu(null); }}>${r}</button>`)}
           </div>`}
         </span>
+        <button class=${`m3d-btn ${painel === 'pipeline' ? 'on' : ''}`} onClick=${() => setPainel(painel === 'pipeline' ? null : 'pipeline')} title="Nós do Pipeline, parâmetros e presets (valem ao vivo)">⛓ Pipeline</button>
         <button class=${`m3d-btn ${painel === 'avatar' ? 'on' : ''}`} onClick=${() => setPainel(painel === 'avatar' ? null : 'avatar')} title="Modelo 3D, mapeamento de ossos, dedos e rosto">🧍 Avatar</button>
         <button class=${`m3d-btn ${painel === 'estudio' ? 'on' : ''}`} onClick=${() => setPainel(painel === 'estudio' ? null : 'estudio')} title="Câmera virtual, fundo, gravação, OBS, VMC, várias pessoas">🎬 Estúdio</button>
         <${BotaoVia} modulo="motion3d" classe="m3d-btn" rotulo="✦ Via" texto="Para o Motion 3D: " />

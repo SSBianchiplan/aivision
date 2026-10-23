@@ -961,7 +961,7 @@ export function App({ sessao = null }) {
     ${s.studioOEE && html`<${StudioOEE} onClose=${() => store.set({ studioOEE: false })} />`}
     ${s.studioFisio && html`<${StudioFisio} onClose=${() => store.set({ studioFisio: false })} />`}
     ${s.studioOnda2c && html`<${StudioOnda2c} onClose=${() => store.set({ studioOnda2c: false })} />`}
-    ${s.studioMotion3D && html`<${StudioMotion3D} displayCanvas=${displayCanvas} onClose=${() => store.set({ studioMotion3D: false })} />`}
+    ${s.studioMotion3D && html`<${StudioMotion3D} displayCanvas=${displayCanvas} onResetState=${resetState} onClose=${() => store.set({ studioMotion3D: false })} />`}
     ${s.studioVideo && html`<${StudioVideo} source=${source} onPickFile=${pickFile} onClose=${() => store.set({ studioVideo: false })} />`}
     ${s.panels.via && html`<${ViaPainel} onClose=${closePanel('via')} source=${source} displayCanvas=${displayCanvas} />`}
   `;
