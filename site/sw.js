@@ -24,7 +24,7 @@
  * ========================================================================
  */
 
-const VERSION = 'iav-v111-vps';   // 23/10/2026: Nitidez: largura de trabalho não fica presa em 160, 14 operadores só desenham, máscaras/mapas como camada sobre o vídeo nítido
+const VERSION = 'iav-v112-vps';   // 23/10/2026: Textos públicos sem o apelido interno do servidor
 const SHELL = `${VERSION}-shell`;
 /*
  * Pesos dos modelos num cache de nome FIXO: sobrevivem às publicações. Antes o
