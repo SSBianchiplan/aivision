@@ -5,7 +5,7 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/licen%C3%A7a-AGPL--3.0-04413C" alt="Licença AGPL-3.0"></a>
   <a href="https://aivision.gplansis.com"><img src="https://img.shields.io/badge/no%20ar-aivision.gplansis.com-2ea44f" alt="No ar em aivision.gplansis.com"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/vers%C3%A3o-v105-FFD84D" alt="Versão v105"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/vers%C3%A3o-v111-FFD84D" alt="Versão v111"></a>
   <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-bem--vindos-brightgreen" alt="PRs bem-vindos"></a>
 </p>
 
@@ -54,7 +54,8 @@ Detalhes em [docs/industrial.md](docs/industrial.md).
 ### Ferramentas
 
 - **Via:** assistente de IA (Claude, com a chave do próprio usuário) que monta cadeias, olha o quadro atual e consulta uma base de conhecimento. [docs/via.md](docs/via.md)
-- **Ferramentas de mouse:** régua e ângulo calibrados, zonas e linhas de contagem, ROI e exclusão, marcações sobre o vídeo.
+- **Ferramentas de mouse:** régua e ângulo calibrados, zonas e linhas de contagem, ROI e exclusão, marcações sobre o vídeo; as regiões dos pipelines (quadra, linhas, zonas) se ajustam arrastando, e o widget 🛠 Ferramentas está em todos os Studios.
+- **⚙ Calibrar quadra:** padel, tênis, vôlei, basquete, futsal e beach tennis, com 4 cantos sobre o vídeo e radar em metros.
 - **+Projeto:** rotulagem de imagens para treinar modelos próprios. [docs/projeto.md](docs/projeto.md)
 - **GPlanSiS|Vídeo:** editor com quadro exato, cortes, recorte/Ken Burns e exportação MP4 no navegador (WebCodecs). [docs/video.md](docs/video.md)
 - **Treinar:** treino de RF-DETR, PatchCore e YOLO26 com fila e comparação. [docs/treinar.md](docs/treinar.md)
@@ -67,6 +68,8 @@ Câmera do aparelho, câmeras USB e Continuidade, câmeras Wi-Fi/IP (WHEP), arqu
 
 - **WebGPU por modelo**, com queda automática para WASM, fila única de inferência com prioridade e abertura sob demanda. [docs/desempenho.md](docs/desempenho.md)
 - **Funciona no Safari** (macOS e iOS), no Chrome, no Edge e no Firefox, com os contornos documentados em [docs/compatibilidade.md](docs/compatibilidade.md).
+- **Telemetria** no rodapé, com fps real da captura, GPU/WASM por modelo e relatório para copiar. [docs/telemetria.md](docs/telemetria.md)
+- **Telas grandes e Retina:** teto de área nos canvases de vídeo, sem perder nitidez.
 - **PWA** com cache permanente dos pesos: o modelo baixa uma vez e fica no aparelho.
 
 ## Telas

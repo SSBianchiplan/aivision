@@ -2,6 +2,22 @@
 
 As versões seguem o `VERSION` do service worker (`site/sw.js`).
 
+## v106–v111 — 2026-10-23
+- **Regiões editáveis com o mouse (v106):** as regiões que vêm prontas nos pipelines (quadra, linha de contagem, ponto do SAM 2, zonas, faixas do BeltScan, posto do Takt, gatilho do Inspect) podem ser selecionadas e ajustadas na tela, com ajuste fino pelas setas, Desfazer e menu de contexto (Redefinir, Travar, Apagar).
+- **⚙ Calibrar quadra (v106):** assistente com o esporte (padel, tênis, vôlei, basquete, futsal, beach tennis), 4 cantos arrastados sobre o vídeo e homografia salva por fonte; radar em metros. O mesmo ⚙ em Marcha, Takt, régua/paquímetro e Bike Fit 3D.
+- **🛠 Ferramentas nos 10 Studios (v106)** e **modais do sistema** no lugar de `confirm`/`alert`/`prompt` (`js/components/dialogo.js`).
+- **Vídeo fluido com a sincronia ligada (v107):** fila de exibição em sequência e atraso que sobe e desce devagar; quadros repetidos 60–75 → 0–3 por 10 s.
+- **Menos CPU com arquivo e YouTube (v108):** a fila de inferência descansa 0,5× a duração de cada execução em WASM quando a imagem está atrasada pela sincronia; a qualidade "Automática" do YouTube decodifica no tamanho da captura.
+- **Telas grandes e Retina (v109):** teto de área nos canvases de vídeo (`js/components/escala-canvas.js`): ~4,2 MP no vídeo principal e 3 MP nos Studios. Num monitor de 6324×3106 px com o Motion 3D: captura 13 → 21 fps, 54 → 7 ms por quadro, travadas 73 → 0.
+- **Telemetria (v110):** rodapé de monitoramento com métricas ao vivo (fps real da captura, canvas, modo de exibição, cada modelo com GPU/WASM, fila, sincronia, memória, travadas), cada métrica liga/desliga no widget, "Copiar relatório" e "Gravar 30 s" em CSV. Ver [docs/telemetria.md](docs/telemetria.md).
+- **Nitidez (v111):** a largura de trabalho não fica mais presa em 160 px nem é gravada quando a qualidade automática a baixa; 18 operadores que só desenham (ou só alteram pixels com uma opção ligada) voltam ao vídeo em resolução plena; máscaras, mapas de calor e fundos escurecidos viram uma camada de imagem sobre o vídeo nítido (`overlayOnly` pode ser função dos parâmetros, `registry.soDesenha`).
+
+## v96–v105 — 2026-10-22 a 2026-10-23
+- **Motion 3D Studio (v96–v104):** captura de movimento 2D→3D com ossos rígidos e contatos, até 4 atores, avatar VRM/GLB/FBX, marionete 2D, estúdio com VMC, Pipeline no cabeçalho e botão próprio na barra do topo. Ver [docs/motion3d.md](docs/motion3d.md).
+- **Via em todos os módulos (v99):** registro genérico de ferramentas, botão Via em todos os painéis e Studios, geração de animações para o Motion 3D.
+- **Somar presets no Pipeline (v103):** trocar ou somar, reaproveitando operadores já presentes.
+- **Sincronia genérica (v105):** cada operador carimba o desenho com o instante do quadro de origem e o Viewport atrasa a imagem de arquivo e YouTube; erro caixa↔objeto na quadra 72,8 → 21 px. Ver [docs/tempo-real.md](docs/tempo-real.md).
+
 ## v95 — 2026-10-22
 - **Trânsito em tempo real:** presets com YOLOX no WebGPU (no lugar do RF-DETR int8 em WASM), entrada em resolução plena com ladrilhos para carros pequenos, ByteTrack reescrito com Kalman em tempo real que desenha a posição prevista no quadro exibido, trilhas perdidas não aparecem, sincronia de imagem para arquivo e YouTube. Erro caixa↔veículo 70 px → 2,5 px; latência percebida 725 ms → ~5 ms. Ver [docs/tempo-real.md](docs/tempo-real.md).
 - Correção: os 18 presets de saúde e esportes (CV-70–77) voltaram à lista (sumiram num merge da v94).
